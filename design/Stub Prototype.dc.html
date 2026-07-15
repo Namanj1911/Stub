@@ -1,0 +1,1132 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="_ds/nocturne-6ce214d7-6242-42c6-9b66-ed1524250c5b/styles.css">
+<script src="_ds/nocturne-6ce214d7-6242-42c6-9b66-ed1524250c5b/_ds_bundle.js"></script>
+<style>
+  html, body { margin: 0; padding: 0; background: var(--color-bg, #161826); }
+  body { font-family: var(--font-body, "Inter", sans-serif); }
+  a { color: var(--color-accent, #9184d9); text-decoration: none; }
+  a:hover { color: var(--color-accent-400, #b5abfc); }
+</style>
+</helmet>
+
+<section style="display:flex; flex-wrap:wrap; gap:56px; align-items:flex-start; padding:48px; background:var(--color-bg);">
+
+  <!-- ============ 2a — Onboarding ============ -->
+  <div id="2a" style="display:flex; flex-direction:column; gap:14px;">
+    <div style="display:flex; align-items:center; gap:10px;">
+      <a href="#2a" style="font-size:13px; font-weight:600; border:1px solid var(--color-accent); color:var(--color-accent-300); padding:3px 9px; border-radius:var(--radius-sm);">2a</a>
+      <span style="color:var(--color-text); font-size:15px; font-weight:500;">v2 — Onboarding baseline</span>
+    </div>
+    <x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx" dark="{{ true }}" hint-size="430px,880px">
+      <div style="display:flex; flex-direction:column; height:100%; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); padding:66px 22px 24px; overflow:auto;">
+        <div style="display:flex; align-items:center; justify-content:space-between;">
+          <div style="font-weight:500; font-size:22px;">stub<span style="color:var(--color-accent);">.</span></div>
+          <div style="font-size:12px; color:var(--color-neutral-500);">{{ obStepText }}</div>
+        </div>
+        <div style="margin-top:8px; height:3px; border-radius:999px; background:var(--color-neutral-900); overflow:hidden;"><div style="width:{{ obProgress }}; height:100%; background:var(--color-accent); transition:width .3s;"></div></div>
+
+        <sc-if value="{{ obIsStep1 }}" hint-placeholder-val="{{ true }}">
+          <div style="margin-top:36px; font-weight:500; font-size:30px; line-height:1.25;">How many a day,<br>honestly?</div>
+          <div style="font-size:14px; color:var(--color-neutral-500); margin-top:10px;">No judgement. Well, minimal judgement. This sets your starting budget — your plan only works if this number is real.</div>
+          <div style="display:flex; align-items:center; justify-content:center; gap:26px; margin-top:38px;">
+            <button onClick="{{ obDec }}" style="cursor:pointer; width:52px; height:52px; border-radius:50%; border:1px solid var(--color-neutral-800); background:var(--color-surface); color:var(--color-text); font-size:24px; font-family:var(--font-body);" style-hover="border-color:var(--color-accent);" style-active="transform:scale(.94);">−</button>
+            <div style="text-align:center; min-width:110px;">
+              <div style="font-weight:500; font-size:72px; line-height:1;">{{ obCount }}</div>
+              <div style="font-size:12px; letter-spacing:1.5px; text-transform:uppercase; color:var(--color-neutral-500); margin-top:6px;">per day</div>
+            </div>
+            <button onClick="{{ obInc }}" style="cursor:pointer; width:52px; height:52px; border-radius:50%; border:1px solid var(--color-neutral-800); background:var(--color-surface); color:var(--color-text); font-size:24px; font-family:var(--font-body);" style-hover="border-color:var(--color-accent);" style-active="transform:scale(.94);">+</button>
+          </div>
+          <div style="margin-top:34px; background:var(--color-surface); border-radius:var(--radius-md); padding:14px 16px; font-size:13px; color:var(--color-neutral-300);">{{ obReaction }}</div>
+        </sc-if>
+
+        <sc-if value="{{ obIsStep2 }}" hint-placeholder-val="{{ false }}">
+          <div style="margin-top:36px; font-weight:500; font-size:30px; line-height:1.25;">What's your<br>usual?</div>
+          <div style="font-size:14px; color:var(--color-neutral-500); margin-top:10px;">We'll use this for nicotine and money math. Change it anytime.</div>
+          <div style="display:flex; flex-direction:column; gap:8px; margin-top:28px;">
+            <sc-for list="{{ obBrands }}" as="b" hint-placeholder-count="4">
+              <button onClick="{{ b.pick }}" style="cursor:pointer; display:flex; justify-content:space-between; align-items:center; gap:10px; border:1px solid {{ b.border }}; background:{{ b.bg }}; border-radius:var(--radius-md); padding:14px 16px; color:var(--color-text); font-family:var(--font-body); text-align:left;">
+                <span style="font-size:14px; font-weight:500;">{{ b.name }}</span>
+                <span style="font-size:12px; color:var(--color-neutral-500); white-space:nowrap;">{{ b.meta }}</span>
+              </button>
+            </sc-for>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ obIsStep3 }}" hint-placeholder-val="{{ false }}">
+          <div style="margin-top:36px; font-weight:500; font-size:30px; line-height:1.25;">What's one stick<br>costing you?</div>
+          <div style="font-size:14px; color:var(--color-neutral-500); margin-top:10px;">Loose or from a pack — the average price you actually pay.</div>
+          <div style="display:flex; align-items:center; justify-content:center; gap:26px; margin-top:38px;">
+            <button onClick="{{ obPriceDec }}" style="cursor:pointer; width:52px; height:52px; border-radius:50%; border:1px solid var(--color-neutral-800); background:var(--color-surface); color:var(--color-text); font-size:24px; font-family:var(--font-body);" style-hover="border-color:var(--color-accent);" style-active="transform:scale(.94);">−</button>
+            <div style="text-align:center; min-width:130px;">
+              <div style="font-weight:500; font-size:64px; line-height:1;">₹{{ obPrice }}</div>
+              <div style="font-size:12px; letter-spacing:1.5px; text-transform:uppercase; color:var(--color-neutral-500); margin-top:6px;">per stick</div>
+            </div>
+            <button onClick="{{ obPriceInc }}" style="cursor:pointer; width:52px; height:52px; border-radius:50%; border:1px solid var(--color-neutral-800); background:var(--color-surface); color:var(--color-text); font-size:24px; font-family:var(--font-body);" style-hover="border-color:var(--color-accent);" style-active="transform:scale(.94);">+</button>
+          </div>
+          <div style="margin-top:34px; background:var(--color-surface); border-radius:var(--radius-md); padding:14px 16px; font-size:13px; color:var(--color-neutral-300);">That's about ₹{{ obMonthly }}/month going up in smoke right now.</div>
+        </sc-if>
+
+        <sc-if value="{{ obIsStep4 }}" hint-placeholder-val="{{ false }}">
+          <div style="margin-top:36px; font-weight:500; font-size:30px; line-height:1.25;">When do you<br>usually light up?</div>
+          <div style="font-size:14px; color:var(--color-neutral-500); margin-top:10px;">Pick your triggers — we'll watch those windows and nudge you before they hit.</div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:28px;">
+            <sc-for list="{{ obTriggerChips }}" as="t" hint-placeholder-count="6">
+              <button onClick="{{ t.toggle }}" style="cursor:pointer; border:1px solid {{ t.border }}; background:{{ t.bg }}; border-radius:var(--radius-md); padding:14px 12px; color:var(--color-text); font-family:var(--font-body); font-size:13px; font-weight:500;">{{ t.label }}</button>
+            </sc-for>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ obIsStep5 }}" hint-placeholder-val="{{ false }}">
+          <div style="margin-top:36px; font-weight:500; font-size:30px; line-height:1.25;">How fast do you<br>want out?</div>
+          <div style="font-size:14px; color:var(--color-neutral-500); margin-top:10px;">Your daily budget shrinks by this much every week. Pick what you'll actually stick to.</div>
+          <div style="display:flex; flex-direction:column; gap:8px; margin-top:28px;">
+            <sc-for list="{{ obPaces }}" as="p" hint-placeholder-count="3">
+              <button onClick="{{ p.pick }}" style="cursor:pointer; display:flex; justify-content:space-between; align-items:center; gap:10px; border:1px solid {{ p.border }}; background:{{ p.bg }}; border-radius:var(--radius-md); padding:16px; color:var(--color-text); font-family:var(--font-body); text-align:left;">
+                <div>
+                  <div style="font-size:15px; font-weight:500;">{{ p.name }} <span style="font-size:12px; color:var(--color-neutral-500); font-weight:400;">{{ p.rate }}</span></div>
+                  <div style="font-size:12px; color:var(--color-neutral-500); margin-top:2px;">{{ p.desc }}</div>
+                </div>
+                <div style="font-size:13px; font-weight:500; color:var(--color-accent-300); white-space:nowrap;">{{ p.weeks }}</div>
+              </button>
+            </sc-for>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ obIsDone }}" hint-placeholder-val="{{ false }}">
+          <div style="margin-top:36px; font-weight:500; font-size:30px; line-height:1.25;">Your plan<br>is ready.</div>
+          <div style="margin-top:24px; background:var(--color-section); border-radius:var(--radius-lg); padding:20px; background-image:radial-gradient(circle at 80% 0%, var(--color-section-glow), transparent 70%); display:flex; flex-direction:column; gap:14px;">
+            <div style="display:flex; justify-content:space-between; align-items:baseline;"><span style="font-size:13px; color:var(--color-neutral-400);">Today's budget</span><span style="font-weight:500; font-size:18px;">{{ obCount }} a day</span></div>
+            <div style="display:flex; justify-content:space-between; align-items:baseline;"><span style="font-size:13px; color:var(--color-neutral-400);">Pace</span><span style="font-weight:500; font-size:18px;">{{ obPaceSummary }}</span></div>
+            <div style="display:flex; justify-content:space-between; align-items:baseline;"><span style="font-size:13px; color:var(--color-neutral-400);">Last cigarette</span><span style="font-weight:500; font-size:18px; color:var(--color-accent-300);">{{ obQuitDate }}</span></div>
+            <div style="display:flex; justify-content:space-between; align-items:baseline;"><span style="font-size:13px; color:var(--color-neutral-400);">Back in your pocket</span><span style="font-weight:500; font-size:18px;">₹{{ obMonthly }}/mo</span></div>
+          </div>
+          <div style="font-size:13px; color:var(--color-neutral-500); margin-top:16px;">No cold turkey, no drama. Just a number that shrinks a little every week.</div>
+        </sc-if>
+
+        <div style="margin-top:auto; display:flex; flex-direction:column; gap:10px; padding-top:24px;">
+          <sc-if value="{{ obNotDone }}" hint-placeholder-val="{{ true }}">
+            <button onClick="{{ obNext }}" style="cursor:pointer; border:none; border-radius:var(--radius-md); padding:16px; background:var(--color-accent); color:var(--color-bg); font-family:var(--font-body); font-weight:600; font-size:15px;" style-hover="filter:brightness(1.1);" style-active="transform:scale(.98);">{{ obNextLabel }}</button>
+            <div style="display:flex; align-items:center; justify-content:center; gap:12px;">
+              <sc-if value="{{ obCanBack }}" hint-placeholder-val="{{ false }}">
+                <button onClick="{{ obBack }}" style="cursor:pointer; background:none; border:none; padding:0; font-size:12px; color:var(--color-neutral-500); text-decoration:underline; font-family:var(--font-body);">← back</button>
+              </sc-if>
+              <span style="font-size:12px; color:var(--color-neutral-600);">{{ obNextHint }}</span>
+            </div>
+          </sc-if>
+          <sc-if value="{{ obIsDone }}" hint-placeholder-val="{{ false }}">
+            <button onClick="{{ obRestart }}" style="cursor:pointer; border:1px solid var(--color-accent); border-radius:var(--radius-md); padding:16px; background:transparent; color:var(--color-accent-300); font-family:var(--font-body); font-weight:600; font-size:15px;" style-hover="background:color-mix(in srgb, var(--color-accent) 10%, transparent);" style-active="transform:scale(.98);">Start over (demo)</button>
+          </sc-if>
+        </div>
+      </div>
+    </x-import>
+  </div>
+
+  <!-- ============ 2b — Backfill flow ============ -->
+  <div id="2b" style="display:flex; flex-direction:column; gap:14px;">
+    <div style="display:flex; align-items:center; gap:10px;">
+      <a href="#2b" style="font-size:13px; font-weight:600; border:1px solid var(--color-accent); color:var(--color-accent-300); padding:3px 9px; border-radius:var(--radius-sm);">2b</a>
+      <span style="color:var(--color-text); font-size:15px; font-weight:500;">v2 — Backfill a missed one</span>
+    </div>
+    <x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx" dark="{{ true }}" hint-size="430px,880px">
+      <div style="display:flex; flex-direction:column; height:100%; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); padding:66px 22px 24px; overflow:auto;">
+        <div style="display:flex; align-items:center; gap:12px;">
+          <div style="font-size:18px; color:var(--color-neutral-500);">←</div>
+          <div style="font-weight:500; font-size:20px;">Missed one?</div>
+        </div>
+        <div style="font-size:13px; color:var(--color-neutral-500); margin-top:6px;">Add it now — your stats only work if they're honest.</div>
+
+        <div style="margin-top:26px; font-size:12px; letter-spacing:1.5px; text-transform:uppercase; color:var(--color-neutral-500);">Which day</div>
+        <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-top:10px;">
+          <sc-for list="{{ bfDays }}" as="d" hint-placeholder-count="4">
+            <button onClick="{{ d.pick }}" style="cursor:pointer; border:1px solid {{ d.border }}; border-radius:var(--radius-md); padding:12px 4px; background:{{ d.bg }}; color:var(--color-text); font-family:var(--font-body); font-size:13px; font-weight:500;">{{ d.label }}</button>
+          </sc-for>
+        </div>
+
+        <div style="margin-top:24px; font-size:12px; letter-spacing:1.5px; text-transform:uppercase; color:var(--color-neutral-500);">Roughly when</div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:10px;">
+          <sc-for list="{{ bfBuckets }}" as="b" hint-placeholder-count="4">
+            <button onClick="{{ b.pick }}" style="cursor:pointer; border:1px solid {{ b.border }}; border-radius:var(--radius-md); padding:13px 8px; background:{{ b.bg }}; color:var(--color-text); font-family:var(--font-body); text-align:left;">
+              <div style="font-size:14px; font-weight:500;">{{ b.name }}</div>
+              <div style="font-size:11px; color:var(--color-neutral-500); margin-top:2px;">{{ b.range }}</div>
+            </button>
+          </sc-for>
+        </div>
+
+        <div style="margin-top:24px; font-size:12px; letter-spacing:1.5px; text-transform:uppercase; color:var(--color-neutral-500);">How much</div>
+        <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-top:10px;">
+          <button onClick="{{ bfAmtFull }}" style="cursor:pointer; border:1px solid {{ bfFullBorder }}; border-radius:var(--radius-md); padding:14px 0; background:{{ bfFullBg }}; color:var(--color-text); font-family:var(--font-body); font-size:20px; font-weight:500;">1</button>
+          <button onClick="{{ bfAmtHalf }}" style="cursor:pointer; border:1px solid {{ bfHalfBorder }}; border-radius:var(--radius-md); padding:14px 0; background:{{ bfHalfBg }}; color:var(--color-text); font-family:var(--font-body); font-size:20px; font-weight:500;">½</button>
+          <button onClick="{{ bfAmtThird }}" style="cursor:pointer; border:1px solid {{ bfThirdBorder }}; border-radius:var(--radius-md); padding:14px 0; background:{{ bfThirdBg }}; color:var(--color-text); font-family:var(--font-body); font-size:20px; font-weight:500;">⅓</button>
+        </div>
+
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-top:12px; background:var(--color-surface); border:1px solid var(--color-neutral-800); border-radius:var(--radius-md); padding:10px 12px;">
+          <div>
+            <div style="font-size:13px; color:var(--color-neutral-400);">Total</div>
+            <div style="display:flex; align-items:center; gap:8px; margin-top:2px;">
+              <span style="font-size:11px; color:var(--color-neutral-600);">−/+ adds {{ bfStepLabel }}</span>
+              <button onClick="{{ bfClear }}" style="cursor:pointer; background:none; border:none; padding:0; font-size:11px; color:var(--color-neutral-500); text-decoration:underline; font-family:var(--font-body);">reset</button>
+            </div>
+          </div>
+          <div style="display:flex; align-items:center; gap:14px;">
+            <button onClick="{{ bfCountDec }}" style="cursor:pointer; width:36px; height:36px; border-radius:50%; border:1px solid var(--color-neutral-800); background:var(--color-bg); color:var(--color-text); font-size:18px; font-family:var(--font-body); display:flex; align-items:center; justify-content:center; padding:0;" style-hover="border-color:var(--color-accent);" style-active="transform:scale(.92);">−</button>
+            <span style="font-weight:500; font-size:20px; min-width:40px; text-align:center;">{{ bfTotal }}</span>
+            <button onClick="{{ bfCountInc }}" style="cursor:pointer; width:36px; height:36px; border-radius:50%; border:1px solid var(--color-neutral-800); background:var(--color-bg); color:var(--color-text); font-size:18px; font-family:var(--font-body); display:flex; align-items:center; justify-content:center; padding:0;" style-hover="border-color:var(--color-accent);" style-active="transform:scale(.92);">+</button>
+          </div>
+        </div>
+
+        <sc-if value="{{ bfToast }}" hint-placeholder-val="{{ false }}">
+          <div style="margin-top:18px; background:var(--color-surface); border:1px solid var(--color-neutral-800); border-radius:var(--radius-md); padding:12px 16px; font-size:13px; color:var(--color-neutral-300);">{{ bfToast }}</div>
+        </sc-if>
+
+        <div style="margin-top:auto; padding-top:20px;">
+          <button onClick="{{ bfAdd }}" style="cursor:pointer; width:100%; border:none; border-radius:var(--radius-md); padding:16px; background:var(--color-accent); color:var(--color-bg); font-family:var(--font-body); font-weight:600; font-size:15px;" style-hover="filter:brightness(1.1);" style-active="transform:scale(.98);">Add {{ bfSummary }}</button>
+          <div style="text-align:center; font-size:11px; color:var(--color-neutral-600); margin-top:10px;">Backfilled entries are marked — averages and streaks recompute honestly.</div>
+        </div>
+      </div>
+    </x-import>
+  </div>
+
+  <!-- ============ 2c — Notifications ============ -->
+  <div id="2c" style="display:flex; flex-direction:column; gap:14px;">
+    <div style="display:flex; align-items:center; gap:10px;">
+      <a href="#2c" style="font-size:13px; font-weight:600; border:1px solid var(--color-accent); color:var(--color-accent-300); padding:3px 9px; border-radius:var(--radius-sm);">2c</a>
+      <span style="color:var(--color-text); font-size:15px; font-weight:500;">v2 — Notifications (lock screen)</span>
+    </div>
+    <x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx" dark="{{ true }}" hint-size="430px,880px">
+      <div style="display:flex; flex-direction:column; height:100%; background:radial-gradient(circle at 50% 0%, #232742, var(--color-bg) 65%); color:var(--color-text); font-family:var(--font-body); padding:80px 18px 24px; overflow:auto;">
+        <div style="text-align:center; margin-top:18px;">
+          <div style="font-size:15px; color:var(--color-neutral-400);">Tuesday, 14 July</div>
+          <div style="font-weight:500; font-size:76px; line-height:1; letter-spacing:-2px;">15:42</div>
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:10px; margin-top:44px;">
+          <div style="background:color-mix(in srgb, var(--color-surface) 82%, transparent); backdrop-filter:blur(20px); border:1px solid var(--color-neutral-800); border-radius:var(--radius-lg); padding:14px 16px;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <div style="display:flex; align-items:center; gap:8px;"><div style="width:18px; height:18px; border-radius:5px; background:var(--color-accent); display:flex; align-items:center; justify-content:center; color:var(--color-bg); font-size:11px; font-weight:600;">s</div><span style="font-size:12px; color:var(--color-neutral-400);">STUB</span></div>
+              <span style="font-size:12px; color:var(--color-neutral-500);">now</span>
+            </div>
+            <div style="font-weight:500; font-size:14px; margin-top:8px;">Budget check: 2 left today</div>
+            <div style="font-size:13px; color:var(--color-neutral-300); margin-top:2px;">It's only 3:42pm. Pace yourself, champ — the evening is long.</div>
+          </div>
+
+          <div style="background:color-mix(in srgb, var(--color-surface) 82%, transparent); backdrop-filter:blur(20px); border:1px solid var(--color-neutral-800); border-radius:var(--radius-lg); padding:14px 16px;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <div style="display:flex; align-items:center; gap:8px;"><div style="width:18px; height:18px; border-radius:5px; background:var(--color-accent); display:flex; align-items:center; justify-content:center; color:var(--color-bg); font-size:11px; font-weight:600;">s</div><span style="font-size:12px; color:var(--color-neutral-400);">STUB</span></div>
+              <span style="font-size:12px; color:var(--color-neutral-500);">17:45</span>
+            </div>
+            <div style="font-weight:500; font-size:14px; margin-top:8px;">Chai break incoming ☕</div>
+            <div style="font-size:13px; color:var(--color-neutral-300); margin-top:2px;">6–8pm is your danger zone. You usually smoke 2 here. Today: maybe just the chai?</div>
+          </div>
+
+          <div style="background:color-mix(in srgb, var(--color-surface) 82%, transparent); backdrop-filter:blur(20px); border:1px solid var(--color-accent); border-radius:var(--radius-lg); padding:14px 16px;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <div style="display:flex; align-items:center; gap:8px;"><div style="width:18px; height:18px; border-radius:5px; background:var(--color-accent); display:flex; align-items:center; justify-content:center; color:var(--color-bg); font-size:11px; font-weight:600;">s</div><span style="font-size:12px; color:var(--color-neutral-400);">STUB</span></div>
+              <span style="font-size:12px; color:var(--color-neutral-500);">yesterday</span>
+            </div>
+            <div style="font-weight:500; font-size:14px; margin-top:8px;">Week 3 done. Still on plan 🎯</div>
+            <div style="font-size:13px; color:var(--color-neutral-300); margin-top:2px;">Down from 9 to 5½ a day. Quit day is 34 days out. Who even are you?</div>
+          </div>
+        </div>
+
+        <div style="margin-top:auto; text-align:center; font-size:11px; color:var(--color-neutral-600); padding-top:20px;">Max 2 nudges/day · each category toggleable · respects quiet hours</div>
+      </div>
+    </x-import>
+  </div>
+
+  <!-- ============ 2d — Nicotine database ============ -->
+  <div id="2d" style="display:flex; flex-direction:column; gap:14px;">
+    <div style="display:flex; align-items:center; gap:10px;">
+      <a href="#2d" style="font-size:13px; font-weight:600; border:1px solid var(--color-accent); color:var(--color-accent-300); padding:3px 9px; border-radius:var(--radius-sm);">2d</a>
+      <span style="color:var(--color-text); font-size:15px; font-weight:500;">v2 — Nicotine database</span>
+    </div>
+    <x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx" dark="{{ true }}" hint-size="430px,880px">
+      <div style="display:flex; flex-direction:column; height:100%; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); padding:66px 22px 24px; overflow:auto;">
+        <div style="font-weight:500; font-size:22px;">What's in yours<span style="color:var(--color-accent);">?</span></div>
+        <div style="font-size:13px; color:var(--color-neutral-500); margin-top:2px;">Nicotine &amp; tar per stick — brands sold in India</div>
+
+        <div style="margin-top:16px; background:var(--color-section); border-radius:var(--radius-lg); padding:18px 20px; background-image:radial-gradient(circle at 80% 0%, var(--color-section-glow), transparent 70%);">
+          <div style="font-size:12px; letter-spacing:1.5px; text-transform:uppercase; color:var(--color-neutral-400);">Your intake this week</div>
+          <div style="display:flex; align-items:baseline; gap:10px; margin-top:6px;">
+            <div style="font-weight:500; font-size:34px;">~84 mg</div>
+            <div style="font-size:13px; color:var(--color-accent-300); font-weight:500;">↓ 14 mg vs last week</div>
+          </div>
+          <div style="font-size:12px; color:var(--color-neutral-400); margin-top:6px;">nicotine, from 26½ Gold Flake Kings. Tar: ~265 mg.</div>
+        </div>
+
+        <div style="margin-top:18px; display:flex; align-items:center; gap:10px; background:var(--color-surface); border:1px solid var(--color-neutral-800); border-radius:var(--radius-md); padding:12px 14px;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--color-neutral-500)" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>
+          <span style="font-size:14px; color:var(--color-neutral-500);">Search brands…</span>
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:8px; margin-top:14px; padding-bottom:8px;">
+          <sc-for list="{{ nicBrands }}" as="n" hint-placeholder-count="6">
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; background:var(--color-surface); border:1px solid {{ n.border }}; border-radius:var(--radius-md); padding:13px 16px;">
+              <div style="min-width:0;">
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <span style="font-weight:500; font-size:14px; white-space:nowrap;">{{ n.brand }}</span>
+                  <sc-if value="{{ n.yours }}" hint-placeholder-val="{{ false }}"><span style="font-size:10px; font-weight:600; letter-spacing:1px; text-transform:uppercase; color:var(--color-accent-300); border:1px solid var(--color-accent); border-radius:999px; padding:2px 8px; white-space:nowrap;">yours</span></sc-if>
+                </div>
+                <div style="font-size:12px; color:var(--color-neutral-500); margin-top:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ n.variant }} · ₹{{ n.price }}/stick</div>
+              </div>
+              <div style="text-align:right; white-space:nowrap; flex-shrink:0;">
+                <div style="font-weight:500; font-size:15px;">{{ n.nicotine }} mg</div>
+                <div style="font-size:11px; color:var(--color-neutral-500);">tar {{ n.tar }} mg</div>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+        <div style="font-size:11px; color:var(--color-neutral-600); padding-bottom:12px;">Approximate machine-measured yields. Actual intake varies with how you smoke.</div>
+      </div>
+    </x-import>
+  </div>
+
+  <!-- ============ 2e — Craving SOS ============ -->
+  <div id="2e" style="display:flex; flex-direction:column; gap:14px;">
+    <div style="display:flex; align-items:center; gap:10px;">
+      <a href="#2e" style="font-size:13px; font-weight:600; border:1px solid var(--color-accent); color:var(--color-accent-300); padding:3px 9px; border-radius:var(--radius-sm);">2e</a>
+      <span style="color:var(--color-text); font-size:15px; font-weight:500;">v2 — Craving SOS</span>
+    </div>
+    <x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx" dark="{{ true }}" hint-size="430px,880px">
+      <div style="display:flex; flex-direction:column; height:100%; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); padding:66px 22px 24px; overflow:auto;">
+
+        <sc-if value="{{ cravIdle }}" hint-placeholder-val="{{ true }}">
+          <div style="font-weight:500; font-size:22px;">Craving hitting<span style="color:var(--color-accent);">?</span></div>
+          <div style="font-size:13px; color:var(--color-neutral-500); margin-top:6px;">Most cravings die in under 5 minutes. Outlast this one.</div>
+
+          <div style="display:flex; align-items:center; justify-content:center; flex:1;">
+            <button onClick="{{ cravStart }}" style="cursor:pointer; width:190px; height:190px; border-radius:50%; border:1px solid var(--color-accent); background:color-mix(in srgb, var(--color-accent) 8%, transparent); color:var(--color-text); font-family:var(--font-body); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; box-shadow:var(--shadow-md);" style-hover="background:color-mix(in srgb, var(--color-accent) 14%, transparent);" style-active="transform:scale(.96);">
+              <span style="font-weight:500; font-size:24px;">I'm craving</span>
+              <span style="font-size:12px; color:var(--color-neutral-400);">start the 5-min clock</span>
+            </button>
+          </div>
+
+          <div style="background:var(--color-surface); border-radius:var(--radius-md); padding:14px 16px; display:flex; justify-content:space-between; align-items:center;">
+            <span style="font-size:13px; color:var(--color-neutral-400);">Cravings outlasted this week</span>
+            <span style="font-weight:500; font-size:20px; color:var(--color-accent-300);">7</span>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ cravOn }}" hint-placeholder-val="{{ false }}">
+          <div style="font-weight:500; font-size:22px;">Ride it out.</div>
+          <div style="font-size:13px; color:var(--color-neutral-500); margin-top:6px;">{{ cravPrompt }}</div>
+
+          <div style="display:flex; align-items:center; justify-content:center; flex:1;">
+            <div style="position:relative; width:210px; height:210px;">
+              <svg width="210" height="210" viewBox="0 0 210 210" style="transform:rotate(-90deg);">
+                <circle cx="105" cy="105" r="96" fill="none" stroke="var(--color-neutral-900)" stroke-width="8"></circle>
+                <circle cx="105" cy="105" r="96" fill="none" stroke="var(--color-accent)" stroke-width="8" stroke-linecap="round" stroke-dasharray="{{ cravDash }}"></circle>
+              </svg>
+              <div style="position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px;">
+                <div style="font-weight:500; font-size:44px; letter-spacing:-1px;">{{ cravClock }}</div>
+                <div style="font-size:12px; color:var(--color-neutral-500);">until it fades</div>
+              </div>
+            </div>
+          </div>
+
+          <div style="display:flex; flex-direction:column; gap:10px;">
+            <button onClick="{{ cravSurvived }}" style="cursor:pointer; border:1px solid var(--color-accent); border-radius:var(--radius-md); padding:16px; background:transparent; color:var(--color-accent-300); font-family:var(--font-body); font-weight:600; font-size:15px;" style-hover="background:color-mix(in srgb, var(--color-accent) 10%, transparent);" style-active="transform:scale(.98);">It passed. I win.</button>
+            <button onClick="{{ cravSmoked }}" style="cursor:pointer; border:none; background:none; padding:6px; color:var(--color-neutral-500); font-family:var(--font-body); font-size:13px; text-decoration:underline;">I smoked it anyway</button>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ cravResult }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; flex:1; gap:14px; text-align:center;">
+            <div style="font-weight:500; font-size:28px; line-height:1.3;">{{ cravResultTitle }}</div>
+            <div style="font-size:14px; color:var(--color-neutral-400); max-width:280px;">{{ cravResultBody }}</div>
+            <button onClick="{{ cravReset }}" style="cursor:pointer; margin-top:14px; border:1px solid var(--color-neutral-800); border-radius:var(--radius-md); padding:12px 24px; background:var(--color-surface); color:var(--color-text); font-family:var(--font-body); font-size:14px; font-weight:500;" style-hover="border-color:var(--color-accent);">Done</button>
+          </div>
+        </sc-if>
+      </div>
+    </x-import>
+  </div>
+
+  <!-- ============ 2f — Money saved ============ -->
+  <div id="2f" style="display:flex; flex-direction:column; gap:14px;">
+    <div style="display:flex; align-items:center; gap:10px;">
+      <a href="#2f" style="font-size:13px; font-weight:600; border:1px solid var(--color-accent); color:var(--color-accent-300); padding:3px 9px; border-radius:var(--radius-sm);">2f</a>
+      <span style="color:var(--color-text); font-size:15px; font-weight:500;">v2 — Money saved</span>
+    </div>
+    <x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx" dark="{{ true }}" hint-size="430px,880px">
+      <div style="display:flex; flex-direction:column; height:100%; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); padding:66px 22px 24px; overflow:auto;">
+        <div style="font-weight:500; font-size:22px;">Back in your pocket<span style="color:var(--color-accent);">.</span></div>
+        <div style="font-size:13px; color:var(--color-neutral-500); margin-top:2px;">vs your 9-a-day baseline · Gold Flake Kings at ₹18</div>
+
+        <div style="margin-top:18px; background:var(--color-section); border-radius:var(--radius-lg); padding:22px; background-image:radial-gradient(circle at 80% 0%, var(--color-section-glow), transparent 70%);">
+          <div style="font-size:12px; letter-spacing:1.5px; text-transform:uppercase; color:var(--color-neutral-400);">Saved since you started</div>
+          <div style="font-weight:500; font-size:44px; letter-spacing:-1px; margin-top:6px;">₹3,240</div>
+          <div style="font-size:13px; color:var(--color-accent-300); margin-top:4px;">₹186 this week · 21 days in</div>
+        </div>
+
+        <div style="margin-top:16px; background:var(--color-surface); border-radius:var(--radius-lg); padding:18px 20px;">
+          <div style="display:flex; justify-content:space-between; align-items:baseline;">
+            <span style="font-size:13px; color:var(--color-neutral-400);">Goa flight, one way</span>
+            <span style="font-size:13px; font-weight:500; color:var(--color-accent-300);">72%</span>
+          </div>
+          <div style="margin-top:10px; height:6px; border-radius:999px; background:var(--color-neutral-900); overflow:hidden;"><div style="width:72%; height:100%; background:var(--color-accent);"></div></div>
+          <div style="font-size:12px; color:var(--color-neutral-500); margin-top:8px;">₹3,240 of ₹4,500 — about 2 weeks away at this pace.</div>
+        </div>
+
+        <div style="margin-top:16px; font-size:12px; letter-spacing:1.5px; text-transform:uppercase; color:var(--color-neutral-500);">If you stay on plan</div>
+        <div style="display:flex; flex-direction:column; gap:8px; margin-top:10px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; background:var(--color-surface); border-radius:var(--radius-md); padding:13px 16px;">
+            <span style="font-size:14px;">By quit day <span style="font-size:12px; color:var(--color-neutral-500);">· 18 Nov</span></span>
+            <span style="font-weight:500; font-size:15px;">₹14,800</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:center; background:var(--color-surface); border-radius:var(--radius-md); padding:13px 16px;">
+            <span style="font-size:14px;">One year smoke-free</span>
+            <span style="font-weight:500; font-size:15px;">₹59,130</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:center; background:var(--color-surface); border:1px solid var(--color-neutral-800); border-radius:var(--radius-md); padding:13px 16px;">
+            <span style="font-size:14px; color:var(--color-neutral-300);">That's an iPhone. Or 13 Goa flights.</span>
+            <span style="font-size:16px;">✈️</span>
+          </div>
+        </div>
+
+        <div style="margin-top:auto; padding-top:16px; font-size:11px; color:var(--color-neutral-600);">Savings = (baseline − actual) × your stick price, updated daily.</div>
+      </div>
+    </x-import>
+  </div>
+
+  <!-- ============ 1a — Interactive prototype ============ -->
+  <div id="1a" style="display:flex; flex-direction:column; gap:14px;">
+    <div style="display:flex; align-items:center; gap:10px;">
+      <a href="#1a" style="font-size:13px; font-weight:600; border:1px solid var(--color-accent); color:var(--color-accent-300); padding:3px 9px; border-radius:var(--radius-sm);">1a</a>
+      <span style="color:var(--color-text); font-size:15px; font-weight:500;">Interactive — Log · Stats · Goal</span>
+    </div>
+    <x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx" dark="{{ true }}" hint-size="430px,880px">
+      <div style="display:flex; flex-direction:column; height:100%; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body);">
+
+        <!-- header -->
+        <div style="display:flex; align-items:center; justify-content:space-between; padding:66px 22px 8px;">
+          <div style="font-weight:500; font-size:22px; letter-spacing:-0.3px;">stub<span style="color:var(--color-accent);">.</span></div>
+          <div style="font-size:12px; color:var(--color-neutral-500); border:1px solid var(--color-neutral-800); border-radius:999px; padding:6px 12px;">{{ sinceLast }} since last</div>
+        </div>
+
+        <!-- ======== LOG screen ======== -->
+        <sc-if value="{{ isLog }}" hint-placeholder-val="{{ true }}">
+          <div data-screen-label="Log" style="flex:1; display:flex; flex-direction:column; padding:8px 22px 0; overflow:auto;">
+
+            <div style="margin-top:22px;">
+              <div style="font-size:12px; letter-spacing:1.5px; text-transform:uppercase; color:var(--color-neutral-500);">Today</div>
+              <div style="font-weight:500; font-size:76px; line-height:1; margin-top:6px;">{{ todayDisplay }}</div>
+              <div style="font-size:14px; color:var(--color-neutral-500); margin-top:8px;">of a <span style="color:var(--color-accent-300); font-weight:500;">{{ budgetDisplay }}</span> budget · {{ leftLine }}</div>
+            </div>
+
+            <!-- budget meter -->
+            <div style="margin-top:20px; height:6px; border-radius:999px; background:var(--color-neutral-900); overflow:hidden;">
+              <div style="height:100%; border-radius:999px; background:var(--color-accent); width:{{ meterPct }}%; transition:width .5s cubic-bezier(.2,.8,.2,1);"></div>
+            </div>
+
+            <!-- quick actions -->
+            <div style="margin-top:30px; display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px;">
+              <button onClick="{{ logFull }}" style="cursor:pointer; border:1px solid var(--color-accent); border-radius:var(--radius-lg); padding:20px 0 16px; background:color-mix(in srgb, var(--color-accent) 10%, transparent); color:var(--color-accent-300);" style-hover="background:color-mix(in srgb, var(--color-accent) 18%, transparent);" style-active="transform:scale(.96);">
+                <div style="font-size:30px; font-weight:500;">1</div>
+                <div style="font-size:11px; font-weight:500; letter-spacing:1px; text-transform:uppercase; margin-top:2px;">full</div>
+              </button>
+              <button onClick="{{ logHalf }}" style="cursor:pointer; border:1px solid var(--color-neutral-800); border-radius:var(--radius-lg); padding:20px 0 16px; background:var(--color-surface); color:var(--color-text);" style-hover="border-color:var(--color-neutral-600);" style-active="transform:scale(.96);">
+                <div style="font-size:30px; font-weight:500;">½</div>
+                <div style="font-size:11px; font-weight:500; letter-spacing:1px; text-transform:uppercase; margin-top:2px; color:var(--color-neutral-500);">shared</div>
+              </button>
+              <button onClick="{{ logThird }}" style="cursor:pointer; border:1px solid var(--color-neutral-800); border-radius:var(--radius-lg); padding:20px 0 16px; background:var(--color-surface); color:var(--color-text);" style-hover="border-color:var(--color-neutral-600);" style-active="transform:scale(.96);">
+                <div style="font-size:30px; font-weight:500;">⅓</div>
+                <div style="font-size:11px; font-weight:500; letter-spacing:1px; text-transform:uppercase; margin-top:2px; color:var(--color-neutral-500);">shared</div>
+              </button>
+            </div>
+
+            <div style="display:flex; justify-content:center; margin-top:12px;">
+              <button onClick="{{ undoLast }}" style="cursor:pointer; background:none; border:none; color:var(--color-neutral-500); font-family:var(--font-body); font-size:13px; text-decoration:underline;">undo last</button>
+            </div>
+
+            <!-- toast -->
+            <sc-if value="{{ toast }}" hint-placeholder-val="{{ false }}">
+              <div style="margin-top:14px; background:var(--color-surface); border:1px solid var(--color-neutral-800); border-radius:var(--radius-md); padding:12px 16px; font-size:13px; color:var(--color-neutral-300);">{{ toast }}</div>
+            </sc-if>
+
+            <!-- today's drags -->
+            <div style="margin-top:22px; padding-bottom:20px;">
+              <div style="font-size:12px; letter-spacing:1.5px; text-transform:uppercase; color:var(--color-neutral-500); margin-bottom:10px;">Today's drags</div>
+              <div style="display:flex; flex-direction:column; gap:6px;">
+                <sc-for list="{{ todayLog }}" as="e" hint-placeholder-count="3">
+                  <div style="display:flex; justify-content:space-between; align-items:center; background:var(--color-surface); border-radius:var(--radius-md); padding:10px 14px;">
+                    <div style="display:flex; align-items:center; gap:10px;">
+                      <div style="width:6px; height:6px; border-radius:50%; background:var(--color-accent);"></div>
+                      <span style="font-weight:500; font-size:14px;">{{ e.amt }}</span>
+                      <span style="font-size:12px; color:var(--color-neutral-500);">{{ e.kind }}</span>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:8px;">
+                      <span style="font-size:12px; color:var(--color-neutral-500);">{{ e.time }}</span>
+                      <button onClick="{{ e.edit }}" title="Edit" style="cursor:pointer; background:none; border:1px solid var(--color-neutral-800); border-radius:var(--radius-sm); width:28px; height:28px; display:flex; align-items:center; justify-content:center; color:var(--color-neutral-400); padding:0;" style-hover="border-color:var(--color-accent); color:var(--color-accent-300);">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"></path></svg>
+                      </button>
+                      <button onClick="{{ e.remove }}" title="Delete" style="cursor:pointer; background:none; border:1px solid var(--color-neutral-800); border-radius:var(--radius-sm); width:28px; height:28px; display:flex; align-items:center; justify-content:center; color:var(--color-neutral-400); padding:0;" style-hover="border-color:var(--color-error-500, #e5484d); color:var(--color-error-400, #f2555a);">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                      </button>
+                    </div>
+                  </div>
+                  <sc-if value="{{ e.editing }}" hint-placeholder-val="{{ false }}">
+                    <div style="display:flex; align-items:center; gap:8px; background:var(--color-surface); border:1px solid var(--color-accent); border-radius:var(--radius-md); padding:10px 14px; margin-top:-2px;">
+                      <span style="font-size:12px; color:var(--color-neutral-500); margin-right:2px;">Change to:</span>
+                      <button onClick="{{ e.setFull }}" style="cursor:pointer; border:1px solid var(--color-neutral-800); border-radius:var(--radius-sm); background:none; color:var(--color-text); font-family:var(--font-body); font-size:13px; font-weight:500; padding:6px 12px;" style-hover="border-color:var(--color-accent);">1</button>
+                      <button onClick="{{ e.setHalf }}" style="cursor:pointer; border:1px solid var(--color-neutral-800); border-radius:var(--radius-sm); background:none; color:var(--color-text); font-family:var(--font-body); font-size:13px; font-weight:500; padding:6px 12px;" style-hover="border-color:var(--color-accent);">½</button>
+                      <button onClick="{{ e.setThird }}" style="cursor:pointer; border:1px solid var(--color-neutral-800); border-radius:var(--radius-sm); background:none; color:var(--color-text); font-family:var(--font-body); font-size:13px; font-weight:500; padding:6px 12px;" style-hover="border-color:var(--color-accent);">⅓</button>
+                      <button onClick="{{ e.cancelEdit }}" style="cursor:pointer; background:none; border:none; color:var(--color-neutral-500); font-family:var(--font-body); font-size:12px; text-decoration:underline; margin-left:auto;">cancel</button>
+                    </div>
+                  </sc-if>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- ======== STATS screen ======== -->
+        <sc-if value="{{ isStats }}" hint-placeholder-val="{{ false }}">
+          <div data-screen-label="Stats" style="flex:1; display:flex; flex-direction:column; padding:8px 22px 0; overflow:auto;">
+
+            <!-- segmented -->
+            <div style="display:grid; grid-template-columns:1fr 1fr 1fr; background:var(--color-surface); border:1px solid var(--color-neutral-800); border-radius:var(--radius-md); padding:3px; margin-top:10px;">
+              <button onClick="{{ rangeD }}" style="cursor:pointer; border:1px solid {{ segDBorder }}; border-radius:var(--radius-sm); padding:8px 0; font-family:var(--font-body); font-weight:500; font-size:13px; background:{{ segDBg }}; color:{{ segDFg }};">Day</button>
+              <button onClick="{{ rangeW }}" style="cursor:pointer; border:1px solid {{ segWBorder }}; border-radius:var(--radius-sm); padding:8px 0; font-family:var(--font-body); font-weight:500; font-size:13px; background:{{ segWBg }}; color:{{ segWFg }};">Week</button>
+              <button onClick="{{ rangeM }}" style="cursor:pointer; border:1px solid {{ segMBorder }}; border-radius:var(--radius-sm); padding:8px 0; font-family:var(--font-body); font-weight:500; font-size:13px; background:{{ segMBg }}; color:{{ segMFg }};">Month</button>
+            </div>
+
+            <!-- ring -->
+            <div style="display:flex; align-items:center; gap:22px; margin-top:22px; background:var(--color-surface); border-radius:var(--radius-lg); box-shadow:var(--shadow-sm); padding:20px;">
+              <svg width="110" height="110" viewBox="0 0 110 110">
+                <circle cx="55" cy="55" r="46" fill="none" stroke-width="10" style="stroke:var(--color-neutral-900);"></circle>
+                <circle cx="55" cy="55" r="46" fill="none" stroke-width="10" stroke-linecap="round" stroke-dasharray="{{ ringDash }}" transform="rotate(-90 55 55)" style="stroke:var(--color-accent);"></circle>
+              </svg>
+              <div>
+                <div style="font-weight:500; font-size:30px; line-height:1;">{{ ringBig }}</div>
+                <div style="font-size:13px; color:var(--color-neutral-500); margin-top:6px;">{{ ringSub }}</div>
+                <div style="font-size:13px; color:var(--color-accent-300); font-weight:500; margin-top:8px;">{{ trendLine }}</div>
+              </div>
+            </div>
+
+            <!-- bars -->
+            <div style="margin-top:22px;">
+              <div style="font-size:12px; letter-spacing:1.5px; text-transform:uppercase; color:var(--color-neutral-500); margin-bottom:12px;">{{ chartTitle }}</div>
+              <div style="display:flex; align-items:flex-end; gap:8px; height:140px;">
+                <sc-for list="{{ bars }}" as="b" hint-placeholder-count="7">
+                  <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:6px; height:100%; justify-content:flex-end;">
+                    <div style="font-size:11px; color:var(--color-neutral-500);">{{ b.val }}</div>
+                    <div style="width:100%; border-radius:4px 4px 2px 2px; background:{{ b.color }}; height:{{ b.h }}%;"></div>
+                    <div style="font-size:11px; color:var(--color-neutral-500);">{{ b.label }}</div>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+
+            <!-- stat tiles -->
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:22px; padding-bottom:20px;">
+              <div style="background:var(--color-surface); border-radius:var(--radius-md); box-shadow:var(--shadow-sm); padding:16px;">
+                <div style="font-size:12px; color:var(--color-neutral-500);">Daily average (7d)</div>
+                <div style="font-weight:500; font-size:26px; margin-top:4px;">{{ avg7 }}</div>
+              </div>
+              <div style="background:var(--color-surface); border-radius:var(--radius-md); box-shadow:var(--shadow-sm); padding:16px;">
+                <div style="font-size:12px; color:var(--color-neutral-500);">vs last week</div>
+                <div style="font-weight:500; font-size:26px; margin-top:4px; color:var(--color-accent-300);">{{ vsLastWeek }}</div>
+              </div>
+              <div style="background:var(--color-surface); border-radius:var(--radius-md); box-shadow:var(--shadow-sm); padding:16px;">
+                <div style="font-size:12px; color:var(--color-neutral-500);">Days under budget</div>
+                <div style="font-weight:500; font-size:26px; margin-top:4px;">{{ underBudget }}</div>
+              </div>
+              <div style="background:var(--color-surface); border-radius:var(--radius-md); box-shadow:var(--shadow-sm); padding:16px;">
+                <div style="font-size:12px; color:var(--color-neutral-500);">Longest gap today</div>
+                <div style="font-weight:500; font-size:26px; margin-top:4px;">{{ longestGap }}</div>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- ======== GOAL screen ======== -->
+        <sc-if value="{{ isGoal }}" hint-placeholder-val="{{ false }}">
+          <div data-screen-label="Goal" style="flex:1; display:flex; flex-direction:column; padding:8px 22px 0; overflow:auto;">
+
+            <div style="margin-top:16px; background:var(--color-section); border-radius:var(--radius-lg); padding:20px; background-image:radial-gradient(circle at 20% 0%, var(--color-section-glow), transparent 70%);">
+              <div style="font-size:12px; letter-spacing:1.5px; text-transform:uppercase; color:var(--color-neutral-400);">The plan</div>
+              <div style="font-weight:500; font-size:28px; line-height:1.2; margin-top:8px;">Last cigarette:<br><span style="color:var(--color-accent-300);">{{ quitDate }}</span></div>
+              <div style="font-size:13px; color:var(--color-neutral-300); margin-top:10px;">{{ planLine }}</div>
+            </div>
+
+            <!-- pace -->
+            <div style="margin-top:22px;">
+              <div style="font-size:12px; letter-spacing:1.5px; text-transform:uppercase; color:var(--color-neutral-500); margin-bottom:10px;">Taper pace</div>
+              <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px;">
+                <button onClick="{{ paceChill }}" style="cursor:pointer; border:1px solid {{ chillBorder }}; border-radius:var(--radius-md); padding:14px 6px; background:{{ chillBg }}; color:var(--color-text); font-family:var(--font-body);">
+                  <div style="font-weight:500; font-size:14px;">Chill</div>
+                  <div style="font-size:11px; color:var(--color-neutral-500); margin-top:3px;">−¼ / week</div>
+                </button>
+                <button onClick="{{ paceSteady }}" style="cursor:pointer; border:1px solid {{ steadyBorder }}; border-radius:var(--radius-md); padding:14px 6px; background:{{ steadyBg }}; color:var(--color-text); font-family:var(--font-body);">
+                  <div style="font-weight:500; font-size:14px;">Steady</div>
+                  <div style="font-size:11px; color:var(--color-neutral-500); margin-top:3px;">−½ / week</div>
+                </button>
+                <button onClick="{{ paceBeast }}" style="cursor:pointer; border:1px solid {{ beastBorder }}; border-radius:var(--radius-md); padding:14px 6px; background:{{ beastBg }}; color:var(--color-text); font-family:var(--font-body);">
+                  <div style="font-weight:500; font-size:14px;">Beast</div>
+                  <div style="font-size:11px; color:var(--color-neutral-500); margin-top:3px;">−1 / week</div>
+                </button>
+              </div>
+            </div>
+
+            <!-- taper curve -->
+            <div style="margin-top:24px;">
+              <div style="font-size:12px; letter-spacing:1.5px; text-transform:uppercase; color:var(--color-neutral-500); margin-bottom:12px;">Your glide path — daily budget by week</div>
+              <div style="display:flex; align-items:flex-end; gap:6px; height:120px;">
+                <sc-for list="{{ taperBars }}" as="t" hint-placeholder-count="8">
+                  <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:5px; height:100%; justify-content:flex-end;">
+                    <div style="font-size:10px; color:var(--color-neutral-500);">{{ t.val }}</div>
+                    <div style="width:100%; border-radius:4px 4px 2px 2px; background:{{ t.color }}; height:{{ t.h }}%;"></div>
+                    <div style="font-size:10px; color:var(--color-neutral-500);">{{ t.label }}</div>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+
+            <div style="margin-top:22px; background:var(--color-surface); border-radius:var(--radius-md); box-shadow:var(--shadow-sm); padding:16px; margin-bottom:20px;">
+              <div style="font-size:12px; letter-spacing:1.5px; text-transform:uppercase; color:var(--color-neutral-500);">Tomorrow's budget</div>
+              <div style="display:flex; align-items:baseline; gap:10px; margin-top:6px;">
+                <div style="font-weight:500; font-size:30px;">{{ tomorrowBudget }}</div>
+                <div style="font-size:13px; color:var(--color-neutral-500);">cigarettes · we'll nudge you at 80%</div>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- tab bar -->
+        <div style="display:grid; grid-template-columns:1fr 1fr 1fr; border-top:1px solid var(--color-neutral-900); background:var(--color-bg); padding:10px 12px 6px;">
+          <button onClick="{{ goLog }}" style="cursor:pointer; background:none; border:none; display:flex; flex-direction:column; align-items:center; gap:4px; font-family:var(--font-body); min-height:44px;">
+            <div style="width:20px; height:20px; border-radius:6px; border:1.5px solid {{ tabLogBg }};"></div>
+            <span style="font-size:11px; font-weight:500; color:{{ tabLogFg }};">Log</span>
+          </button>
+          <button onClick="{{ goStats }}" style="cursor:pointer; background:none; border:none; display:flex; flex-direction:column; align-items:center; gap:4px; font-family:var(--font-body); min-height:44px;">
+            <div style="width:20px; height:20px; border-radius:50%; border:1.5px solid {{ tabStatsBg }};"></div>
+            <span style="font-size:11px; font-weight:500; color:{{ tabStatsFg }};">Stats</span>
+          </button>
+          <button onClick="{{ goGoal }}" style="cursor:pointer; background:none; border:none; display:flex; flex-direction:column; align-items:center; gap:4px; font-family:var(--font-body); min-height:44px;">
+            <div style="width:20px; height:20px; border-radius:6px; transform:rotate(45deg) scale(.85); border:1.5px solid {{ tabGoalBg }};"></div>
+            <span style="font-size:11px; font-weight:500; color:{{ tabGoalFg }};">Goal</span>
+          </button>
+        </div>
+      </div>
+    </x-import>
+  </div>
+
+  <!-- ============ 1b — Dashboard variant: Rings ============ -->
+  <div id="1b" style="display:flex; flex-direction:column; gap:14px;">
+    <div style="display:flex; align-items:center; gap:10px;">
+      <a href="#1b" style="font-size:13px; font-weight:600; border:1px solid var(--color-accent); color:var(--color-accent-300); padding:3px 9px; border-radius:var(--radius-sm);">1b</a>
+      <span style="color:var(--color-text); font-size:15px; font-weight:500;">Dashboard variant — Rings</span>
+    </div>
+    <x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx" dark="{{ true }}" hint-size="430px,880px">
+      <div style="display:flex; flex-direction:column; height:100%; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); padding:66px 22px 24px; overflow:auto;">
+        <div style="font-weight:500; font-size:22px;">stub<span style="color:var(--color-accent);">.</span></div>
+        <div style="font-size:13px; color:var(--color-neutral-500); margin-top:2px;">Tuesday, 14 July</div>
+
+        <div style="display:flex; justify-content:center; margin-top:20px;">
+          <svg width="230" height="230" viewBox="0 0 230 230">
+            <circle cx="115" cy="115" r="98" fill="none" stroke-width="16" style="stroke:var(--color-neutral-900);"></circle>
+            <circle cx="115" cy="115" r="98" fill="none" stroke-width="16" stroke-linecap="round" stroke-dasharray="339 616" transform="rotate(-90 115 115)" style="stroke:var(--color-accent);"></circle>
+            <circle cx="115" cy="115" r="72" fill="none" stroke-width="16" style="stroke:var(--color-neutral-900);"></circle>
+            <circle cx="115" cy="115" r="72" fill="none" stroke-width="16" stroke-linecap="round" stroke-dasharray="321 452" transform="rotate(-90 115 115)" style="stroke:var(--color-accent-2-500);"></circle>
+            <circle cx="115" cy="115" r="46" fill="none" stroke-width="16" style="stroke:var(--color-neutral-900);"></circle>
+            <circle cx="115" cy="115" r="46" fill="none" stroke-width="16" stroke-linecap="round" stroke-dasharray="101 289" transform="rotate(-90 115 115)" style="stroke:var(--color-neutral-400);"></circle>
+          </svg>
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:8px; margin-top:18px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; background:var(--color-surface); border-radius:var(--radius-md); padding:12px 16px;">
+            <div style="display:flex; align-items:center; gap:10px;"><div style="width:8px; height:8px; border-radius:50%; background:var(--color-accent);"></div><span style="font-size:14px;">Budget used</span></div>
+            <span style="font-weight:500; font-size:17px;">3⅚ / 7</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:center; background:var(--color-surface); border-radius:var(--radius-md); padding:12px 16px;">
+            <div style="display:flex; align-items:center; gap:10px;"><div style="width:8px; height:8px; border-radius:50%; background:var(--color-accent-2-500);"></div><span style="font-size:14px;">Days under budget</span></div>
+            <span style="font-weight:500; font-size:17px;">5 / 7</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:center; background:var(--color-surface); border-radius:var(--radius-md); padding:12px 16px;">
+            <div style="display:flex; align-items:center; gap:10px;"><div style="width:8px; height:8px; border-radius:50%; background:var(--color-neutral-400);"></div><span style="font-size:14px;">Progress to quit day</span></div>
+            <span style="font-weight:500; font-size:17px;">35%</span>
+          </div>
+        </div>
+
+        <div style="margin-top:18px; border-left:2px solid var(--color-accent); background:var(--color-surface); border-radius:0 var(--radius-md) var(--radius-md) 0; padding:14px 16px; font-size:13px; color:var(--color-neutral-300);">
+          You're 3⅚ in with 5 hours of day left. Historically your danger zone is <span style="color:var(--color-accent-300); font-weight:500;">6–8 pm chai break</span>. Plan for it.
+        </div>
+      </div>
+    </x-import>
+  </div>
+
+  <!-- ============ 1c — Dashboard variant: Heatmap ============ -->
+  <div id="1c" style="display:flex; flex-direction:column; gap:14px;">
+    <div style="display:flex; align-items:center; gap:10px;">
+      <a href="#1c" style="font-size:13px; font-weight:600; border:1px solid var(--color-accent); color:var(--color-accent-300); padding:3px 9px; border-radius:var(--radius-sm);">1c</a>
+      <span style="color:var(--color-text); font-size:15px; font-weight:500;">Dashboard variant — Month heatmap</span>
+    </div>
+    <x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx" dark="{{ true }}" hint-size="430px,880px">
+      <div style="display:flex; flex-direction:column; height:100%; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); padding:66px 22px 24px; overflow:auto;">
+        <div style="font-weight:500; font-size:22px;">stub<span style="color:var(--color-accent);">.</span></div>
+        <div style="font-size:13px; color:var(--color-neutral-500); margin-top:2px;">July — every day, one square</div>
+
+        <div style="margin-top:20px; display:grid; grid-template-columns:repeat(7,1fr); gap:6px;">
+          <sc-for list="{{ heatCells }}" as="c" hint-placeholder-count="28">
+            <div style="aspect-ratio:1; border-radius:var(--radius-sm); background:{{ c.color }}; display:flex; align-items:center; justify-content:center; font-size:11px; color:{{ c.fg }}; font-weight:500;">{{ c.day }}</div>
+          </sc-for>
+        </div>
+
+        <div style="display:flex; align-items:center; gap:8px; margin-top:14px; font-size:11px; color:var(--color-neutral-500);">
+          <span>fewer</span>
+          <div style="width:14px; height:14px; border-radius:4px; background:var(--color-neutral-900);"></div>
+          <div style="width:14px; height:14px; border-radius:4px; background:var(--color-accent-900);"></div>
+          <div style="width:14px; height:14px; border-radius:4px; background:var(--color-accent-700);"></div>
+          <div style="width:14px; height:14px; border-radius:4px; background:var(--color-accent-500);"></div>
+          <span>more</span>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:22px;">
+          <div style="background:var(--color-surface); border-radius:var(--radius-md); box-shadow:var(--shadow-sm); padding:16px;">
+            <div style="font-size:12px; color:var(--color-neutral-500);">This month</div>
+            <div style="font-weight:500; font-size:26px; margin-top:4px;">86½</div>
+          </div>
+          <div style="background:var(--color-surface); border-radius:var(--radius-md); box-shadow:var(--shadow-sm); padding:16px;">
+            <div style="font-size:12px; color:var(--color-neutral-500);">vs June</div>
+            <div style="font-weight:500; font-size:26px; margin-top:4px; color:var(--color-accent-300);">−18%</div>
+          </div>
+          <div style="background:var(--color-surface); border-radius:var(--radius-md); box-shadow:var(--shadow-sm); padding:16px;">
+            <div style="font-size:12px; color:var(--color-neutral-500);">Best streak</div>
+            <div style="font-weight:500; font-size:26px; margin-top:4px;">6 days</div>
+          </div>
+          <div style="background:var(--color-surface); border-radius:var(--radius-md); box-shadow:var(--shadow-sm); padding:16px;">
+            <div style="font-size:12px; color:var(--color-neutral-500);">Cleanest day</div>
+            <div style="font-weight:500; font-size:26px; margin-top:4px;">2⅓</div>
+          </div>
+        </div>
+
+        <div style="margin-top:18px; border-left:2px solid var(--color-accent); background:var(--color-surface); border-radius:0 var(--radius-md) var(--radius-md) 0; padding:14px 16px; font-size:13px; color:var(--color-neutral-300);">
+          Weekends are your weak spot — Saturdays average <span style="color:var(--color-accent-300); font-weight:500;">+2.4</span> over budget. Maybe don't be that guy this Saturday.
+        </div>
+      </div>
+    </x-import>
+  </div>
+
+</section>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;roastMode&quot;: {&quot;editor&quot;: &quot;boolean&quot;, &quot;default&quot;: true, &quot;tsType&quot;: &quot;boolean&quot;, &quot;section&quot;: &quot;Copy&quot;}}">
+class Component extends DCLogic {
+  state = {
+    screen: 'log',
+    range: 'week',
+    pace: 'steady',
+    // today's entries in sixths of a cigarette
+    todayLog: [
+      { sixths: 6, time: '8:12 am' },
+      { sixths: 3, time: '11:05 am' },
+      { sixths: 6, time: '1:40 pm' },
+      { sixths: 2, time: '3:55 pm' },
+      { sixths: 6, time: '5:20 pm' },
+    ],
+    lastAt: Date.now() - 134 * 60000,
+    sinceLast: '2h 14m',
+    toast: '',
+    editingIdx: -1, // index into todayLog (chronological) being edited
+    // v2 mockup state
+    obCount: 9,
+    bfDay: 1, bfBucket: 'evening', bfStep: 6, bfTotalSixths: 0, bfToast: '',
+    obStep: 0, obBrandIdx: 0, obPrice: 18, obTrig: {}, obPace: 0.5,
+    cravState: 'idle', cravLeft: 300, cravOutcome: '',
+  };
+
+  // last 28 days (sixths), oldest → newest, trending down. ~9/day → ~5.5/day
+  history = [54,48,60,54,48,54,42, 48,54,42,48,48,42,42, 48,36,42,36,42,30,36, 36,30,36,30,33,27,33];
+
+  componentDidMount() {
+    this.tick = setInterval(() => {
+      this.setState(st => ({ sinceLast: this.fmtSince(st.lastAt) }));
+    }, 60000);
+  }
+
+  fmtSince(lastAt) {
+    const mins = Math.max(1, Math.round((Date.now() - lastAt) / 60000));
+    return mins >= 60 ? Math.floor(mins / 60) + 'h ' + (mins % 60) + 'm' : mins + 'm';
+  }
+  componentWillUnmount() { clearInterval(this.tick); this.toastT && clearTimeout(this.toastT); this.bfT && clearTimeout(this.bfT); this.cravT && clearInterval(this.cravT); }
+
+  frac(sixths) {
+    const whole = Math.floor(sixths / 6);
+    const rem = sixths % 6;
+    const glyph = { 1: '⅙', 2: '⅓', 3: '½', 4: '⅔', 5: '⅚' }[rem] || '';
+    if (whole === 0 && glyph) return glyph;
+    return whole + glyph;
+  }
+
+  roastMode() { return this.props.roastMode ?? true; }
+
+  log(sixths) {
+    const now = new Date();
+    const time = now.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }).toLowerCase();
+    const total = this.todayTotal() + sixths;
+    const budget = this.budgetSixths();
+    let msg;
+    const roast = this.roastMode();
+    if (total > budget) {
+      msg = roast ? 'Over budget. Your lungs saw that, by the way.' : 'Over budget today — tomorrow is a fresh start.';
+    } else if (budget - total <= 6) {
+      msg = roast ? 'Logged. That leaves basically fumes for the rest of the day.' : 'Logged. You\u2019re close to today\u2019s line — make the next one count.';
+    } else {
+      msg = roast ? 'Logged. Still on plan — annoyingly responsible of you.' : 'Logged. Nicely within budget.';
+    }
+    this.setState(s => ({
+      todayLog: [...s.todayLog, { sixths, time }],
+      lastAt: Date.now(),
+      sinceLast: 'just now',
+      toast: msg,
+    }));
+    clearTimeout(this.toastT);
+    this.toastT = setTimeout(() => this.setState({ toast: '' }), 3500);
+  }
+
+  todayTotal() { return this.state.todayLog.reduce((a, e) => a + e.sixths, 0); }
+
+  avg7Sixths() {
+    const last7 = this.history.slice(-7);
+    return last7.reduce((a, b) => a + b, 0) / 7;
+  }
+
+  budgetSixths() {
+    // adaptive: 90% of trailing 7-day average, rounded to nearest half (3 sixths)
+    return Math.max(3, Math.round((this.avg7Sixths() * 0.9) / 3) * 3);
+  }
+
+  paceRate() { return { chill: 1.5, steady: 3, beast: 6 }[this.state.pace]; } // sixths/day reduced per week
+
+  renderVals() {
+    // Memoize: return the identical object (stable handler/array identities)
+    // unless state or props actually changed — prevents render feedback loops.
+    if (this._cached && this._cachedState === this.state && this._cachedProps === this.props) {
+      return this._cached;
+    }
+    const out = this.computeVals();
+    this._cachedState = this.state;
+    this._cachedProps = this.props;
+    this._cached = out;
+    return out;
+  }
+
+  computeVals() {
+    const s = this.state;
+    const total = this.todayTotal();
+    const budget = this.budgetSixths();
+    const leftSixths = budget - total;
+    const sinceLast = s.sinceLast;
+
+    const ACCENT = 'var(--color-accent-500)';
+    const NEUTRAL_BAR = 'var(--color-neutral-800)';
+    const MUTED = 'var(--color-neutral-500)';
+
+    // stats
+    const avg7 = this.avg7Sixths();
+    const prev7 = this.history.slice(-14, -7).reduce((a, b) => a + b, 0) / 7;
+    const delta = Math.round(((avg7 - prev7) / prev7) * 100);
+    const days = ['Tue','Wed','Thu','Fri','Sat','Sun','Mon'];
+    const week = this.history.slice(-7);
+    const max = Math.max(...week, total, budget);
+
+    let bars, chartTitle;
+    if (s.range === 'day') {
+      chartTitle = 'Today by time of day';
+      const late = total - 17;
+      const slots = [
+        { label: '6–9', v: 6 }, { label: '9–12', v: 3 }, { label: '12–3', v: 8 },
+        { label: '3–6', v: late > 0 ? late : 6 }, { label: '6–9p', v: 0 }, { label: '9–12p', v: 0 },
+      ];
+      const m = Math.max(...slots.map(x => x.v), 6);
+      bars = slots.map(x => ({ label: x.label, val: x.v ? this.frac(x.v) : '·', h: Math.max(4, (x.v / m) * 100), color: x.v > 6 ? ACCENT : NEUTRAL_BAR }));
+    } else if (s.range === 'month') {
+      chartTitle = 'Last 4 weeks — daily average';
+      const wks = [0, 1, 2, 3].map(i => this.history.slice(i * 7, i * 7 + 7).reduce((a, b) => a + b, 0) / 7);
+      const m = Math.max(...wks);
+      bars = wks.map((v, i) => ({ label: 'W' + (i + 1), val: (v / 6).toFixed(1), h: Math.max(6, (v / m) * 100), color: i === 3 ? ACCENT : NEUTRAL_BAR }));
+    } else {
+      chartTitle = 'This week — cigarettes per day';
+      bars = week.map((v, i) => ({ label: days[i], val: this.frac(v), h: Math.max(6, (v / max) * 100), color: v > budget ? ACCENT : NEUTRAL_BAR }));
+    }
+
+    // ring
+    const ringFrac = Math.min(1, total / budget);
+    const circ = 2 * Math.PI * 46;
+    const under7 = week.filter(v => v <= budget + 3).length;
+
+    // taper plan
+    const rate = this.paceRate();
+    const weeksToQuit = Math.ceil(budget / rate);
+    const quit = new Date(Date.now() + weeksToQuit * 7 * 86400000);
+    const quitDate = quit.toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
+    const taperBars = [];
+    const nWeeks = Math.min(8, weeksToQuit + 1);
+    for (let i = 0; i < nWeeks; i++) {
+      const v = Math.max(0, budget - rate * i);
+      taperBars.push({
+        label: i === 0 ? 'now' : 'w' + i,
+        val: v === 0 ? 'zero' : (v / 6).toFixed(1),
+        h: Math.max(3, (v / budget) * 100),
+        color: i === 0 ? ACCENT : v === 0 ? 'var(--color-accent-300)' : NEUTRAL_BAR,
+      });
+    }
+    const tomorrow = Math.max(0, budget - Math.round(rate / 7));
+
+    const seg = (r) => s.range === r;
+    const tab = (t) => s.screen === t;
+    const segBg = (on) => on ? 'color-mix(in srgb, var(--color-accent) 12%, transparent)' : 'transparent';
+    const segBorder = (on) => on ? 'var(--color-accent)' : 'transparent';
+    const segFg = (on) => on ? 'var(--color-accent-300)' : MUTED;
+
+    // heatmap (variant 1c) — 28 days
+    const heatCells = this.history.map((v, i) => {
+      const c = v <= 30 ? 'var(--color-neutral-900)' : v <= 42 ? 'var(--color-accent-900)' : v <= 50 ? 'var(--color-accent-700)' : 'var(--color-accent-500)';
+      return { day: i + 1, color: c, fg: v > 50 ? 'var(--color-bg)' : 'var(--color-neutral-400)' };
+    });
+
+    return {
+      // nav
+      isLog: tab('log'), isStats: tab('stats'), isGoal: tab('goal'),
+      goLog: () => this.setState({ screen: 'log' }),
+      goStats: () => this.setState({ screen: 'stats' }),
+      goGoal: () => this.setState({ screen: 'goal' }),
+      tabLogBg: tab('log') ? 'var(--color-accent)' : 'var(--color-neutral-700)', tabLogFg: tab('log') ? 'var(--color-accent-300)' : MUTED,
+      tabStatsBg: tab('stats') ? 'var(--color-accent)' : 'var(--color-neutral-700)', tabStatsFg: tab('stats') ? 'var(--color-accent-300)' : MUTED,
+      tabGoalBg: tab('goal') ? 'var(--color-accent)' : 'var(--color-neutral-700)', tabGoalFg: tab('goal') ? 'var(--color-accent-300)' : MUTED,
+
+      // log screen
+      sinceLast,
+      todayDisplay: this.frac(total) || '0',
+      budgetDisplay: this.frac(budget),
+      leftLine: leftSixths > 0 ? this.frac(leftSixths) + ' left' : this.roastMode() ? 'budget torched' : 'budget used up',
+      meterPct: Math.min(100, (total / budget) * 100),
+      logFull: () => this.log(6),
+      logHalf: () => this.log(3),
+      logThird: () => this.log(2),
+      undoLast: () => this.setState(st => ({ todayLog: st.todayLog.slice(0, -1), editingIdx: -1, toast: 'Undone. It never happened.' })),
+      toast: s.toast,
+      todayLog: s.todayLog.slice().reverse().map((e, ri) => {
+        const idx = s.todayLog.length - 1 - ri; // chronological index
+        const setAmt = (sixths) => this.setState(st => ({
+          todayLog: st.todayLog.map((x, i) => i === idx ? { ...x, sixths } : x),
+          editingIdx: -1,
+          toast: this.roastMode() ? 'Fixed. Revisionist history, but fine.' : 'Entry updated.',
+        }));
+        return {
+          amt: this.frac(e.sixths),
+          kind: e.sixths === 6 ? 'full' : 'shared',
+          time: e.time,
+          editing: s.editingIdx === idx,
+          edit: () => this.setState(st => ({ editingIdx: st.editingIdx === idx ? -1 : idx })),
+          cancelEdit: () => this.setState({ editingIdx: -1 }),
+          setFull: () => setAmt(6),
+          setHalf: () => setAmt(3),
+          setThird: () => setAmt(2),
+          remove: () => this.setState(st => ({
+            todayLog: st.todayLog.filter((x, i) => i !== idx),
+            editingIdx: -1,
+            toast: this.roastMode() ? 'Deleted. We saw nothing.' : 'Entry deleted.',
+          })),
+        };
+      }),
+
+      // stats screen
+      rangeD: () => this.setState({ range: 'day' }),
+      rangeW: () => this.setState({ range: 'week' }),
+      rangeM: () => this.setState({ range: 'month' }),
+      segDBg: segBg(seg('day')), segDFg: segFg(seg('day')), segDBorder: segBorder(seg('day')),
+      segWBg: segBg(seg('week')), segWFg: segFg(seg('week')), segWBorder: segBorder(seg('week')),
+      segMBg: segBg(seg('month')), segMFg: segFg(seg('month')), segMBorder: segBorder(seg('month')),
+      ringDash: (ringFrac * circ).toFixed(1) + ' ' + circ.toFixed(1),
+      ringBig: this.frac(total) + ' / ' + this.frac(budget),
+      ringSub: 'today vs adaptive budget',
+      trendLine: delta < 0 ? '↓ ' + Math.abs(delta) + '% vs last week' : '↑ ' + delta + '% vs last week',
+      chartTitle, bars,
+      avg7: (avg7 / 6).toFixed(1),
+      vsLastWeek: (delta < 0 ? '−' : '+') + Math.abs(delta) + '%',
+      underBudget: under7 + ' / 7',
+      longestGap: '2h 14m',
+
+      // goal screen
+      paceChill: () => this.setState({ pace: 'chill' }),
+      paceSteady: () => this.setState({ pace: 'steady' }),
+      paceBeast: () => this.setState({ pace: 'beast' }),
+      chillBg: s.pace === 'chill' ? 'color-mix(in srgb, var(--color-accent) 10%, transparent)' : 'var(--color-surface)',
+      chillBorder: s.pace === 'chill' ? 'var(--color-accent)' : 'var(--color-neutral-800)',
+      steadyBg: s.pace === 'steady' ? 'color-mix(in srgb, var(--color-accent) 10%, transparent)' : 'var(--color-surface)',
+      steadyBorder: s.pace === 'steady' ? 'var(--color-accent)' : 'var(--color-neutral-800)',
+      beastBg: s.pace === 'beast' ? 'color-mix(in srgb, var(--color-accent) 10%, transparent)' : 'var(--color-surface)',
+      beastBorder: s.pace === 'beast' ? 'var(--color-accent)' : 'var(--color-neutral-800)',
+      quitDate,
+      planLine: 'Based on your last 7 days (' + (avg7 / 6).toFixed(1) + '/day), stepping down ' + { chill: '¼', steady: '½', beast: '1' }[s.pace] + ' a week gets you to zero in ' + weeksToQuit + ' weeks. No cold turkey, no drama.',
+      taperBars,
+      tomorrowBudget: this.frac(tomorrow),
+
+      // heatmap variant
+      heatCells,
+
+      // ===== v2 mockups =====
+      // 2a onboarding
+      obCount: s.obCount,
+      obInc: () => this.setState(st => ({ obCount: Math.min(40, st.obCount + 1) })),
+      obDec: () => this.setState(st => ({ obCount: Math.max(1, st.obCount - 1) })),
+      obStepText: s.obStep >= 5 ? 'done' : (s.obStep + 1) + ' of 5',
+      obProgress: (s.obStep >= 5 ? 100 : (s.obStep + 1) * 20) + '%',
+      obIsStep1: s.obStep === 0,
+      obIsStep2: s.obStep === 1,
+      obIsStep3: s.obStep === 2,
+      obIsStep4: s.obStep === 3,
+      obIsStep5: s.obStep === 4,
+      obIsDone: s.obStep >= 5,
+      obNotDone: s.obStep < 5,
+      obCanBack: s.obStep > 0 && s.obStep < 5,
+      obNext: () => this.setState(st => ({ obStep: Math.min(5, st.obStep + 1) })),
+      obBack: () => this.setState(st => ({ obStep: Math.max(0, st.obStep - 1) })),
+      obRestart: () => this.setState({ obStep: 0 }),
+      obNextLabel: s.obStep === 4 ? 'Build my plan' : 'Continue',
+      obNextHint: ['Next: your usual brand', 'Next: what a stick costs', 'Next: your trigger times', 'Next: your quitting pace', 'Last one — then your plan'][s.obStep] || '',
+      obPaces: [
+        { name: 'Chill', pace: 0.25, rate: '−¼ a week', desc: 'Barely feel it. Slow and certain.' },
+        { name: 'Steady', pace: 0.5, rate: '−½ a week', desc: 'The sweet spot for most people.' },
+        { name: 'Beast', pace: 1, rate: '−1 a week', desc: 'Aggressive. For the impatient.' },
+      ].map(p => ({
+        ...p,
+        weeks: Math.ceil(s.obCount / p.pace) + ' wks',
+        border: s.obPace === p.pace ? 'var(--color-accent)' : 'var(--color-neutral-800)',
+        bg: s.obPace === p.pace ? 'color-mix(in srgb, var(--color-accent) 10%, transparent)' : 'var(--color-surface)',
+        pick: () => this.setState({ obPace: p.pace }),
+      })),
+      obPaceSummary: ({ 0.25: 'Chill · −¼ a week', 0.5: 'Steady · −½ a week', 1: 'Beast · −1 a week' })[s.obPace],
+      obBrands: [
+        { name: 'Gold Flake', meta: 'Kings · ₹18' },
+        { name: 'Classic', meta: 'Milds · ₹18' },
+        { name: 'Marlboro', meta: 'Advance · ₹16' },
+        { name: 'Wills', meta: 'Navy Cut · ₹17' },
+        { name: 'Four Square', meta: 'Regular · ₹13' },
+      ].map((b, i) => ({
+        ...b,
+        border: i === s.obBrandIdx ? 'var(--color-accent)' : 'var(--color-neutral-800)',
+        bg: i === s.obBrandIdx ? 'color-mix(in srgb, var(--color-accent) 10%, transparent)' : 'var(--color-surface)',
+        pick: () => this.setState({ obBrandIdx: i }),
+      })),
+      obPrice: s.obPrice,
+      obPriceInc: () => this.setState(st => ({ obPrice: Math.min(60, st.obPrice + 1) })),
+      obPriceDec: () => this.setState(st => ({ obPrice: Math.max(5, st.obPrice - 1) })),
+      obMonthly: Math.round(s.obCount * s.obPrice * 30).toLocaleString('en-IN'),
+      obQuitDate: new Date(Date.now() + Math.ceil(s.obCount / s.obPace) * 7 * 86400000).toLocaleDateString('en-IN', { day: 'numeric', month: 'long' }),
+      obTriggerChips: [
+        { id: 'chai', label: 'Chai breaks' },
+        { id: 'meals', label: 'After meals' },
+        { id: 'stress', label: 'Stress spikes' },
+        { id: 'drinks', label: 'With drinks' },
+        { id: 'commute', label: 'Commute' },
+        { id: 'late', label: 'Late nights' },
+      ].map(t => ({
+        ...t,
+        border: s.obTrig[t.id] ? 'var(--color-accent)' : 'var(--color-neutral-800)',
+        bg: s.obTrig[t.id] ? 'color-mix(in srgb, var(--color-accent) 10%, transparent)' : 'var(--color-surface)',
+        toggle: () => this.setState(st => ({ obTrig: { ...st.obTrig, [t.id]: !st.obTrig[t.id] } })),
+      })),
+      obReaction: s.obCount <= 5
+        ? 'Light smoker. A Chill pace could have you done in about ' + Math.ceil(s.obCount / 0.25) + ' weeks.'
+        : s.obCount <= 12
+        ? 'About average for your age group. At a Steady pace, zero in roughly ' + Math.ceil(s.obCount / 0.5) + ' weeks. Very doable.'
+        : 'Heavy going. No panic — we taper, not cold turkey. Steady pace: about ' + Math.ceil(s.obCount / 0.5) + ' weeks to zero.',
+
+      // 2b backfill
+      bfDays: ['Today', 'Yst', 'Sun', 'Sat'].map((label, i) => ({
+        label,
+        border: s.bfDay === i ? 'var(--color-accent)' : 'var(--color-neutral-800)',
+        bg: s.bfDay === i ? 'color-mix(in srgb, var(--color-accent) 10%, transparent)' : 'var(--color-surface)',
+        pick: () => this.setState({ bfDay: i }),
+      })),
+      bfBuckets: [
+        { id: 'morning', name: 'Morning', range: '6 am – 12 pm' },
+        { id: 'afternoon', name: 'Afternoon', range: '12 – 5 pm' },
+        { id: 'evening', name: 'Evening', range: '5 – 9 pm' },
+        { id: 'night', name: 'Night', range: '9 pm – 2 am' },
+      ].map(b => ({
+        ...b,
+        border: s.bfBucket === b.id ? 'var(--color-accent)' : 'var(--color-neutral-800)',
+        bg: s.bfBucket === b.id ? 'color-mix(in srgb, var(--color-accent) 10%, transparent)' : 'var(--color-surface)',
+        pick: () => this.setState({ bfBucket: b.id }),
+      })),
+      bfAmtFull: () => this.setState({ bfStep: 6 }),
+      bfAmtHalf: () => this.setState({ bfStep: 3 }),
+      bfAmtThird: () => this.setState({ bfStep: 2 }),
+      bfFullBorder: s.bfStep === 6 ? 'var(--color-accent)' : 'var(--color-neutral-800)',
+      bfFullBg: s.bfStep === 6 ? 'color-mix(in srgb, var(--color-accent) 10%, transparent)' : 'var(--color-surface)',
+      bfHalfBorder: s.bfStep === 3 ? 'var(--color-accent)' : 'var(--color-neutral-800)',
+      bfHalfBg: s.bfStep === 3 ? 'color-mix(in srgb, var(--color-accent) 10%, transparent)' : 'var(--color-surface)',
+      bfThirdBorder: s.bfStep === 2 ? 'var(--color-accent)' : 'var(--color-neutral-800)',
+      bfThirdBg: s.bfStep === 2 ? 'color-mix(in srgb, var(--color-accent) 10%, transparent)' : 'var(--color-surface)',
+      bfTotal: this.frac(s.bfTotalSixths),
+      bfStepLabel: { 6: '1', 3: '½', 2: '⅓' }[s.bfStep],
+      bfCountInc: () => this.setState(st => ({ bfTotalSixths: Math.min(120, st.bfTotalSixths + st.bfStep) })),
+      bfCountDec: () => this.setState(st => ({ bfTotalSixths: Math.max(0, st.bfTotalSixths - st.bfStep) })),
+      bfClear: () => this.setState({ bfTotalSixths: 0 }),
+      bfSummary: this.frac(s.bfTotalSixths) + ' · ' + ['today', 'yesterday', 'Sunday', 'Saturday'][s.bfDay] + ', ' + s.bfBucket,
+      bfToast: s.bfToast,
+      bfAdd: () => {
+        if (!this.state.bfTotalSixths) {
+          this.setState({ bfToast: this.roastMode() ? 'Add zero? Bold strategy. Tap an amount first.' : 'Tap an amount first.' });
+          clearTimeout(this.bfT);
+          this.bfT = setTimeout(() => this.setState({ bfToast: '' }), 3500);
+          return;
+        }
+        this.setState({ bfToast: this.roastMode() ? 'Bar night, huh. Logged — stats recomputed.' : 'Added. Your stats are up to date.' });
+        clearTimeout(this.bfT);
+        this.bfT = setTimeout(() => this.setState({ bfToast: '' }), 3500);
+      },
+
+      // 2e craving SOS
+      cravIdle: s.cravState === 'idle',
+      cravOn: s.cravState === 'on',
+      cravResult: s.cravState === 'result',
+      cravStart: () => {
+        clearInterval(this.cravT);
+        this.setState({ cravState: 'on', cravLeft: 300 });
+        this.cravT = setInterval(() => this.setState(st => {
+          if (st.cravLeft <= 1) { clearInterval(this.cravT); return { cravState: 'result', cravOutcome: 'survived', cravLeft: 0 }; }
+          return { cravLeft: st.cravLeft - 1 };
+        }), 1000);
+      },
+      cravClock: Math.floor(s.cravLeft / 60) + ':' + String(s.cravLeft % 60).padStart(2, '0'),
+      cravDash: (603 * (s.cravLeft / 300)).toFixed(1) + ' 603',
+      cravPrompt: s.cravLeft > 200 ? 'Get up. Drink a glass of water. Slowly.' : s.cravLeft > 100 ? 'Four counts in, hold four, four out. Repeat.' : 'Almost there. It\'s already weaker than it was.',
+      cravSurvived: () => { clearInterval(this.cravT); this.setState({ cravState: 'result', cravOutcome: 'survived' }); },
+      cravSmoked: () => { clearInterval(this.cravT); this.setState({ cravState: 'result', cravOutcome: 'smoked' }); },
+      cravReset: () => this.setState({ cravState: 'idle', cravLeft: 300 }),
+      cravResultTitle: s.cravOutcome === 'survived' ? 'Craving: 0. You: 8.' : 'Logged. No drama.',
+      cravResultBody: s.cravOutcome === 'survived'
+        ? (this.roastMode() ? 'That\'s 8 outlasted this week. The craving is embarrassed for itself.' : 'That\'s 8 cravings outlasted this week. Each one gets easier.')
+        : (this.roastMode() ? 'It happens. We logged it against today\'s budget — honesty is the whole point.' : 'It\'s logged against today\'s budget. One smoke isn\'t a relapse.'),
+
+      // 2d nicotine database
+      nicBrands: [
+        { brand: 'Gold Flake', variant: 'Kings', nicotine: '1.1', tar: '15', price: '18', yours: true },
+        { brand: 'Classic', variant: 'Milds', nicotine: '0.9', tar: '12', price: '18', yours: false },
+        { brand: 'Marlboro', variant: 'Advance Compact', nicotine: '0.8', tar: '10', price: '16', yours: false },
+        { brand: 'Wills', variant: 'Navy Cut', nicotine: '1.0', tar: '14', price: '17', yours: false },
+        { brand: 'Four Square', variant: 'Regular', nicotine: '1.2', tar: '17', price: '13', yours: false },
+        { brand: 'Charminar', variant: 'Regular (non-filter)', nicotine: '1.6', tar: '22', price: '8', yours: false },
+      ].map(n => ({ ...n, border: n.yours ? 'var(--color-accent)' : 'var(--color-neutral-800)' })),
+    };
+  }
+}
+</script>
+</body>
+</html>
