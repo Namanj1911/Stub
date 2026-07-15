@@ -1,0 +1,69 @@
+// All user-facing feedback copy lives in this one table (NFR7). The app
+// speaks in one voice — roast — by product decision (gentle mode removed).
+
+const TABLE = {
+  logOver: 'Over budget. Your lungs saw that, by the way.',
+  logNear: 'Logged. That leaves basically fumes for the rest of the day.',
+  logWithin: 'Logged. Still on plan — annoyingly responsible of you.',
+  undone: 'Undone. It never happened.',
+  edited: 'Fixed. Revisionist history, but fine.',
+  deleted: 'Deleted. We saw nothing.',
+  budgetTorched: 'budget torched',
+  backfilled: 'Bar night, huh. Logged — stats recomputed.',
+  backfillZero: 'Add zero? Bold strategy. Tap an amount first.',
+} as const satisfies Record<string, string>;
+
+export type StringKey = keyof typeof TABLE;
+
+export function copy(key: StringKey): string {
+  return TABLE[key];
+}
+
+// S20 craving SOS copy
+export const SOS_PROMPTS = {
+  early: 'Get up. Drink a glass of water. Slowly.',
+  mid: 'Four counts in, hold four, four out. Repeat.',
+  late: "Almost there. It's already weaker than it was.",
+} as const;
+
+export function sosResult(
+  outcome: 'survived' | 'smoked',
+  weeklySurvived: number,
+): { title: string; body: string } {
+  if (outcome === 'survived') {
+    return {
+      title: `Craving: 0. You: ${weeklySurvived}.`,
+      body: `That's ${weeklySurvived} outlasted this week. The craving is embarrassed for itself.`,
+    };
+  }
+  return {
+    title: 'Logged. No drama.',
+    body: "It happens. We logged it against today's budget — honesty is the whole point.",
+  };
+}
+
+// S7 insight card copy
+export function insightCopy(
+  insight:
+    | { kind: 'danger'; window: string }
+    | { kind: 'weekend'; over: string }
+    | { kind: 'newUser' },
+): string {
+  switch (insight.kind) {
+    case 'danger':
+      return `Your danger zone is ${insight.window}. Plan literally anything else for that window.`;
+    case 'weekend':
+      return `Weekends are your weak spot — Saturdays average +${insight.over} over budget. Maybe don't be that guy this Saturday.`;
+    case 'newUser':
+      return `Not enough data to roast you properly yet. A week of honest logging fixes that.`;
+  }
+}
+
+// Onboarding reaction card (parameterised, so kept as a function)
+export function setupReaction(countPerDay: number): string {
+  if (countPerDay <= 5)
+    return `Light smoker. A Chill pace could have you done in about ${Math.ceil(countPerDay / 0.25)} weeks.`;
+  if (countPerDay <= 12)
+    return `About average for your age group. At a Steady pace, zero in roughly ${Math.ceil(countPerDay / 0.5)} weeks. Very doable.`;
+  return `Heavy going. No panic — we taper, not cold turkey. Steady pace: about ${Math.ceil(countPerDay / 0.5)} weeks to zero.`;
+}
