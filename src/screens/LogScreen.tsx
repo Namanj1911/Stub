@@ -90,22 +90,42 @@ export function LogScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: color.bg }}>
       <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 100 }}>
-        {/* header — the profile mark keeps the corner to itself; "last one"
-            sits under the wordmark like every other screen's subtitle */}
+        {/* header — wordmark and profile mark only, branding stays clean */}
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
           <Text style={{ fontFamily: font.medium, fontSize: 22, color: color.text }}>
             stub<Text style={{ color: color.accent }}>.</Text>
           </Text>
           <ProfileButton />
         </View>
+
+        {/* "last one" status chip — a pill captioning the count below it */}
         {lastAt != null && (
-          <Text style={{ fontFamily: font.regular, fontSize: 12, color: color.neutral500, marginTop: 2 }}>
-            last one {fmtSince(lastAt, now)} ago
-          </Text>
+          <View
+            style={{
+              alignSelf: 'flex-start',
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 7,
+              backgroundColor: color.surface,
+              borderWidth: 1,
+              borderColor: color.neutral800,
+              borderRadius: radius.pill,
+              paddingVertical: 6,
+              paddingHorizontal: 13,
+              marginTop: 20,
+            }}
+          >
+            <Text style={{ fontSize: 12 }}>🚬</Text>
+            <Text style={{ fontFamily: font.regular, fontSize: 12, color: color.neutral400 }}>
+              last one {fmtSince(lastAt, now)} ago
+            </Text>
+          </View>
         )}
 
         {/* today count + budget (S3) */}
-        <Text style={{ fontFamily: font.medium, fontSize: 64, color: color.text, marginTop: 24 }}>
+        <Text
+          style={{ fontFamily: font.medium, fontSize: 64, color: color.text, marginTop: lastAt != null ? 14 : 24 }}
+        >
           {frac(total)}
         </Text>
         <Text style={{ fontFamily: font.regular, fontSize: 13, color: color.neutral500, marginTop: 2 }}>
