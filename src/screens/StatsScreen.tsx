@@ -286,24 +286,28 @@ const HEAT_COLOR = {
 
 function Heatmap(props: { entries: Entry[]; todayKey: number; installDayKey: number; budget: number }) {
   const cells = heatCells(props.entries, props.todayKey, props.installDayKey, props.budget);
+  // explicit rows of 7 — percentage-based wrapping breaks rows unevenly and
+  // leaves ragged vertical space
+  const rows = [0, 1, 2, 3].map((r) => cells.slice(r * 7, r * 7 + 7));
   return (
     <View>
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
-        {cells.map((c) => (
-          <View
-            key={c.key}
-            style={{
-              width: '12%',
-              flexGrow: 1,
-              flexBasis: '12%',
-              maxWidth: '13.4%',
-              aspectRatio: 1,
-              borderRadius: radius.sm,
-              backgroundColor: HEAT_COLOR[c.color],
-              borderWidth: c.color === 'none' ? 1 : 0,
-              borderColor: color.neutral900,
-            }}
-          />
+      <View style={{ gap: 6 }}>
+        {rows.map((row, r) => (
+          <View key={r} style={{ flexDirection: 'row', gap: 6 }}>
+            {row.map((c) => (
+              <View
+                key={c.key}
+                style={{
+                  flex: 1,
+                  aspectRatio: 1,
+                  borderRadius: radius.sm,
+                  backgroundColor: HEAT_COLOR[c.color],
+                  borderWidth: c.color === 'none' ? 1 : 0,
+                  borderColor: color.neutral900,
+                }}
+              />
+            ))}
+          </View>
         ))}
       </View>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 10 }}>

@@ -38,6 +38,20 @@ without discussion.
   budget history rewrite retroactively. Pace + price changes are safe today;
   count is not. Design the dated-baseline storage first. *(#7)*
 
+## P1 bugs — self-identified in code review (2026-07-16)
+
+- [ ] **SOS countdown drifts when app is backgrounded.** The timer decrements
+  a counter with `setInterval`; iOS pauses JS timers in the background, so a
+  user who locks their phone mid-craving comes back to a frozen countdown.
+  Fix: store the end *timestamp* and derive remaining time from the wall
+  clock on every tick and on foreground.
+- [ ] **"Time since last" breaks after backfill.** The Log header reads the
+  *last array element's* timestamp, but backfilled entries append out of
+  chronological order — backfill yesterday's smoke and the header claims your
+  last cigarette was 18h ago even if you smoked 10 minutes ago. Fix: use the
+  max timestamp. Also decide: should "undo last" undo the last *action*
+  (current behavior, removes the backfill) or the most recent cigarette?
+
 ## P2 — polish
 
 - [ ] **Haptic feedback on logging** (expo-haptics; light impact on log,
@@ -46,6 +60,18 @@ without discussion.
   random pick, instead of the same three every time. *(#8)*
 - [ ] **Tap-to-reveal bar values** (Apple Fitness pattern) — bars currently
   show values permanently; switch to showing on touch, highlighted bar. *(#5)*
+- [ ] **Day chart mislabels midnight–4 am smokes** (self-identified): a 1 am
+  smoke correctly counts toward the previous day (4 am boundary) but renders
+  in that day's "6–9" morning bucket. Extend the night bucket to cover
+  9 pm–4 am.
+- [ ] **Money saved can go negative** (self-identified): smoking above
+  baseline shows "₹-84 saved". Decide: clamp to 0 or show honestly with
+  roast copy.
+- [ ] **Accessibility pass** (self-identified): icon-only controls (edit,
+  delete, SOS button, steppers) need `accessibilityLabel`s for VoiceOver;
+  audit contrast per NFR5.
+- [ ] **Replace default Expo app icon/splash** before anyone else installs —
+  part of the ROADMAP launch checklist.
 
 ## Later / needs discussion
 

@@ -248,28 +248,40 @@ export function LogScreen() {
         )}
       </ScrollView>
 
-      {/* floating craving SOS button (S20 entry point) */}
+      {/* floating craving SOS button (S20 entry point) — deliberately breaks
+          theme: an emergency control has to look like one */}
       <Pressable
         onPress={() => nav.navigate('Sos')}
         style={({ pressed }) => ({
           position: 'absolute',
           right: 20,
           bottom: 24,
-          width: 56,
-          height: 56,
-          borderRadius: 28,
-          backgroundColor: color.accent,
+          width: 64,
+          height: 64,
+          borderRadius: 32,
+          backgroundColor: color.sos,
+          borderWidth: 2,
+          borderColor: 'rgba(224, 74, 63, 0.35)',
           alignItems: 'center',
           justifyContent: 'center',
-          shadowColor: '#000',
-          shadowOpacity: 0.4,
-          shadowRadius: 8,
+          shadowColor: color.sos,
+          shadowOpacity: 0.5,
+          shadowRadius: 10,
           shadowOffset: { width: 0, height: 4 },
-          elevation: 6,
+          elevation: 8,
           transform: [{ scale: pressed ? 0.92 : 1 }],
         })}
       >
-        <Text style={{ fontFamily: font.medium, fontSize: 13, color: color.bg }}>sos</Text>
+        <Text
+          style={{
+            fontFamily: font.medium,
+            fontSize: 16,
+            letterSpacing: 1.5,
+            color: color.sosText,
+          }}
+        >
+          SOS
+        </Text>
       </Pressable>
 
       {/* toast */}

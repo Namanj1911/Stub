@@ -36,6 +36,12 @@ export const color = {
   // color-mix(in srgb, accent 10%, transparent) equivalent
   accentTint10: 'rgba(145, 132, 217, 0.10)',
   accentTint12: 'rgba(145, 132, 217, 0.12)',
+
+  // Deliberate exception to Nocturne (which has no alert colors): the craving
+  // SOS button must read as an emergency control, so it breaks theme on
+  // purpose. Use nowhere else.
+  sos: '#e04a3f',
+  sosText: '#1c0f0d',
 } as const;
 
 export const space = {
