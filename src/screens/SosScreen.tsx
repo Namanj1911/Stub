@@ -4,12 +4,13 @@
 // "I smoked it anyway" asks how much (1/½/⅓) and logs it against today's
 // budget (honesty over enforcement).
 
+import * as Haptics from 'expo-haptics';
 import React, { useEffect, useRef, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 import { useApp } from '../AppContext';
 import { useNav } from '../navigation';
-import { SOS_PROMPTS, sosResult } from '../strings';
+import { pickPrompts, sosResult } from '../strings';
 import { color, font, radius } from '../theme';
 
 const TOTAL = 300; // seconds
@@ -29,6 +30,8 @@ export function SosScreen() {
   // wall-clock deadline — iOS pauses JS timers in the background, so remaining
   // time must be derived from the clock, never counted down in memory
   const endAt = useRef(0);
+  // one random prompt per stage, re-rolled each session
+  const prompts = useRef(pickPrompts());
 
   const stopTimer = () => {
     if (timer.current) clearInterval(timer.current);
@@ -38,12 +41,14 @@ export function SosScreen() {
 
   const finishSurvived = () => {
     stopTimer();
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setOutcome('survived');
     addCraving('survived');
     setPhase('result');
   };
 
   const finishSmoked = (sixths: number) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setOutcome('smoked');
     addCraving('smoked');
     addEntry(sixths);
@@ -51,6 +56,7 @@ export function SosScreen() {
   };
 
   const start = () => {
+    prompts.current = pickPrompts();
     endAt.current = Date.now() + TOTAL * 1000;
     setLeft(TOTAL);
     setPhase('on');
@@ -78,7 +84,8 @@ export function SosScreen() {
   ).length;
 
   const clock = `${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}`;
-  const prompt = left > 200 ? SOS_PROMPTS.early : left > 100 ? SOS_PROMPTS.mid : SOS_PROMPTS.late;
+  const prompt =
+    left > 200 ? prompts.current.early : left > 100 ? prompts.current.mid : prompts.current.late;
 
   return (
     <View style={{ flex: 1, backgroundColor: color.bg, alignItems: 'center', padding: 22, paddingTop: 16 }}>

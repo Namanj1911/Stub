@@ -3,6 +3,7 @@
 // in that unit. The entry is marked backfilled; all stats recompute since
 // they derive from the entries array.
 
+import * as Haptics from 'expo-haptics';
 import React, { useRef, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { useApp } from '../AppContext';
@@ -48,6 +49,7 @@ export function BackfillScreen() {
     }
     const d = days[dayIdx].date;
     const ts = new Date(d.getFullYear(), d.getMonth(), d.getDate(), bucket.hour, 0, 0).getTime();
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     addEntry(total, Math.min(ts, Date.now()), true);
     setTotal(0);
     // confirm in place (prototype 2b behavior) — user backs out when done
