@@ -1,6 +1,7 @@
 import {
   Inter_400Regular,
   Inter_500Medium,
+  Inter_700Bold,
   useFonts,
 } from '@expo-google-fonts/inter';
 import { DarkTheme, NavigationContainer } from '@react-navigation/native';
@@ -105,7 +106,7 @@ function Tabs() {
 }
 
 export default function App() {
-  const [fontsLoaded] = useFonts({ Inter_400Regular, Inter_500Medium });
+  const [fontsLoaded] = useFonts({ Inter_400Regular, Inter_500Medium, Inter_700Bold });
   const store = useAppData();
 
   if (!fontsLoaded || !store.loaded) {

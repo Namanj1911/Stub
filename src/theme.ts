@@ -61,7 +61,9 @@ export const radius = {
 } as const;
 
 // Inter everywhere; headings max weight 500 — hierarchy via size/space, not bold.
+// `bold` exists solely for the SOS button (the documented theme exception).
 export const font = {
   regular: 'Inter_400Regular',
   medium: 'Inter_500Medium',
+  bold: 'Inter_700Bold',
 } as const;

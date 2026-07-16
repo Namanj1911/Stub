@@ -7,7 +7,6 @@ import { Pressable, ScrollView, Text, View } from 'react-native';
 import Svg, { Defs, Ellipse, RadialGradient, Stop } from 'react-native-svg';
 import { BRANDS } from '../brands';
 import {
-  Entry,
   PACE_RATE,
   budgetSixths,
   dayKey,
@@ -16,12 +15,15 @@ import {
   totalSixths,
   weeksToQuit,
 } from '../domain';
+import { copy } from '../strings';
 import { useApp, useProfile } from '../AppContext';
 import { color, font, radius } from '../theme';
 
 const GOA_FLIGHT = 4500; // ₹, one way — aspirational goal from the 2f mockup
 
-const inr = (n: number) => Math.round(n).toLocaleString('en-IN');
+const inr = (n: number) => Math.abs(Math.round(n)).toLocaleString('en-IN');
+// negative savings display honestly (roast, not clamp) — '−₹84'
+const inrSigned = (n: number) => (n < 0 ? '−₹' : '₹') + inr(n);
 
 export function MoneyScreen() {
   const { data, setPricePerStick } = useApp();
@@ -53,10 +55,10 @@ export function MoneyScreen() {
   const weeksAway = saved >= GOA_FLIGHT ? 0 : weeklyRate > 0 ? Math.ceil((GOA_FLIGHT - saved) / weeklyRate) : null;
   const goaLine =
     weeksAway === 0
-      ? `₹${inr(saved)} of ₹${inr(GOA_FLIGHT)} — covered. Book it.`
+      ? `${inrSigned(saved)} of ₹${inr(GOA_FLIGHT)} — covered. Book it.`
       : weeksAway != null
-        ? `₹${inr(saved)} of ₹${inr(GOA_FLIGHT)} — about ${weeksAway} week${weeksAway === 1 ? '' : 's'} away at this pace.`
-        : `₹${inr(saved)} of ₹${inr(GOA_FLIGHT)}.`;
+        ? `${inrSigned(saved)} of ₹${inr(GOA_FLIGHT)} — about ${weeksAway} week${weeksAway === 1 ? '' : 's'} away at this pace.`
+        : `${inrSigned(saved)} of ₹${inr(GOA_FLIGHT)}.`;
 
   // projections: budget tapers weekly from here to zero
   const budget = budgetSixths(entries, todayKey, profile.installDayKey, baseline);
@@ -122,11 +124,16 @@ export function MoneyScreen() {
           Saved since you started
         </Text>
         <Text style={{ fontFamily: font.medium, fontSize: 44, letterSpacing: -1, color: color.text, marginTop: 6 }}>
-          ₹{inr(saved)}
+          {inrSigned(saved)}
         </Text>
         <Text style={{ fontFamily: font.regular, fontSize: 13, color: color.accent300, marginTop: 4 }}>
-          ₹{inr(savedWeek)} this week · {daysIn} day{daysIn === 1 ? '' : 's'} in
+          {inrSigned(savedWeek)} this week · {daysIn} day{daysIn === 1 ? '' : 's'} in
         </Text>
+        {saved < 0 && (
+          <Text style={{ fontFamily: font.regular, fontSize: 12, color: color.neutral400, marginTop: 8, lineHeight: 17 }}>
+            {copy('moneyBehind')}
+          </Text>
+        )}
       </View>
 
       {/* Goa flight goal */}

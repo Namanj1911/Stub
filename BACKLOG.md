@@ -40,17 +40,13 @@ without discussion.
 
 ## P1 bugs — self-identified in code review (2026-07-16)
 
-- [ ] **SOS countdown drifts when app is backgrounded.** The timer decrements
-  a counter with `setInterval`; iOS pauses JS timers in the background, so a
-  user who locks their phone mid-craving comes back to a frozen countdown.
-  Fix: store the end *timestamp* and derive remaining time from the wall
-  clock on every tick and on foreground.
-- [ ] **"Time since last" breaks after backfill.** The Log header reads the
-  *last array element's* timestamp, but backfilled entries append out of
-  chronological order — backfill yesterday's smoke and the header claims your
-  last cigarette was 18h ago even if you smoked 10 minutes ago. Fix: use the
-  max timestamp. Also decide: should "undo last" undo the last *action*
-  (current behavior, removes the backfill) or the most recent cigarette?
+- [x] **SOS countdown drifts when app is backgrounded.** — **done 2026-07-16**
+  (`fix/p1-bugs`): remaining time derives from a wall-clock end timestamp on
+  every tick; backgrounding can no longer freeze the countdown.
+- [x] **"Time since last" breaks after backfill.** — **done 2026-07-16**: the
+  header uses the max timestamp across entries. Decision: "undo last" keeps
+  last-*action* semantics (a just-added backfill is undone first) — documented
+  in LogScreen.
 
 ## P2 — polish
 
@@ -64,9 +60,9 @@ without discussion.
   smoke correctly counts toward the previous day (4 am boundary) but renders
   in that day's "6–9" morning bucket. Extend the night bucket to cover
   9 pm–4 am.
-- [ ] **Money saved can go negative** (self-identified): smoking above
-  baseline shows "₹-84 saved". Decide: clamp to 0 or show honestly with
-  roast copy.
+- [x] **Money saved can go negative** (self-identified) — **done 2026-07-16**:
+  decision was show honestly, roast copy ("Goa is drifting further away");
+  amounts render as −₹84, Goa progress clamps at 0%.
 - [ ] **Accessibility pass** (self-identified): icon-only controls (edit,
   delete, SOS button, steppers) need `accessibilityLabel`s for VoiceOver;
   audit contrast per NFR5.

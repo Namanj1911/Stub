@@ -26,6 +26,9 @@ export function SosScreen() {
   const [left, setLeft] = useState(TOTAL);
   const [outcome, setOutcome] = useState<'survived' | 'smoked'>('survived');
   const timer = useRef<ReturnType<typeof setInterval> | null>(null);
+  // wall-clock deadline — iOS pauses JS timers in the background, so remaining
+  // time must be derived from the clock, never counted down in memory
+  const endAt = useRef(0);
 
   const stopTimer = () => {
     if (timer.current) clearInterval(timer.current);
@@ -48,21 +51,20 @@ export function SosScreen() {
   };
 
   const start = () => {
+    endAt.current = Date.now() + TOTAL * 1000;
     setLeft(TOTAL);
     setPhase('on');
     stopTimer();
     timer.current = setInterval(() => {
-      setLeft((s) => {
-        if (s <= 1) {
-          stopTimer();
-          setOutcome('survived');
-          addCraving('survived');
-          setPhase('result');
-          return 0;
-        }
-        return s - 1;
-      });
-    }, 1000);
+      const remaining = Math.max(0, Math.round((endAt.current - Date.now()) / 1000));
+      if (remaining <= 0) {
+        stopTimer();
+        setOutcome('survived');
+        addCraving('survived');
+        setPhase('result');
+      }
+      setLeft(remaining);
+    }, 500);
   };
 
   const cancelToIdle = () => {

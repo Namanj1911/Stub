@@ -11,6 +11,8 @@ const TABLE = {
   budgetTorched: 'budget torched',
   backfilled: 'Bar night, huh. Logged — stats recomputed.',
   backfillZero: 'Add zero? Bold strategy. Tap an amount first.',
+  moneyBehind:
+    "You're smoking above your baseline, so this is costing you extra. Goa is drifting further away, just so you know.",
 } as const satisfies Record<string, string>;
 
 export type StringKey = keyof typeof TABLE;
