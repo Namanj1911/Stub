@@ -90,9 +90,11 @@ export function LogScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: color.bg }}>
       <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 100 }}>
-        {/* header — wordmark and profile mark only, branding stays clean */}
+        {/* header — wordmark and profile mark only. 26 (vs 22 elsewhere) on
+            purpose: this is the app's front door, and the profile mark beside
+            it visually shrinks anything smaller */}
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Text style={{ fontFamily: font.medium, fontSize: 22, color: color.text }}>
+          <Text style={{ fontFamily: font.medium, fontSize: 26, color: color.text }}>
             stub<Text style={{ color: color.accent }}>.</Text>
           </Text>
           <ProfileButton />
