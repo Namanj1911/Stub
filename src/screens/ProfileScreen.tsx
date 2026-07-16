@@ -168,23 +168,25 @@ export function ProfileScreen() {
           {copy('exportNote')}
         </Text>
       </Pressable>
+      {/* danger-styled on purpose (see theme.ts exception 2): quiet red at
+          rest, waking to full red only under the finger */}
       <Pressable
         onPress={confirmReset}
         accessibilityLabel="Reset all data"
         style={({ pressed }) => ({
           borderWidth: 1,
-          borderColor: color.neutral800,
-          backgroundColor: pressed ? color.accentTint10 : 'transparent',
+          borderColor: pressed ? color.danger : color.dangerBorder,
+          backgroundColor: pressed ? color.dangerTint8 : 'transparent',
           borderRadius: radius.md,
           padding: 16,
           marginTop: 8,
         })}
       >
-        <Text style={{ fontFamily: font.medium, fontSize: 15, color: color.neutral300 }}>
+        <Text style={{ fontFamily: font.medium, fontSize: 15, color: color.dangerText }}>
           Reset everything
         </Text>
         <Text style={{ fontFamily: font.regular, fontSize: 12, color: color.neutral500, marginTop: 3 }}>
-          Back to day zero. We'll ask twice.
+          Burns every log to day zero — we'll ask twice, but there's no undo.
         </Text>
       </Pressable>
     </ScrollView>

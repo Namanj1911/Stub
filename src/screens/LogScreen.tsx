@@ -15,6 +15,7 @@ import {
   totalSixths,
 } from '../domain';
 import { useApp, useProfile } from '../AppContext';
+import { ProfileButton } from '../ProfileButton';
 import { useNav } from '../navigation';
 import { StringKey, copy } from '../strings';
 import { color, font, radius } from '../theme';
@@ -90,15 +91,18 @@ export function LogScreen() {
     <View style={{ flex: 1, backgroundColor: color.bg }}>
       <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 100 }}>
         {/* header */}
-        <View style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
           <Text style={{ fontFamily: font.medium, fontSize: 22, color: color.text }}>
             stub<Text style={{ color: color.accent }}>.</Text>
           </Text>
-          {lastAt != null && (
-            <Text style={{ fontFamily: font.regular, fontSize: 12, color: color.neutral500 }}>
-              last one {fmtSince(lastAt, now)} ago
-            </Text>
-          )}
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+            {lastAt != null && (
+              <Text style={{ fontFamily: font.regular, fontSize: 12, color: color.neutral500 }}>
+                last one {fmtSince(lastAt, now)} ago
+              </Text>
+            )}
+            <ProfileButton />
+          </View>
         </View>
 
         {/* today count + budget (S3) */}

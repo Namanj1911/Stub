@@ -15,6 +15,7 @@ import {
   weekBars,
 } from '../stats';
 import { useApp, useProfile } from '../AppContext';
+import { ProfileButton } from '../ProfileButton';
 import { useNav } from '../navigation';
 import { insightCopy } from '../strings';
 import { color, font, radius } from '../theme';
@@ -65,9 +66,12 @@ export function StatsScreen() {
       style={{ flex: 1, backgroundColor: color.bg }}
       contentContainerStyle={{ padding: 20, paddingBottom: 40 }}
     >
-      <Text style={{ fontFamily: font.medium, fontSize: 22, color: color.text }}>
-        stats<Text style={{ color: color.accent }}>.</Text>
-      </Text>
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+        <Text style={{ fontFamily: font.medium, fontSize: 22, color: color.text }}>
+          stats<Text style={{ color: color.accent }}>.</Text>
+        </Text>
+        <ProfileButton />
+      </View>
 
       {/* segmented control (S5) */}
       <View style={{ flexDirection: 'row', gap: 8, marginTop: 18 }}>

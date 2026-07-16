@@ -18,7 +18,7 @@ import {
   weeksToQuit,
 } from '../domain';
 import { useApp, useProfile } from '../AppContext';
-import { useNav } from '../navigation';
+import { ProfileButton } from '../ProfileButton';
 import { color, font, radius } from '../theme';
 
 const PACES: { id: Pace; name: string; rate: string; desc: string }[] = [
@@ -32,7 +32,6 @@ const PACE_LABEL: Record<Pace, string> = { chill: '¼', steady: '½', beast: '1'
 export function GoalScreen() {
   const { data, setPace } = useApp();
   const profile = useProfile();
-  const nav = useNav();
   const entries = data.entries;
   const now = Date.now();
   const todayKey = dayKey(now);
@@ -76,15 +75,7 @@ export function GoalScreen() {
         <Text style={{ fontFamily: font.medium, fontSize: 22, color: color.text }}>
           goal<Text style={{ color: color.accent }}>.</Text>
         </Text>
-        <Pressable
-          onPress={() => nav.navigate('Profile')}
-          hitSlop={10}
-          accessibilityLabel="Open profile"
-        >
-          <Text style={{ fontFamily: font.regular, fontSize: 13, color: color.neutral500 }}>
-            profile →
-          </Text>
-        </Pressable>
+        <ProfileButton />
       </View>
 
       {/* pace picker (S9) */}

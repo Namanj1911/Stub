@@ -17,8 +17,9 @@ import {
   quitDate,
   weeksToQuit,
 } from '../domain';
-import { copy } from '../strings';
+import { copy, moneyTemptation } from '../strings';
 import { useApp, useProfile } from '../AppContext';
+import { ProfileButton } from '../ProfileButton';
 import { color, font, radius } from '../theme';
 
 const GOA_FLIGHT = 4500; // ₹, one way — aspirational goal from the 2f mockup
@@ -78,6 +79,7 @@ export function MoneyScreen() {
   });
   const oneYear = profile.countPerDay * price * 365;
   const flights = Math.floor(oneYear / GOA_FLIGHT);
+  const temptation = moneyTemptation(flights);
   const brand = brandInfo(profile.brandId, profile.customBrandName);
 
   return (
@@ -85,9 +87,12 @@ export function MoneyScreen() {
       style={{ flex: 1, backgroundColor: color.bg }}
       contentContainerStyle={{ padding: 22, paddingBottom: 40 }}
     >
-      <Text style={{ fontFamily: font.medium, fontSize: 22, color: color.text }}>
-        Back in your pocket<Text style={{ color: color.accent }}>.</Text>
-      </Text>
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+        <Text style={{ fontFamily: font.medium, fontSize: 22, color: color.text }}>
+          Back in your pocket<Text style={{ color: color.accent }}>.</Text>
+        </Text>
+        <ProfileButton />
+      </View>
       <Text style={{ fontFamily: font.regular, fontSize: 13, color: color.neutral500, marginTop: 2 }}>
         vs your {profile.countPerDay}-a-day baseline
         {brand ? ` · ${brand.label} at ${brand.estimated ? '~' : ''}₹${price}` : ` · ~₹${price} a stick`}
@@ -211,10 +216,10 @@ export function MoneyScreen() {
             paddingHorizontal: 16,
           }}
         >
-          <Text style={{ fontFamily: font.regular, fontSize: 14, color: color.neutral300 }}>
-            That's an iPhone. Or {flights} Goa flights.
+          <Text style={{ fontFamily: font.regular, fontSize: 14, color: color.neutral300, flex: 1, paddingRight: 10 }}>
+            {temptation.line}
           </Text>
-          <Text style={{ fontSize: 16 }}>✈️</Text>
+          <Text style={{ fontSize: 16 }}>{temptation.emoji}</Text>
         </View>
       </View>
 
