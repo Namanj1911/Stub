@@ -1,33 +1,28 @@
-// Stats computations for S5–S8, derived from real logged entries. The
-// prototype ran on canned history; here days before install fall back to the
-// user's stated baseline (same convention as the adaptive budget), and
-// anything that needs data we don't have yet renders as '—'.
+// Stats computations for S5–S8, derived from real logged entries.
+//
+// Display honesty rule (BACKLOG P0): charts and tiles only ever show what was
+// actually logged — days before install render as empty ('·' / '—'), never as
+// the stated baseline. The baseline fallback lives exclusively inside the
+// budget math (domain.budgetSixths), where it's needed for a sane day-1
+// budget; it must not leak into anything the user sees as "their data".
 
-import {
-  Entry,
-  entriesForDay,
-  fmtSince,
-  frac,
-  totalSixths,
-  trailing7Totals,
-} from './domain';
+import { Entry, entriesForDay, fmtSince, frac, totalSixths } from './domain';
 
 export type Bar = { label: string; val: string; h: number; accent: boolean };
 
 const WEEKDAY = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 // Daily totals for the `n` day-keys ending at (and including) todayKey,
-// oldest → newest, with baseline fallback before install.
+// oldest → newest. Days before install are null — no data, not zero.
 function dailyTotals(
   entries: Entry[],
   todayKey: number,
   installDayKey: number,
-  baselineSixths: number,
   n: number,
-): number[] {
-  const out: number[] = [];
+): (number | null)[] {
+  const out: (number | null)[] = [];
   for (let k = todayKey - n + 1; k <= todayKey; k++) {
-    out.push(k >= installDayKey ? totalSixths(entriesForDay(entries, k)) : baselineSixths);
+    out.push(k >= installDayKey ? totalSixths(entriesForDay(entries, k)) : null);
   }
   return out;
 }
@@ -56,54 +51,59 @@ export function weekBars(
   entries: Entry[],
   todayKey: number,
   installDayKey: number,
-  baselineSixths: number,
   budget: number,
   now: number,
 ): Bar[] {
-  const week = dailyTotals(entries, todayKey, installDayKey, baselineSixths, 7);
-  const max = Math.max(...week, budget, 1);
+  const week = dailyTotals(entries, todayKey, installDayKey, 7);
+  const max = Math.max(...week.map((v) => v ?? 0), budget, 1);
   return week.map((v, i) => ({
     label: WEEKDAY[new Date(now - (6 - i) * 86_400_000).getDay()],
     val: v ? frac(v) : '·',
-    h: Math.max(6, (v / max) * 100),
-    accent: v > budget,
+    h: v ? Math.max(6, (v / max) * 100) : 4,
+    accent: v != null && v > budget,
   }));
 }
 
-// S5 Month view — daily average per week, last 4 weeks.
+// S5 Month view — daily average per week, last 4 weeks. Weeks average only
+// over their post-install days; fully pre-install weeks render empty.
 export function monthBars(
   entries: Entry[],
   todayKey: number,
   installDayKey: number,
-  baselineSixths: number,
 ): Bar[] {
-  const days = dailyTotals(entries, todayKey, installDayKey, baselineSixths, 28);
-  const weeks = [0, 1, 2, 3].map(
-    (i) => days.slice(i * 7, i * 7 + 7).reduce((a, b) => a + b, 0) / 7,
-  );
-  const m = Math.max(...weeks, 1);
+  const days = dailyTotals(entries, todayKey, installDayKey, 28);
+  const weeks = [0, 1, 2, 3].map((i) => {
+    const real = days.slice(i * 7, i * 7 + 7).filter((v): v is number => v != null);
+    return real.length ? real.reduce((a, b) => a + b, 0) / real.length : null;
+  });
+  const m = Math.max(...weeks.map((v) => v ?? 0), 1);
   return weeks.map((v, i) => ({
     label: 'W' + (i + 1),
-    val: (v / 6).toFixed(1),
-    h: Math.max(6, (v / m) * 100),
-    accent: i === 3,
+    val: v != null ? (v / 6).toFixed(1) : '·',
+    h: v != null ? Math.max(6, (v / m) * 100) : 4,
+    accent: i === 3 && v != null,
   }));
 }
 
-// S6 tiles + ring trend
+// S6 tiles + ring trend — averages only over days that actually have data;
+// '—' until there is enough real history for a comparison.
 export function tiles(
   entries: Entry[],
   todayKey: number,
   installDayKey: number,
-  baselineSixths: number,
   budget: number,
   now: number,
 ) {
-  const last7 = trailing7Totals(entries, todayKey + 1, installDayKey, baselineSixths);
-  const prev7 = trailing7Totals(entries, todayKey - 6, installDayKey, baselineSixths);
-  const avg7 = last7.reduce((a, b) => a + b, 0) / 7;
-  const prevAvg = prev7.reduce((a, b) => a + b, 0) / 7;
-  const delta = prevAvg > 0 ? Math.round(((avg7 - prevAvg) / prevAvg) * 100) : 0;
+  const last7 = dailyTotals(entries, todayKey, installDayKey, 7).filter(
+    (v): v is number => v != null,
+  );
+  const prev7 = dailyTotals(entries, todayKey - 7, installDayKey, 7).filter(
+    (v): v is number => v != null,
+  );
+  const avg7 = last7.length ? last7.reduce((a, b) => a + b, 0) / last7.length : 0;
+  const prevAvg = prev7.length === 7 ? prev7.reduce((a, b) => a + b, 0) / 7 : null;
+  const delta =
+    prevAvg != null && prevAvg > 0 ? Math.round(((avg7 - prevAvg) / prevAvg) * 100) : null;
 
   const today = entriesForDay(entries, todayKey).sort((a, b) => a.timestamp - b.timestamp);
   let longest = 0;
@@ -116,10 +116,13 @@ export function tiles(
 
   return {
     avg7: (avg7 / 6).toFixed(1),
-    vsLastWeek: (delta < 0 ? '−' : '+') + Math.abs(delta) + '%',
-    trendLine: `${delta < 0 ? '↓' : '↑'} ${Math.abs(delta)}% vs last week`,
-    trendDown: delta < 0,
-    underBudget: last7.filter((v) => v <= budget).length + ' / 7',
+    vsLastWeek: delta == null ? '—' : (delta < 0 ? '−' : '+') + Math.abs(delta) + '%',
+    trendLine:
+      delta == null
+        ? 'no trend yet — keep logging'
+        : `${delta < 0 ? '↓' : '↑'} ${Math.abs(delta)}% vs last week`,
+    trendDown: delta != null && delta < 0,
+    underBudget: `${last7.filter((v) => v <= budget).length} / ${last7.length || 1}`,
     longestGap: today.length ? fmtSince(now - longest, now) : '—',
   };
 }
