@@ -4,7 +4,7 @@ import {
   useFonts,
 } from '@expo-google-fonts/inter';
 import { DarkTheme, NavigationContainer } from '@react-navigation/native';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { StatusBar } from 'expo-status-bar';
 import React from 'react';
@@ -24,7 +24,7 @@ import { useAppData } from './src/store';
 import { color, font } from './src/theme';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
-const Tab = createBottomTabNavigator<TabParamList>();
+const Tab = createMaterialTopTabNavigator<TabParamList>();
 
 const navTheme = {
   ...DarkTheme,
@@ -64,8 +64,9 @@ function TabIcon({ shape, focused }: { shape: 'square' | 'circle' | 'diamond' | 
 function Tabs() {
   return (
     <Tab.Navigator
+      tabBarPosition="bottom"
       screenOptions={{
-        headerShown: false,
+        swipeEnabled: true,
         tabBarStyle: {
           backgroundColor: color.bg,
           borderTopColor: color.neutral900,
@@ -73,7 +74,10 @@ function Tabs() {
         },
         tabBarActiveTintColor: color.accent300,
         tabBarInactiveTintColor: color.neutral500,
-        tabBarLabelStyle: { fontFamily: font.medium, fontSize: 11 },
+        tabBarLabelStyle: { fontFamily: font.medium, fontSize: 11, textTransform: 'none' },
+        tabBarShowIcon: true,
+        tabBarIndicatorStyle: { backgroundColor: color.accent, height: 2, top: 0 },
+        tabBarPressColor: 'transparent',
       }}
     >
       <Tab.Screen
@@ -117,7 +121,7 @@ export default function App() {
             <SetupScreen />
           </SafeAreaView>
         ) : (
-          <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: color.bg }}>
+          <SafeAreaView edges={['top', 'bottom']} style={{ flex: 1, backgroundColor: color.bg }}>
             <NavigationContainer theme={navTheme}>
               <Stack.Navigator screenOptions={{ headerShown: false }}>
                 <Stack.Screen name="Tabs" component={Tabs} />
