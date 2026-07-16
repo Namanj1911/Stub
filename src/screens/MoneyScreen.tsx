@@ -16,22 +16,17 @@ import {
   totalSixths,
   weeksToQuit,
 } from '../domain';
-import { Profile } from '../store';
+import { useApp, useProfile } from '../AppContext';
 import { color, font, radius } from '../theme';
 
 const GOA_FLIGHT = 4500; // ₹, one way — aspirational goal from the 2f mockup
 
 const inr = (n: number) => Math.round(n).toLocaleString('en-IN');
 
-export function MoneyScreen({
-  profile,
-  entries,
-  setPricePerStick,
-}: {
-  profile: Profile;
-  entries: Entry[];
-  setPricePerStick: (p: number) => void;
-}) {
+export function MoneyScreen() {
+  const { data, setPricePerStick } = useApp();
+  const profile = useProfile();
+  const entries = data.entries;
   if (profile.pricePerStick == null) {
     return <SetPrice setPricePerStick={setPricePerStick} />;
   }

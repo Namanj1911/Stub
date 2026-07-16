@@ -5,7 +5,9 @@
 
 import React, { useRef, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
+import { useApp } from '../AppContext';
 import { frac } from '../domain';
+import { useNav } from '../navigation';
 import { copy } from '../strings';
 import { color, font, radius } from '../theme';
 
@@ -16,13 +18,9 @@ const BUCKETS = [
   { id: 'night', name: 'Night', range: '9 pm – 2 am', hour: 23 },
 ] as const;
 
-export function BackfillScreen({
-  onAdd,
-  onClose,
-}: {
-  onAdd: (sixths: number, timestamp: number) => void;
-  onClose: () => void;
-}) {
+export function BackfillScreen() {
+  const { addEntry } = useApp();
+  const nav = useNav();
   const [dayIdx, setDayIdx] = useState(0);
   const [bucketId, setBucketId] = useState<(typeof BUCKETS)[number]['id']>('evening');
   const [step, setStep] = useState(6);
@@ -50,14 +48,19 @@ export function BackfillScreen({
     }
     const d = days[dayIdx].date;
     const ts = new Date(d.getFullYear(), d.getMonth(), d.getDate(), bucket.hour, 0, 0).getTime();
-    onAdd(total, Math.min(ts, Date.now()));
+    addEntry(total, Math.min(ts, Date.now()), true);
+    setTotal(0);
+    // confirm in place (prototype 2b behavior) — user backs out when done
+    setToast(copy('backfilled'));
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    toastTimer.current = setTimeout(() => setToast(''), 3500);
   };
 
   return (
     <View style={{ flex: 1, backgroundColor: color.bg }}>
       <ScrollView contentContainerStyle={{ padding: 22, paddingTop: 16, paddingBottom: 120 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-          <Pressable onPress={onClose} hitSlop={12}>
+          <Pressable onPress={() => nav.goBack()} hitSlop={12}>
             <Text style={{ fontSize: 18, color: color.neutral500 }}>←</Text>
           </Pressable>
           <Text style={{ fontFamily: font.medium, fontSize: 20, color: color.text }}>

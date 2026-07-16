@@ -7,7 +7,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
-import { Craving } from '../store';
+import { useApp } from '../AppContext';
+import { useNav } from '../navigation';
 import { SOS_PROMPTS, sosResult } from '../strings';
 import { color, font, radius } from '../theme';
 
@@ -17,17 +18,10 @@ const CIRC = 2 * Math.PI * R; // ≈ 603, as in the prototype
 
 type Phase = 'idle' | 'on' | 'pickAmount' | 'result';
 
-export function SosScreen({
-  cravings,
-  addCraving,
-  logSmoked,
-  onClose,
-}: {
-  cravings: Craving[];
-  addCraving: (outcome: 'survived' | 'smoked') => void;
-  logSmoked: (sixths: number) => void;
-  onClose: () => void;
-}) {
+export function SosScreen() {
+  const { data, addCraving, addEntry } = useApp();
+  const cravings = data.cravings;
+  const nav = useNav();
   const [phase, setPhase] = useState<Phase>('idle');
   const [left, setLeft] = useState(TOTAL);
   const [outcome, setOutcome] = useState<'survived' | 'smoked'>('survived');
@@ -49,7 +43,7 @@ export function SosScreen({
   const finishSmoked = (sixths: number) => {
     setOutcome('smoked');
     addCraving('smoked');
-    logSmoked(sixths);
+    addEntry(sixths);
     setPhase('result');
   };
 
@@ -91,7 +85,7 @@ export function SosScreen({
           onPress={() => {
             // leaving mid-countdown abandons the craving without judging it
             stopTimer();
-            onClose();
+            nav.goBack();
           }}
           hitSlop={12}
         >
@@ -263,7 +257,7 @@ export function SosScreen({
         <ResultView
           outcome={outcome}
           weeklySurvived={weeklySurvived}
-          onDone={() => setPhase('idle')}
+          onDone={() => nav.goBack()}
         />
       )}
     </View>

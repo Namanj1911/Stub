@@ -23,12 +23,15 @@ without discussion.
 - [x] **SOS: "I smoked it anyway" asks how much** (1 / ½ / ⅓) instead of
   silently logging a full cigarette. *(#2)* — **done 2026-07-16**: picker
   phase pauses the timer; "never mind" returns to idle without logging.
-- [ ] **Adopt react-navigation** (bottom tabs + native stack). Replaces
+- [x] **Adopt react-navigation** (bottom tabs + native stack). Replaces
   hand-rolled conditional-render navigation (Backfill, NicotineDB); gives
   back-gestures. Target: 4 tabs (log · stats · goal · money), drill-ins as
-  stack screens. *(#1)*
-- [ ] **Real tab bar icons** per the 1a mockup's geometric tab marks
-  (circle / bars / diamond), not text-only labels. *(#4)*
+  stack screens. *(#1)* — **done 2026-07-16** (`feat/react-navigation`):
+  root native-stack (Tabs / Backfill / Nicotine / Sos), store shared via
+  `src/AppContext.tsx` instead of prop drilling, swipe-back works.
+- [x] **Real tab bar icons** per the 1a mockup's geometric tab marks
+  (square / circle / diamond + a coin for Money), not text-only labels.
+  *(#4)* — **done 2026-07-16**, same branch.
 - [ ] **Profile/settings screen** to edit count/day, brand, price, pace.
   **Blocked on a design decision:** baseline changes must be effective-dated
   (apply from today forward; history keeps old values) or money-saved and

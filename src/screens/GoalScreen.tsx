@@ -17,7 +17,7 @@ import {
   trailing7Totals,
   weeksToQuit,
 } from '../domain';
-import { Profile } from '../store';
+import { useApp, useProfile } from '../AppContext';
 import { color, font, radius } from '../theme';
 
 const PACES: { id: Pace; name: string; rate: string; desc: string }[] = [
@@ -28,15 +28,10 @@ const PACES: { id: Pace; name: string; rate: string; desc: string }[] = [
 
 const PACE_LABEL: Record<Pace, string> = { chill: '¼', steady: '½', beast: '1' };
 
-export function GoalScreen({
-  profile,
-  entries,
-  setPace,
-}: {
-  profile: Profile;
-  entries: Entry[];
-  setPace: (p: Pace) => void;
-}) {
+export function GoalScreen() {
+  const { data, setPace } = useApp();
+  const profile = useProfile();
+  const entries = data.entries;
   const now = Date.now();
   const todayKey = dayKey(now);
   const baseline = profile.countPerDay * 6;

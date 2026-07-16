@@ -6,22 +6,17 @@
 import React, { useState } from 'react';
 import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import Svg, { Defs, Ellipse, RadialGradient, Stop } from 'react-native-svg';
+import { useApp, useProfile } from '../AppContext';
 import { BRANDS } from '../brands';
-import { Entry, dayKey, entriesForDay, totalSixths } from '../domain';
-import { Profile } from '../store';
+import { dayKey, entriesForDay, totalSixths } from '../domain';
+import { useNav } from '../navigation';
 import { color, font, radius } from '../theme';
 
-export function NicotineScreen({
-  profile,
-  entries,
-  setBrandId,
-  onClose,
-}: {
-  profile: Profile;
-  entries: Entry[];
-  setBrandId: (id: string) => void;
-  onClose: () => void;
-}) {
+export function NicotineScreen() {
+  const { data, setBrandId } = useApp();
+  const profile = useProfile();
+  const entries = data.entries;
+  const nav = useNav();
   const [query, setQuery] = useState('');
 
   const brand = BRANDS.find((b) => b.id === profile.brandId);
@@ -50,7 +45,7 @@ export function NicotineScreen({
       keyboardShouldPersistTaps="handled"
     >
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-        <Pressable onPress={onClose} hitSlop={12}>
+        <Pressable onPress={() => nav.goBack()} hitSlop={12}>
           <Text style={{ fontSize: 18, color: color.neutral500 }}>←</Text>
         </Pressable>
         <Text style={{ fontFamily: font.medium, fontSize: 20, color: color.text }}>
