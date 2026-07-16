@@ -90,20 +90,19 @@ export function LogScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: color.bg }}>
       <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 100 }}>
-        {/* header */}
+        {/* header — the profile mark keeps the corner to itself; "last one"
+            sits under the wordmark like every other screen's subtitle */}
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
           <Text style={{ fontFamily: font.medium, fontSize: 22, color: color.text }}>
             stub<Text style={{ color: color.accent }}>.</Text>
           </Text>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-            {lastAt != null && (
-              <Text style={{ fontFamily: font.regular, fontSize: 12, color: color.neutral500 }}>
-                last one {fmtSince(lastAt, now)} ago
-              </Text>
-            )}
-            <ProfileButton />
-          </View>
+          <ProfileButton />
         </View>
+        {lastAt != null && (
+          <Text style={{ fontFamily: font.regular, fontSize: 12, color: color.neutral500, marginTop: 2 }}>
+            last one {fmtSince(lastAt, now)} ago
+          </Text>
+        )}
 
         {/* today count + budget (S3) */}
         <Text style={{ fontFamily: font.medium, fontSize: 64, color: color.text, marginTop: 24 }}>
