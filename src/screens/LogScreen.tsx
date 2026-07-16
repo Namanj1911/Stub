@@ -2,7 +2,7 @@
 
 import { Feather } from '@expo/vector-icons';
 import React, { useEffect, useRef, useState } from 'react';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { Animated, Easing, Pressable, ScrollView, Text, View } from 'react-native';
 import {
   budgetSixths,
   dayKey,
@@ -32,6 +32,25 @@ export function LogScreen() {
     const t = setInterval(() => setNow(Date.now()), 60_000);
     return () => clearInterval(t);
   }, []);
+
+  // SOS halo pulse — a ring breathes outward every ~2s
+  const pulse = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulse, {
+          toValue: 1,
+          duration: 1400,
+          easing: Easing.out(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.delay(600),
+        Animated.timing(pulse, { toValue: 0, duration: 0, useNativeDriver: true }),
+      ]),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [pulse]);
   useEffect(() => () => { if (toastTimer.current) clearTimeout(toastTimer.current); }, []);
 
   const todayKey = dayKey(now);
@@ -255,6 +274,20 @@ export function LogScreen() {
 
       {/* floating craving SOS button (S20 entry point) — deliberately breaks
           theme: an emergency control has to look like one */}
+      <Animated.View
+        pointerEvents="none"
+        style={{
+          position: 'absolute',
+          right: 20,
+          bottom: 24,
+          width: 64,
+          height: 64,
+          borderRadius: 32,
+          backgroundColor: color.sos,
+          opacity: pulse.interpolate({ inputRange: [0, 1], outputRange: [0.35, 0] }),
+          transform: [{ scale: pulse.interpolate({ inputRange: [0, 1], outputRange: [1, 1.5] }) }],
+        }}
+      />
       <Pressable
         onPress={() => nav.navigate('Sos')}
         style={({ pressed }) => ({
