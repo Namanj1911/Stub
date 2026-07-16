@@ -18,6 +18,7 @@ import { GoalScreen } from './src/screens/GoalScreen';
 import { LogScreen } from './src/screens/LogScreen';
 import { MoneyScreen } from './src/screens/MoneyScreen';
 import { NicotineScreen } from './src/screens/NicotineScreen';
+import { ProfileScreen } from './src/screens/ProfileScreen';
 import { SetupScreen } from './src/screens/SetupScreen';
 import { SosScreen } from './src/screens/SosScreen';
 import { StatsScreen } from './src/screens/StatsScreen';
@@ -129,6 +130,7 @@ export default function App() {
                 <Stack.Screen name="Backfill" component={BackfillScreen} />
                 <Stack.Screen name="Nicotine" component={NicotineScreen} />
                 <Stack.Screen name="Sos" component={SosScreen} />
+                <Stack.Screen name="Profile" component={ProfileScreen} />
               </Stack.Navigator>
             </NavigationContainer>
           </SafeAreaView>

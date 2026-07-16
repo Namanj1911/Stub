@@ -4,16 +4,21 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Entry, Pace, dayKey } from './domain';
+import { BRANDS, BRAND_AVERAGES, DATASET_VERSION } from './brands';
+import { BaselineRecord, Entry, Pace, PriceRecord, dayKey } from './domain';
 
 export type Profile = {
+  // countPerDay / pricePerStick mirror the last history record (kept in sync
+  // by the mutators) so screens can read "current" without a lookup.
   countPerDay: number;
   pace: Pace;
   installDayKey: number;
-  // set by later onboarding steps (S13 full / S18 / S21)
-  brandId?: string;
-  pricePerStick?: number;
+  brandId?: string; // unset when the brand isn't in the dataset
+  customBrandName?: string; // set when the user named an unlisted brand
+  pricePerStick: number;
   triggers?: string[];
+  baselineHistory: BaselineRecord[]; // ascending fromDayKey, never empty
+  priceHistory: PriceRecord[]; // ascending fromTimestamp, never empty
 };
 
 export type Craving = {
@@ -26,11 +31,56 @@ export type AppData = {
   profile: Profile | null;
   entries: Entry[];
   cravings: Craving[];
+  priceDatasetVersion?: number;
 };
 
 const KEY = 'stub/v1';
 
 const EMPTY: AppData = { profile: null, entries: [], cravings: [] };
+
+// Older app versions stored flat countPerDay/pricePerStick; synthesize the
+// dated histories so existing installs keep an honest savings history. The
+// price seed uses fromTimestamp 0: the first known price applies to the
+// whole past (best guess beats ₹0). Pre-price profiles seed from their
+// brand's MRP, or the dataset average as a last resort — this retires the
+// Money tab's manual price stepper for everyone.
+function migrate(parsed: Partial<AppData>): AppData {
+  const data = { ...EMPTY, ...parsed };
+  const p = data.profile;
+  if (!p) return data;
+
+  const profile = { ...p };
+  if (!profile.baselineHistory?.length) {
+    profile.baselineHistory = [
+      { fromDayKey: profile.installDayKey, countPerDay: profile.countPerDay },
+    ];
+  }
+  if (!profile.priceHistory?.length) {
+    const brand = BRANDS.find((b) => b.id === profile.brandId);
+    const price =
+      (profile.pricePerStick as number | undefined) ?? brand?.price ?? BRAND_AVERAGES.price;
+    profile.priceHistory = [
+      { fromTimestamp: 0, pricePerStick: price, brandId: profile.brandId },
+    ];
+    profile.pricePerStick = price;
+  }
+
+  // A dataset MRP revision (shipped in an app update) re-prices the user's
+  // brand from now — never retroactively. No-op when the price already
+  // matches, so an unpersisted migration can't append twice.
+  if ((data.priceDatasetVersion ?? 0) < DATASET_VERSION) {
+    const brand = BRANDS.find((b) => b.id === profile.brandId);
+    if (brand && brand.price !== profile.pricePerStick) {
+      profile.priceHistory = [
+        ...profile.priceHistory,
+        { fromTimestamp: Date.now(), pricePerStick: brand.price, brandId: brand.id },
+      ];
+      profile.pricePerStick = brand.price;
+    }
+  }
+
+  return { ...data, profile, priceDatasetVersion: DATASET_VERSION };
+}
 
 export function useAppData() {
   const [data, setData] = useState<AppData>(EMPTY);
@@ -41,8 +91,7 @@ export function useAppData() {
   useEffect(() => {
     AsyncStorage.getItem(KEY)
       .then((raw) => {
-        // spread over EMPTY so data saved by older app versions gains new fields
-        if (raw) setData({ ...EMPTY, ...(JSON.parse(raw) as Partial<AppData>) });
+        if (raw) setData(migrate(JSON.parse(raw) as Partial<AppData>));
       })
       .catch(() => {}) // corrupt/missing store — start fresh rather than crash
       .finally(() => setLoaded(true));
@@ -61,14 +110,20 @@ export function useAppData() {
       countPerDay: number;
       pace: Pace;
       brandId?: string;
-      pricePerStick?: number;
+      pricePerStick: number;
       triggers?: string[];
     }) => {
+      const installDayKey = dayKey(Date.now());
       update((d) => ({
         ...d,
+        priceDatasetVersion: DATASET_VERSION,
         profile: {
           ...input,
-          installDayKey: dayKey(Date.now()),
+          installDayKey,
+          baselineHistory: [{ fromDayKey: installDayKey, countPerDay: input.countPerDay }],
+          priceHistory: [
+            { fromTimestamp: 0, pricePerStick: input.pricePerStick, brandId: input.brandId },
+          ],
         },
       }));
     },
@@ -87,18 +142,67 @@ export function useAppData() {
     [update],
   );
 
-  const setBrandId = useCallback(
-    (brandId: string) => {
-      update((d) => (d.profile ? { ...d, profile: { ...d.profile, brandId } } : d));
+  // Baseline edits are effective-dated at day granularity: today forward gets
+  // the new number, history keeps its old one. Same-day edits collapse (last
+  // write wins), and setting the value back to what was already in effect
+  // leaves no record at all.
+  const setCountPerDay = useCallback(
+    (countPerDay: number) => {
+      update((d) => {
+        if (!d.profile) return d;
+        const today = dayKey(Date.now());
+        const history = d.profile.baselineHistory.filter((r) => r.fromDayKey !== today);
+        // history is empty when today's record was the seed (install-day edit)
+        if (!history.length || history[history.length - 1].countPerDay !== countPerDay) {
+          history.push({ fromDayKey: today, countPerDay });
+        }
+        return { ...d, profile: { ...d.profile, countPerDay, baselineHistory: history } };
+      });
     },
     [update],
   );
 
-  const setPricePerStick = useCallback(
-    (pricePerStick: number) => {
-      update((d) =>
-        d.profile ? { ...d, profile: { ...d.profile, pricePerStick } } : d,
-      );
+  // Brand switches re-price from this moment (BACKLOG P1): entries logged
+  // before keep the old price. Dithering in the picker doesn't pile up
+  // records — a same-day record that no entry was valued against is replaced
+  // in place (the seed record is always preserved).
+  const switchBrand = useCallback(
+    (input: { brandId?: string; customBrandName?: string; pricePerStick: number }) => {
+      update((d) => {
+        const p = d.profile;
+        if (!p) return d;
+        if (
+          input.brandId === p.brandId &&
+          input.customBrandName === p.customBrandName &&
+          input.pricePerStick === p.pricePerStick
+        ) {
+          return d;
+        }
+        const now = Date.now();
+        const record: PriceRecord = {
+          fromTimestamp: now,
+          pricePerStick: input.pricePerStick,
+          brandId: input.brandId,
+        };
+        const last = p.priceHistory[p.priceHistory.length - 1];
+        const lastUnused =
+          p.priceHistory.length > 1 &&
+          dayKey(last.fromTimestamp) === dayKey(now) &&
+          !d.entries.some((e) => e.timestamp >= last.fromTimestamp);
+        const priceHistory = lastUnused
+          ? [...p.priceHistory.slice(0, -1), record]
+          : [...p.priceHistory, record];
+        return {
+          ...d,
+          profile: {
+            ...p,
+            brandId: input.brandId,
+            customBrandName: input.customBrandName,
+            pricePerStick: input.pricePerStick,
+            priceHistory,
+          },
+        };
+      });
     },
     [update],
   );
@@ -144,6 +248,12 @@ export function useAppData() {
     [update],
   );
 
+  // The one thing we can't undo — wipes storage and returns to onboarding.
+  const resetAll = useCallback(() => {
+    AsyncStorage.removeItem(KEY).catch(() => {});
+    setData(EMPTY);
+  }, []);
+
   return {
     data,
     loaded,
@@ -153,8 +263,9 @@ export function useAppData() {
     editEntry,
     removeEntry,
     addCraving,
-    setBrandId,
+    setCountPerDay,
+    switchBrand,
     setPace,
-    setPricePerStick,
+    resetAll,
   };
 }

@@ -13,6 +13,12 @@ const TABLE = {
   backfillZero: 'Add zero? Bold strategy. Tap an amount first.',
   moneyBehind:
     "You're smoking above your baseline, so this is costing you extra. Goa is drifting further away, just so you know.",
+  baselineNote: 'Applies from today — your history keeps its old numbers.',
+  resetTitle: 'Burn it all down?',
+  resetBody:
+    "Every log, craving and rupee saved — gone. This is the one thing here we can't undo.",
+  resetConfirm: 'Reset everything',
+  exportNote: 'Your data lives only on this phone. Export it somewhere safe once in a while.',
 } as const satisfies Record<string, string>;
 
 export type StringKey = keyof typeof TABLE;
@@ -84,6 +90,27 @@ export function insightCopy(
     case 'newUser':
       return `Not enough data to roast you properly yet. A week of honest logging fixes that.`;
   }
+}
+
+// Brand-switch roast (BACKLOG P1): the app noticed, and has opinions.
+export function brandSwitchRoast(
+  prev: { nicotineMg: number; estimated: boolean } | null,
+  next: { label: string; nicotineMg: number; estimated: boolean },
+): string {
+  if (next.estimated) {
+    return `No lab data for ${next.label}, so we'll assume it's average. Statistically, it is.`;
+  }
+  if (!prev || prev.estimated) {
+    return `${next.label} it is. Now the nicotine math is real, not average.`;
+  }
+  const delta = Math.round(((next.nicotineMg - prev.nicotineMg) / prev.nicotineMg) * 100);
+  if (delta > 5) {
+    return `${next.label} packs ${delta}% more nicotine per stick. Bold choice for someone quitting.`;
+  }
+  if (delta < -5) {
+    return `${Math.abs(delta)}% less nicotine per stick. Sneaky downgrade — we respect it.`;
+  }
+  return 'Same nicotine, different wrapper. A lateral move, but noted.';
 }
 
 // Onboarding reaction card (parameterised, so kept as a function)

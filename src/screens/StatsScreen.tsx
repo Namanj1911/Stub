@@ -4,7 +4,7 @@
 import React, { useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
-import { Entry, budgetSixths, dayKey, entriesForDay, frac, totalSixths } from '../domain';
+import { Entry, baselineSixthsFor, budgetSixths, dayKey, entriesForDay, frac, totalSixths } from '../domain';
 import {
   Bar,
   dayBars,
@@ -31,7 +31,8 @@ export function StatsScreen() {
 
   const now = Date.now();
   const todayKey = dayKey(now);
-  const baseline = profile.countPerDay * 6;
+  // budget's pre-install fallback uses the onboarding baseline (first record)
+  const baseline = baselineSixthsFor(profile.baselineHistory, profile.installDayKey);
   const budget = budgetSixths(entries, todayKey, profile.installDayKey, baseline);
   const today = entriesForDay(entries, todayKey);
   const total = totalSixths(today);

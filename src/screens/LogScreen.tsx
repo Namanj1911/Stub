@@ -5,6 +5,7 @@ import * as Haptics from 'expo-haptics';
 import React, { useEffect, useRef, useState } from 'react';
 import { Animated, Easing, Pressable, ScrollView, Text, View } from 'react-native';
 import {
+  baselineSixthsFor,
   budgetSixths,
   dayKey,
   entriesForDay,
@@ -57,7 +58,12 @@ export function LogScreen() {
   const todayKey = dayKey(now);
   const today = entriesForDay(entries, todayKey).sort((a, b) => a.timestamp - b.timestamp);
   const total = totalSixths(today);
-  const budget = budgetSixths(entries, todayKey, profile.installDayKey, profile.countPerDay * 6);
+  const budget = budgetSixths(
+    entries,
+    todayKey,
+    profile.installDayKey,
+    baselineSixthsFor(profile.baselineHistory, profile.installDayKey),
+  );
   const left = budget - total;
   // max timestamp, not last array element — backfills append out of
   // chronological order. ("undo last" stays last-array-element by design:

@@ -11,6 +11,75 @@ export type Entry = {
 
 export type Pace = 'chill' | 'steady' | 'beast';
 
+// Effective-dated profile facts (BACKLOG P1, settled 2026-07-17). Baseline
+// edits apply from a day key; brand/price switches apply from a wall-clock
+// moment. History is append-only so money-saved never rewrites the past.
+export type BaselineRecord = { fromDayKey: number; countPerDay: number };
+export type PriceRecord = {
+  fromTimestamp: number; // epoch ms; the seed record uses 0 (retroactive)
+  pricePerStick: number;
+  brandId?: string; // unset for custom / "something else" brands
+};
+
+// Both lookups fall back to the first record for moments before any record —
+// the onboarding value is the best guess for the pre-install past.
+export function baselineSixthsFor(history: BaselineRecord[], key: number): number {
+  let current = history[0];
+  for (const r of history) {
+    if (r.fromDayKey <= key) current = r;
+    else break;
+  }
+  return current.countPerDay * 6;
+}
+
+export function priceAt(history: PriceRecord[], timestamp: number): number {
+  let current = history[0];
+  for (const r of history) {
+    if (r.fromTimestamp <= timestamp) current = r;
+    else break;
+  }
+  return current.pricePerStick;
+}
+
+// Price in effect at the end of a day: the last record that took effect on or
+// before that day. Avoided smokes have no timestamp, so a day's worth of
+// not-smoking is valued at what a stick cost by that evening.
+function priceAtEndOfDay(history: PriceRecord[], key: number): number {
+  let current = history[0];
+  for (const r of history) {
+    if (dayKey(r.fromTimestamp) <= key) current = r;
+    else break;
+  }
+  return current.pricePerStick;
+}
+
+// Money saved (S21): per day, (that day's baseline − actual) valued in ₹.
+// Smoked entries are valued at the price in effect when they were lit
+// (backfill-safe); avoided smokes at the day's ending price. Today counts
+// as it stands.
+export function computeSavings(
+  entries: Entry[],
+  baselineHistory: BaselineRecord[],
+  priceHistory: PriceRecord[],
+  installDayKey: number,
+  todayKey: number,
+): { saved: number; savedWeek: number } {
+  let saved = 0;
+  let savedWeek = 0;
+  for (let k = installDayKey; k <= todayKey; k++) {
+    const actualCost = entriesForDay(entries, k).reduce(
+      (a, e) => a + (e.sixths * priceAt(priceHistory, e.timestamp)) / 6,
+      0,
+    );
+    const counterfactualCost =
+      (baselineSixthsFor(baselineHistory, k) * priceAtEndOfDay(priceHistory, k)) / 6;
+    const daySaved = counterfactualCost - actualCost;
+    saved += daySaved;
+    if (k > todayKey - 7) savedWeek += daySaved;
+  }
+  return { saved, savedWeek };
+}
+
 // sixths/day reduced per week
 export const PACE_RATE: Record<Pace, number> = { chill: 1.5, steady: 3, beast: 6 };
 

@@ -1,18 +1,20 @@
 // Money saved — S21, per the 2f mockup. Savings = (baseline − actual) × stick
-// price, updated daily. Users who set up before the price step existed get an
-// inline price stepper instead of silent wrong math.
+// price, valued through the dated histories (BACKLOG P1): each smoke at the
+// price in effect when it was lit, each day's avoided smokes at that day's
+// baseline and ending price. Deliberately approximate — pack MRP, never the
+// user's street price.
 
 import React from 'react';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { ScrollView, Text, View } from 'react-native';
 import Svg, { Defs, Ellipse, RadialGradient, Stop } from 'react-native-svg';
-import { BRANDS } from '../brands';
+import { DATASET_AS_OF, brandInfo } from '../brands';
 import {
   PACE_RATE,
+  baselineSixthsFor,
   budgetSixths,
+  computeSavings,
   dayKey,
-  entriesForDay,
   quitDate,
-  totalSixths,
   weeksToQuit,
 } from '../domain';
 import { copy } from '../strings';
@@ -26,27 +28,23 @@ const inr = (n: number) => Math.abs(Math.round(n)).toLocaleString('en-IN');
 const inrSigned = (n: number) => (n < 0 ? '−₹' : '₹') + inr(n);
 
 export function MoneyScreen() {
-  const { data, setPricePerStick } = useApp();
+  const { data } = useApp();
   const profile = useProfile();
   const entries = data.entries;
-  if (profile.pricePerStick == null) {
-    return <SetPrice setPricePerStick={setPricePerStick} />;
-  }
 
-  const price = profile.pricePerStick;
+  const price = profile.pricePerStick; // current, for projections + header
   const now = Date.now();
   const todayKey = dayKey(now);
-  const baseline = profile.countPerDay * 6; // sixths/day
+  const baseline = profile.countPerDay * 6; // current baseline, for projections
   const perSixth = price / 6;
 
-  // cumulative daily savings since install (today counts as it stands)
-  let saved = 0;
-  let savedWeek = 0;
-  for (let k = profile.installDayKey; k <= todayKey; k++) {
-    const daySaved = (baseline - totalSixths(entriesForDay(entries, k))) * perSixth;
-    saved += daySaved;
-    if (k > todayKey - 7) savedWeek += daySaved;
-  }
+  const { saved, savedWeek } = computeSavings(
+    entries,
+    profile.baselineHistory,
+    profile.priceHistory,
+    profile.installDayKey,
+    todayKey,
+  );
   const daysIn = todayKey - profile.installDayKey + 1;
 
   // Goa flight goal
@@ -60,8 +58,14 @@ export function MoneyScreen() {
         ? `${inrSigned(saved)} of ₹${inr(GOA_FLIGHT)} — about ${weeksAway} week${weeksAway === 1 ? '' : 's'} away at this pace.`
         : `${inrSigned(saved)} of ₹${inr(GOA_FLIGHT)}.`;
 
-  // projections: budget tapers weekly from here to zero
-  const budget = budgetSixths(entries, todayKey, profile.installDayKey, baseline);
+  // projections: budget tapers weekly from here to zero. The budget's
+  // pre-install fallback is the onboarding baseline, not today's.
+  const budget = budgetSixths(
+    entries,
+    todayKey,
+    profile.installDayKey,
+    baselineSixthsFor(profile.baselineHistory, profile.installDayKey),
+  );
   const rate = PACE_RATE[profile.pace];
   const weeks = weeksToQuit(budget, profile.pace);
   let byQuitDay = saved;
@@ -74,7 +78,7 @@ export function MoneyScreen() {
   });
   const oneYear = profile.countPerDay * price * 365;
   const flights = Math.floor(oneYear / GOA_FLIGHT);
-  const brand = BRANDS.find((b) => b.id === profile.brandId);
+  const brand = brandInfo(profile.brandId, profile.customBrandName);
 
   return (
     <ScrollView
@@ -86,7 +90,7 @@ export function MoneyScreen() {
       </Text>
       <Text style={{ fontFamily: font.regular, fontSize: 13, color: color.neutral500, marginTop: 2 }}>
         vs your {profile.countPerDay}-a-day baseline
-        {brand ? ` · ${brand.name} ${brand.variant} at ₹${price}` : ` · ₹${price} a stick`}
+        {brand ? ` · ${brand.label} at ${brand.estimated ? '~' : ''}₹${price}` : ` · ~₹${price} a stick`}
       </Text>
 
       {/* hero card */}
@@ -215,7 +219,9 @@ export function MoneyScreen() {
       </View>
 
       <Text style={{ fontFamily: font.regular, fontSize: 11, color: color.neutral600, marginTop: 24 }}>
-        Savings = (baseline − actual) × your stick price, updated daily.
+        Savings = (baseline − actual) × your brand's MRP per stick, updated daily. Baseline and
+        brand changes count from when you made them — history keeps its old numbers. MRPs as of{' '}
+        {DATASET_AS_OF}.
       </Text>
     </ScrollView>
   );
@@ -237,78 +243,5 @@ function ProjectionRow({ value, children }: { value: string; children: React.Rea
       {children}
       <Text style={{ fontFamily: font.medium, fontSize: 15, color: color.text }}>{value}</Text>
     </View>
-  );
-}
-
-// One-time prompt for profiles created before onboarding collected price.
-function SetPrice({ setPricePerStick }: { setPricePerStick: (p: number) => void }) {
-  const [price, setPrice] = React.useState(18);
-  return (
-    <View style={{ flex: 1, backgroundColor: color.bg, padding: 22 }}>
-      <Text style={{ fontFamily: font.medium, fontSize: 30, lineHeight: 37, color: color.text, marginTop: 36 }}>
-        What's one stick{'\n'}costing you?
-      </Text>
-      <Text style={{ fontFamily: font.regular, fontSize: 14, lineHeight: 20, color: color.neutral500, marginTop: 10 }}>
-        Loose or from a pack — the average price you actually pay. This unlocks your savings.
-      </Text>
-      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 26, marginTop: 38 }}>
-        <PriceButton label="−" onPress={() => setPrice((p) => Math.max(5, p - 1))} />
-        <View style={{ alignItems: 'center', minWidth: 130 }}>
-          <Text style={{ fontFamily: font.medium, fontSize: 64, color: color.text }}>₹{price}</Text>
-          <Text
-            style={{
-              fontFamily: font.regular,
-              fontSize: 12,
-              letterSpacing: 1.5,
-              textTransform: 'uppercase',
-              color: color.neutral500,
-              marginTop: 6,
-            }}
-          >
-            per stick
-          </Text>
-        </View>
-        <PriceButton label="+" onPress={() => setPrice((p) => Math.min(60, p + 1))} />
-      </View>
-      <Pressable
-        onPress={() => setPricePerStick(price)}
-        style={({ pressed }) => ({
-          backgroundColor: color.accent,
-          borderRadius: radius.md,
-          padding: 16,
-          alignItems: 'center',
-          marginTop: 38,
-          transform: [{ scale: pressed ? 0.98 : 1 }],
-        })}
-      >
-        <Text style={{ fontFamily: font.medium, fontSize: 15, color: color.bg }}>
-          Show me the money
-        </Text>
-      </Pressable>
-    </View>
-  );
-}
-
-function PriceButton({ label, onPress }: { label: string; onPress: () => void }) {
-  return (
-    <Pressable
-      onPress={onPress}
-      hitSlop={8}
-      style={({ pressed }) => ({
-        width: 52,
-        height: 52,
-        borderRadius: 26,
-        borderWidth: 1,
-        borderColor: pressed ? color.accent : color.neutral800,
-        backgroundColor: color.surface,
-        alignItems: 'center',
-        justifyContent: 'center',
-        transform: [{ scale: pressed ? 0.94 : 1 }],
-      })}
-    >
-      <Text style={{ fontFamily: font.regular, fontSize: 24, color: color.text, lineHeight: 28 }}>
-        {label}
-      </Text>
-    </Pressable>
   );
 }
