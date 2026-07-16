@@ -9,6 +9,7 @@ export type RootStackParamList = {
   Backfill: undefined;
   Nicotine: undefined;
   Sos: undefined;
+  Profile: undefined;
 };
 
 export type TabParamList = {

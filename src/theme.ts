@@ -37,11 +37,18 @@ export const color = {
   accentTint10: 'rgba(145, 132, 217, 0.10)',
   accentTint12: 'rgba(145, 132, 217, 0.12)',
 
-  // Deliberate exception to Nocturne (which has no alert colors): the craving
-  // SOS button must read as an emergency control, so it breaks theme on
-  // purpose. Use nowhere else.
+  // Deliberate exceptions to Nocturne (which has no alert colors). Two are
+  // sanctioned; add no others:
+  // 1. The craving SOS button must read as an emergency control.
   sos: '#e04a3f',
   sosText: '#1c0f0d',
+  // 2. Destructive data actions (profile reset) wear a quiet blood-red so
+  //    they register as "not a casual tap" without shouting for attention.
+  //    Danger affordances only — never for emphasis or decoration.
+  danger: '#b03a30',
+  dangerBorder: 'rgba(176, 58, 48, 0.55)',
+  dangerText: '#cf7a71',
+  dangerTint8: 'rgba(176, 58, 48, 0.08)',
 } as const;
 
 export const space = {

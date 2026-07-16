@@ -1,25 +1,29 @@
 // Nicotine database — S18 + S19, per the 2d mockup. Weekly intake computed
 // from your logs × your brand's per-stick numbers; searchable brand list.
-// Tapping a row sets it as "yours" ("Change it anytime", per onboarding).
+// Tapping a row switches your brand — and re-prices your money math from
+// this moment (BACKLOG P1): old smokes keep their old price. Brands we don't
+// know can be added by name; they get dataset averages, marked ~estimated.
 // Brand data is placeholder — production needs a vetted dataset.
 
 import React, { useState } from 'react';
 import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import Svg, { Defs, Ellipse, RadialGradient, Stop } from 'react-native-svg';
 import { useApp, useProfile } from '../AppContext';
-import { BRANDS } from '../brands';
+import { BRANDS, BRAND_AVERAGES, brandInfo } from '../brands';
 import { dayKey, entriesForDay, totalSixths } from '../domain';
 import { useNav } from '../navigation';
+import { brandSwitchRoast } from '../strings';
 import { color, font, radius } from '../theme';
 
 export function NicotineScreen() {
-  const { data, setBrandId } = useApp();
+  const { data, switchBrand } = useApp();
   const profile = useProfile();
   const entries = data.entries;
   const nav = useNav();
   const [query, setQuery] = useState('');
+  const [roast, setRoast] = useState<string | null>(null);
 
-  const brand = BRANDS.find((b) => b.id === profile.brandId);
+  const yourBrand = brandInfo(profile.brandId, profile.customBrandName);
   const todayKey = dayKey(Date.now());
   const weekSixths = (offsetWeeks: number) => {
     let s = 0;
@@ -30,13 +34,21 @@ export function NicotineScreen() {
   };
   const thisWeek = weekSixths(0);
   const lastWeek = weekSixths(1);
-  const nicotine = brand ? (thisWeek / 6) * brand.nicotineMg : null;
-  const tar = brand ? (thisWeek / 6) * brand.tarMg : null;
+  const nicotine = yourBrand ? (thisWeek / 6) * yourBrand.nicotineMg : null;
+  const tar = yourBrand ? (thisWeek / 6) * yourBrand.tarMg : null;
   const delta = lastWeek > 0 ? Math.round(((thisWeek - lastWeek) / lastWeek) * 100) : null;
 
+  const trimmed = query.trim();
   const results = BRANDS.filter((b) =>
-    `${b.name} ${b.variant}`.toLowerCase().includes(query.trim().toLowerCase()),
+    `${b.name} ${b.variant}`.toLowerCase().includes(trimmed.toLowerCase()),
   );
+
+  const pick = (input: { brandId?: string; customBrandName?: string; pricePerStick: number }) => {
+    const next = brandInfo(input.brandId, input.customBrandName);
+    if (!next) return;
+    setRoast(brandSwitchRoast(yourBrand, next));
+    switchBrand(input);
+  };
 
   return (
     <ScrollView
@@ -45,7 +57,7 @@ export function NicotineScreen() {
       keyboardShouldPersistTaps="handled"
     >
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-        <Pressable onPress={() => nav.goBack()} hitSlop={12}>
+        <Pressable onPress={() => nav.goBack()} hitSlop={12} accessibilityLabel="Back">
           <Text style={{ fontSize: 18, color: color.neutral500 }}>←</Text>
         </Pressable>
         <Text style={{ fontFamily: font.medium, fontSize: 20, color: color.text }}>
@@ -99,6 +111,11 @@ export function NicotineScreen() {
               {delta == null ? 'first week of data' : delta <= 0 ? `↓ ${Math.abs(delta)}% vs last week` : `↑ ${delta}% vs last week`}
               {tar != null ? ` · plus ~${Math.round(tar)} mg of tar` : ''}
             </Text>
+            {yourBrand?.estimated && (
+              <Text style={{ fontFamily: font.regular, fontSize: 12, color: color.neutral400, marginTop: 6 }}>
+                ~ dataset averages — no lab data for {yourBrand.label}
+              </Text>
+            )}
           </>
         ) : (
           <Text style={{ fontFamily: font.regular, fontSize: 13, color: color.accent200, marginTop: 8, lineHeight: 19 }}>
@@ -107,12 +124,32 @@ export function NicotineScreen() {
         )}
       </View>
 
+      {/* brand-switch roast */}
+      {roast && (
+        <View
+          style={{
+            borderWidth: 1,
+            borderColor: color.accent,
+            backgroundColor: color.accentTint10,
+            borderRadius: radius.md,
+            paddingVertical: 12,
+            paddingHorizontal: 14,
+            marginTop: 12,
+          }}
+        >
+          <Text style={{ fontFamily: font.regular, fontSize: 13, color: color.accent200, lineHeight: 19 }}>
+            {roast}
+          </Text>
+        </View>
+      )}
+
       {/* search (S18) */}
       <TextInput
         value={query}
         onChangeText={setQuery}
         placeholder="Search brands…"
         placeholderTextColor={color.neutral600}
+        accessibilityLabel="Search brands"
         style={{
           backgroundColor: color.surface,
           borderWidth: 1,
@@ -129,81 +166,193 @@ export function NicotineScreen() {
 
       {/* brand rows */}
       <View style={{ gap: 8, marginTop: 12 }}>
-        {results.map((b) => {
-          const yours = profile.brandId === b.id;
-          return (
-            <Pressable
-              key={b.id}
-              onPress={() => setBrandId(b.id)}
-              style={({ pressed }) => ({
-                flexDirection: 'row',
-                alignItems: 'center',
-                borderWidth: 1,
-                borderColor: yours ? color.accent : color.neutral800,
-                backgroundColor: pressed ? color.accentTint10 : color.surface,
-                borderRadius: radius.md,
-                paddingVertical: 13,
-                paddingHorizontal: 16,
-                gap: 10,
-              })}
-            >
-              <View style={{ flex: 1 }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                  <Text style={{ fontFamily: font.medium, fontSize: 14, color: color.text }}>
-                    {b.name}
-                  </Text>
-                  {yours && (
-                    <View
-                      style={{
-                        borderWidth: 1,
-                        borderColor: color.accent,
-                        borderRadius: radius.sm,
-                        paddingHorizontal: 6,
-                        paddingVertical: 1,
-                      }}
-                    >
-                      <Text
-                        style={{
-                          fontFamily: font.medium,
-                          fontSize: 10,
-                          letterSpacing: 0.5,
-                          textTransform: 'uppercase',
-                          color: color.accent300,
-                        }}
-                      >
-                        yours
-                      </Text>
-                    </View>
-                  )}
-                </View>
-                <Text
-                  style={{ fontFamily: font.regular, fontSize: 12, color: color.neutral500, marginTop: 3 }}
-                  numberOfLines={1}
-                >
-                  {b.variant} · ₹{b.price}/stick
-                </Text>
-              </View>
-              <View style={{ alignItems: 'flex-end' }}>
-                <Text style={{ fontFamily: font.medium, fontSize: 13, color: color.text }} numberOfLines={1}>
-                  {b.nicotineMg.toFixed(1)} mg nic
-                </Text>
-                <Text style={{ fontFamily: font.regular, fontSize: 12, color: color.neutral500, marginTop: 3 }} numberOfLines={1}>
-                  {b.tarMg} mg tar
-                </Text>
-              </View>
-            </Pressable>
-          );
-        })}
-        {results.length === 0 && (
-          <Text style={{ fontFamily: font.regular, fontSize: 13, color: color.neutral600, marginTop: 8 }}>
-            No brands match "{query.trim()}".
-          </Text>
+        {profile.customBrandName && !trimmed && (
+          <BrandRow
+            yours
+            name={profile.customBrandName}
+            sub={`your entry · ~₹${profile.pricePerStick}/stick`}
+            right={`~${BRAND_AVERAGES.nicotineMg.toFixed(1)} mg nic`}
+            rightSub={`~${BRAND_AVERAGES.tarMg} mg tar`}
+            onPress={() => {}}
+          />
+        )}
+        {results.map((b) => (
+          <BrandRow
+            key={b.id}
+            yours={profile.brandId === b.id}
+            name={b.name}
+            sub={`${b.variant} · ₹${b.price}/stick MRP`}
+            right={`${b.nicotineMg.toFixed(1)} mg nic`}
+            rightSub={`${b.tarMg} mg tar`}
+            onPress={() => {
+              if (profile.brandId !== b.id) pick({ brandId: b.id, pricePerStick: b.price });
+            }}
+          />
+        ))}
+        {results.length === 0 && trimmed.length > 0 && (
+          <AddCustomBrand
+            name={trimmed}
+            onAdd={(pricePerStick) => {
+              pick({ customBrandName: trimmed, pricePerStick });
+              setQuery('');
+            }}
+          />
         )}
       </View>
 
       <Text style={{ fontFamily: font.regular, fontSize: 11, color: color.neutral600, marginTop: 20 }}>
-        Placeholder figures for reference only — not medical guidance.
+        Placeholder figures for reference only — not medical guidance. Prices are pack MRP.
       </Text>
     </ScrollView>
+  );
+}
+
+function BrandRow({
+  yours,
+  name,
+  sub,
+  right,
+  rightSub,
+  onPress,
+}: {
+  yours: boolean;
+  name: string;
+  sub: string;
+  right: string;
+  rightSub: string;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityLabel={yours ? `${name}, your brand` : `Switch to ${name}`}
+      style={({ pressed }) => ({
+        flexDirection: 'row',
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: yours ? color.accent : color.neutral800,
+        backgroundColor: pressed ? color.accentTint10 : color.surface,
+        borderRadius: radius.md,
+        paddingVertical: 13,
+        paddingHorizontal: 16,
+        gap: 10,
+      })}
+    >
+      <View style={{ flex: 1 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <Text style={{ fontFamily: font.medium, fontSize: 14, color: color.text }}>{name}</Text>
+          {yours && (
+            <View
+              style={{
+                borderWidth: 1,
+                borderColor: color.accent,
+                borderRadius: radius.sm,
+                paddingHorizontal: 6,
+                paddingVertical: 1,
+              }}
+            >
+              <Text
+                style={{
+                  fontFamily: font.medium,
+                  fontSize: 10,
+                  letterSpacing: 0.5,
+                  textTransform: 'uppercase',
+                  color: color.accent300,
+                }}
+              >
+                yours
+              </Text>
+            </View>
+          )}
+        </View>
+        <Text
+          style={{ fontFamily: font.regular, fontSize: 12, color: color.neutral500, marginTop: 3 }}
+          numberOfLines={1}
+        >
+          {sub}
+        </Text>
+      </View>
+      <View style={{ alignItems: 'flex-end' }}>
+        <Text style={{ fontFamily: font.medium, fontSize: 13, color: color.text }} numberOfLines={1}>
+          {right}
+        </Text>
+        <Text style={{ fontFamily: font.regular, fontSize: 12, color: color.neutral500, marginTop: 3 }} numberOfLines={1}>
+          {rightSub}
+        </Text>
+      </View>
+    </Pressable>
+  );
+}
+
+// No match in the dataset: the user names their cigarette and sets what a
+// stick costs (the one place price is user-entered — we have nothing better).
+// Health numbers fall back to dataset averages, marked estimated.
+function AddCustomBrand({ name, onAdd }: { name: string; onAdd: (price: number) => void }) {
+  const [price, setPrice] = useState(BRAND_AVERAGES.price);
+  return (
+    <View
+      style={{
+        borderWidth: 1,
+        borderColor: color.neutral800,
+        backgroundColor: color.surface,
+        borderRadius: radius.md,
+        padding: 16,
+      }}
+    >
+      <Text style={{ fontFamily: font.medium, fontSize: 14, color: color.text }}>
+        No "{name}" in our list.
+      </Text>
+      <Text style={{ fontFamily: font.regular, fontSize: 12, color: color.neutral500, marginTop: 4, lineHeight: 17 }}>
+        Add it as your brand — nicotine and tar will use dataset averages (shown with ~) until we
+        know better. What does one stick cost?
+      </Text>
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 22, marginTop: 16 }}>
+        <MiniStepper label="−" onPress={() => setPrice((p) => Math.max(1, p - 1))} />
+        <Text style={{ fontFamily: font.medium, fontSize: 28, color: color.text, minWidth: 76, textAlign: 'center' }}>
+          ₹{price}
+        </Text>
+        <MiniStepper label="+" onPress={() => setPrice((p) => Math.min(99, p + 1))} />
+      </View>
+      <Pressable
+        onPress={() => onAdd(price)}
+        style={({ pressed }) => ({
+          backgroundColor: color.accent,
+          borderRadius: radius.md,
+          padding: 13,
+          alignItems: 'center',
+          marginTop: 16,
+          transform: [{ scale: pressed ? 0.98 : 1 }],
+        })}
+      >
+        <Text style={{ fontFamily: font.medium, fontSize: 14, color: color.bg }}>
+          Make "{name}" my brand
+        </Text>
+      </Pressable>
+    </View>
+  );
+}
+
+function MiniStepper({ label, onPress }: { label: string; onPress: () => void }) {
+  return (
+    <Pressable
+      onPress={onPress}
+      hitSlop={8}
+      accessibilityLabel={label === '−' ? 'Decrease price' : 'Increase price'}
+      style={({ pressed }) => ({
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        borderWidth: 1,
+        borderColor: pressed ? color.accent : color.neutral800,
+        backgroundColor: color.bg,
+        alignItems: 'center',
+        justifyContent: 'center',
+        transform: [{ scale: pressed ? 0.94 : 1 }],
+      })}
+    >
+      <Text style={{ fontFamily: font.regular, fontSize: 20, color: color.text, lineHeight: 24 }}>
+        {label}
+      </Text>
+    </Pressable>
   );
 }

@@ -4,7 +4,7 @@
 import React, { useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
-import { Entry, budgetSixths, dayKey, entriesForDay, frac, totalSixths } from '../domain';
+import { Entry, baselineSixthsFor, budgetSixths, dayKey, entriesForDay, frac, totalSixths } from '../domain';
 import {
   Bar,
   dayBars,
@@ -15,6 +15,7 @@ import {
   weekBars,
 } from '../stats';
 import { useApp, useProfile } from '../AppContext';
+import { ProfileButton } from '../ProfileButton';
 import { useNav } from '../navigation';
 import { insightCopy } from '../strings';
 import { color, font, radius } from '../theme';
@@ -31,7 +32,8 @@ export function StatsScreen() {
 
   const now = Date.now();
   const todayKey = dayKey(now);
-  const baseline = profile.countPerDay * 6;
+  // budget's pre-install fallback uses the onboarding baseline (first record)
+  const baseline = baselineSixthsFor(profile.baselineHistory, profile.installDayKey);
   const budget = budgetSixths(entries, todayKey, profile.installDayKey, baseline);
   const today = entriesForDay(entries, todayKey);
   const total = totalSixths(today);
@@ -64,9 +66,12 @@ export function StatsScreen() {
       style={{ flex: 1, backgroundColor: color.bg }}
       contentContainerStyle={{ padding: 20, paddingBottom: 40 }}
     >
-      <Text style={{ fontFamily: font.medium, fontSize: 22, color: color.text }}>
-        stats<Text style={{ color: color.accent }}>.</Text>
-      </Text>
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+        <Text style={{ fontFamily: font.medium, fontSize: 22, color: color.text }}>
+          stats<Text style={{ color: color.accent }}>.</Text>
+        </Text>
+        <ProfileButton />
+      </View>
 
       {/* segmented control (S5) */}
       <View style={{ flexDirection: 'row', gap: 8, marginTop: 18 }}>

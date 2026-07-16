@@ -6,9 +6,9 @@ import React from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import Svg, { Defs, Ellipse, RadialGradient, Stop } from 'react-native-svg';
 import {
-  Entry,
   PACE_RATE,
   Pace,
+  baselineSixthsFor,
   budgetSixths,
   dayKey,
   frac,
@@ -18,6 +18,7 @@ import {
   weeksToQuit,
 } from '../domain';
 import { useApp, useProfile } from '../AppContext';
+import { ProfileButton } from '../ProfileButton';
 import { color, font, radius } from '../theme';
 
 const PACES: { id: Pace; name: string; rate: string; desc: string }[] = [
@@ -34,7 +35,9 @@ export function GoalScreen() {
   const entries = data.entries;
   const now = Date.now();
   const todayKey = dayKey(now);
-  const baseline = profile.countPerDay * 6;
+  // Budget's pre-install fallback and quit-day progress measure against the
+  // onboarding baseline; profile edits only redate the money math.
+  const baseline = baselineSixthsFor(profile.baselineHistory, profile.installDayKey);
   const budget = budgetSixths(entries, todayKey, profile.installDayKey, baseline);
   const avg7 =
     trailing7Totals(entries, todayKey + 1, profile.installDayKey, baseline).reduce((a, b) => a + b, 0) / 7;
@@ -68,9 +71,12 @@ export function GoalScreen() {
       style={{ flex: 1, backgroundColor: color.bg }}
       contentContainerStyle={{ padding: 20, paddingBottom: 40 }}
     >
-      <Text style={{ fontFamily: font.medium, fontSize: 22, color: color.text }}>
-        goal<Text style={{ color: color.accent }}>.</Text>
-      </Text>
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+        <Text style={{ fontFamily: font.medium, fontSize: 22, color: color.text }}>
+          goal<Text style={{ color: color.accent }}>.</Text>
+        </Text>
+        <ProfileButton />
+      </View>
 
       {/* pace picker (S9) */}
       <Text style={{ fontFamily: font.medium, fontSize: 17, color: color.text, marginTop: 20 }}>

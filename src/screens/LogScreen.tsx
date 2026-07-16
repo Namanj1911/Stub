@@ -5,6 +5,7 @@ import * as Haptics from 'expo-haptics';
 import React, { useEffect, useRef, useState } from 'react';
 import { Animated, Easing, Pressable, ScrollView, Text, View } from 'react-native';
 import {
+  baselineSixthsFor,
   budgetSixths,
   dayKey,
   entriesForDay,
@@ -14,6 +15,7 @@ import {
   totalSixths,
 } from '../domain';
 import { useApp, useProfile } from '../AppContext';
+import { ProfileButton } from '../ProfileButton';
 import { useNav } from '../navigation';
 import { StringKey, copy } from '../strings';
 import { color, font, radius } from '../theme';
@@ -57,7 +59,12 @@ export function LogScreen() {
   const todayKey = dayKey(now);
   const today = entriesForDay(entries, todayKey).sort((a, b) => a.timestamp - b.timestamp);
   const total = totalSixths(today);
-  const budget = budgetSixths(entries, todayKey, profile.installDayKey, profile.countPerDay * 6);
+  const budget = budgetSixths(
+    entries,
+    todayKey,
+    profile.installDayKey,
+    baselineSixthsFor(profile.baselineHistory, profile.installDayKey),
+  );
   const left = budget - total;
   // max timestamp, not last array element — backfills append out of
   // chronological order. ("undo last" stays last-array-element by design:
@@ -83,20 +90,44 @@ export function LogScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: color.bg }}>
       <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 100 }}>
-        {/* header */}
-        <View style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' }}>
-          <Text style={{ fontFamily: font.medium, fontSize: 22, color: color.text }}>
+        {/* header — wordmark and profile mark only. 26 (vs 22 elsewhere) on
+            purpose: this is the app's front door, and the profile mark beside
+            it visually shrinks anything smaller */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Text style={{ fontFamily: font.medium, fontSize: 26, color: color.text }}>
             stub<Text style={{ color: color.accent }}>.</Text>
           </Text>
-          {lastAt != null && (
-            <Text style={{ fontFamily: font.regular, fontSize: 12, color: color.neutral500 }}>
-              last one {fmtSince(lastAt, now)} ago
-            </Text>
-          )}
+          <ProfileButton />
         </View>
 
+        {/* "last one" status chip — a pill captioning the count below it */}
+        {lastAt != null && (
+          <View
+            style={{
+              alignSelf: 'flex-start',
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 7,
+              backgroundColor: color.surface,
+              borderWidth: 1,
+              borderColor: color.neutral800,
+              borderRadius: radius.pill,
+              paddingVertical: 6,
+              paddingHorizontal: 13,
+              marginTop: 20,
+            }}
+          >
+            <Text style={{ fontSize: 12 }}>🚬</Text>
+            <Text style={{ fontFamily: font.regular, fontSize: 12, color: color.neutral400 }}>
+              last one {fmtSince(lastAt, now)} ago
+            </Text>
+          </View>
+        )}
+
         {/* today count + budget (S3) */}
-        <Text style={{ fontFamily: font.medium, fontSize: 64, color: color.text, marginTop: 24 }}>
+        <Text
+          style={{ fontFamily: font.medium, fontSize: 64, color: color.text, marginTop: lastAt != null ? 14 : 24 }}
+        >
           {frac(total)}
         </Text>
         <Text style={{ fontFamily: font.regular, fontSize: 13, color: color.neutral500, marginTop: 2 }}>

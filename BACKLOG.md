@@ -32,11 +32,45 @@ without discussion.
 - [x] **Real tab bar icons** per the 1a mockup's geometric tab marks
   (square / circle / diamond + a coin for Money), not text-only labels.
   *(#4)* — **done 2026-07-16**, same branch.
-- [ ] **Profile/settings screen** to edit count/day, brand, price, pace.
-  **Blocked on a design decision:** baseline changes must be effective-dated
-  (apply from today forward; history keeps old values) or money-saved and
-  budget history rewrite retroactively. Pace + price changes are safe today;
-  count is not. Design the dated-baseline storage first. *(#7)*
+- [x] **Profile/settings screen** — edit count/day, brand, pace. Design
+  settled 2026-07-17 — **built 2026-07-17** (typecheck + domain scenario
+  tests pass; on-device pass in Expo Go still pending): `Profile` stack
+  screen reached from the Goal header, onboarding trimmed to 4 steps (price
+  step retired), NicotineScreen does the brand switching (with roast) and
+  custom-brand entry. Real sourced MRPs for `src/brands.ts` remain open —
+  see Later.
+  - **Baseline (count/day) is effective-dated** at day-key granularity:
+    `baselineHistory: {fromDayKey, countPerDay}[]`, seeded at onboarding.
+    Edits apply from today's day-key; same-day edits collapse (last write
+    wins) — no separate "fix a typo" path, a same-day correction is a clean
+    rewrite. Money values each day against the baseline in effect that day;
+    the budget's pre-install fallback uses the first record.
+  - **Price derives from brand MRP, never user-entered** (money-saved is
+    approximate by design; reduce onus on the user). Effective-dated at
+    timestamp granularity: `priceHistory: {fromTimestamp, pricePerStick,
+    brandId}[]`. A brand switch appends a record; logged entries are valued
+    at the price in effect at `entry.timestamp` (backfill-safe); a day's
+    avoided smokes are valued at that day's ending price. Retires the Money
+    tab's manual price stepper. A dataset MRP revision (shipped in an app
+    update) appends a record at first launch after update. Money screen
+    shows "MRP as of <date>" fine print.
+  - **Unlisted brand:** the user names the cigarette and enters its price —
+    the one place price is user-entered, since the DB has nothing to offer;
+    nicotine/tar fill from dataset averages, flagged estimated and displayed
+    with a ~ prefix.
+  - **Data export + reset** (added 2026-07-17): "share my data" as JSON via
+    the share sheet — the only backup until cloud sync exists — plus a
+    confirm-guarded "reset all data". Both live on the profile screen.
+  - **Nicotine roast on brand switch** (added 2026-07-17): on switching,
+    pull both brands' records and roast the nicotine delta (one
+    strings-table entry + a lookup).
+  - **Migration:** existing installs synthesize `baselineHistory` from flat
+    `countPerDay` + `installDayKey`, and `priceHistory` from the stored
+    `pricePerStick` (existing savings history stays honest); DB pricing
+    takes over on the next brand switch.
+  - **Prerequisite:** extend `src/brands.ts` with `packMrp`, `packSize`,
+    `asOf` (real sourced MRPs — printed MRP is the only citable source).
+  *(#7)*
 
 ## P1 bugs — self-identified in code review (2026-07-16)
 
@@ -75,8 +109,24 @@ without discussion.
 
 - Notifications (SPEC S15–S17) — needs expo-notifications; limited inside
   Expo Go, best done alongside a development build.
+- Milestone roast notifications (decided 2026-07-17): push a playful roast
+  when the data hits a milestone that proves the app understands the user.
+  Scope deliberately trimmed to a few important ones — personal, not badge
+  spam. Rides on the same notifications/dev-build infra as S15–S17.
+- Product analytics for the maintainer (DAU/MAU, retention, feature usage) —
+  the first feature that sends data off-device, so it drags in user consent,
+  a privacy policy (DPDP), and a telemetry backend choice. Own design pass.
+- Go-live readiness plan: what shipping to real users requires (EAS dev
+  build → TestFlight → App Store listing, privacy policy, crash reporting,
+  support/feedback channel) and which core-design risks to settle before
+  launch (multi-user means cloud sync + auth + DPDP delete-account).
+  Research and write-up task before anything is built.
 - Cloud sync (SPEC S23) — needs a backend; DPDP delete-account requirement.
-- Vetted nicotine/tar dataset to replace placeholder `src/brands.ts`.
+- Vetted nicotine/tar dataset to replace placeholder `src/brands.ts`
+  (MRP/pack-size columns land earlier, with the profile screen).
+- Remote-fetch brand/price database (server-hosted, updatable without app
+  releases) — decided 2026-07-17 to ship the dataset inside the app for now;
+  remote fetch needs real research + design.
 
 ## Issues faced so far (for the record)
 
