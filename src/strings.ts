@@ -21,12 +21,37 @@ export function copy(key: StringKey): string {
   return TABLE[key];
 }
 
-// S20 craving SOS copy
+// S20 craving SOS copy — a pool per countdown stage; one is picked at random
+// each session so repeat visitors don't memorize the script.
 export const SOS_PROMPTS = {
-  early: 'Get up. Drink a glass of water. Slowly.',
-  mid: 'Four counts in, hold four, four out. Repeat.',
-  late: "Almost there. It's already weaker than it was.",
+  early: [
+    'Get up. Drink a glass of water. Slowly.',
+    'Go stand somewhere else. Cravings hate a change of scenery.',
+    'Text someone back. You owe at least three people replies anyway.',
+    'Ten slow breaths by a window. Yes, actually do it.',
+    'Eat something small. Your brain is confusing hungry with smoky.',
+  ],
+  mid: [
+    'Four counts in, hold four, four out. Repeat.',
+    "Halfway. The craving already peaked — it just doesn't know it yet.",
+    'Clench your fists for five seconds, release. Repeat until bored.',
+    'Name five things you can see. Boring? Cravings hate boring.',
+  ],
+  late: [
+    "Almost there. It's already weaker than it was.",
+    "Under two minutes. You've outlasted worse than this.",
+    "It's fading. Let it leave without a goodbye.",
+  ],
 } as const;
+
+export function pickPrompts(): { early: string; mid: string; late: string } {
+  const pick = (arr: readonly string[]) => arr[Math.floor(Math.random() * arr.length)];
+  return {
+    early: pick(SOS_PROMPTS.early),
+    mid: pick(SOS_PROMPTS.mid),
+    late: pick(SOS_PROMPTS.late),
+  };
+}
 
 export function sosResult(
   outcome: 'survived' | 'smoked',

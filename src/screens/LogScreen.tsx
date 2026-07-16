@@ -1,6 +1,7 @@
 // Log screen — S1 quick log, S2 undo, S3 today view, S4 over-budget state.
 
 import { Feather } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import React, { useEffect, useRef, useState } from 'react';
 import { Animated, Easing, Pressable, ScrollView, Text, View } from 'react-native';
 import {
@@ -72,6 +73,7 @@ export function LogScreen() {
   };
 
   const log = (sixths: number) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     addEntry(sixths); // optimistic, never blocked (S4)
     setNow(Date.now());
     const after = total + sixths;
@@ -136,6 +138,7 @@ export function LogScreen() {
           <Pressable
             onPress={() => {
               if (!entries.length) return;
+              Haptics.selectionAsync();
               undoLast();
               setEditingId(null);
               showToast('undone');

@@ -50,12 +50,14 @@ without discussion.
 
 ## P2 — polish
 
-- [ ] **Haptic feedback on logging** (expo-haptics; light impact on log,
-  success notification on undo). No sound. *(#3)*
-- [ ] **SOS prompt variety** — pool of distraction prompts per countdown stage,
-  random pick, instead of the same three every time. *(#8)*
-- [ ] **Tap-to-reveal bar values** (Apple Fitness pattern) — bars currently
-  show values permanently; switch to showing on touch, highlighted bar. *(#5)*
+- [x] **Haptic feedback on logging** *(#3)* — **done 2026-07-16**
+  (`feat/polish`): light impact on log/backfill-add/SOS-smoked, selection
+  tick on undo, success notification on craving survived. No sound.
+- [x] **SOS prompt variety** *(#8)* — **done 2026-07-16**: 3–5 prompts per
+  countdown stage in the strings table, one rolled per session.
+- [x] **Tap-to-reveal bar values** *(#5)* — **done 2026-07-16**: values hidden
+  by default; tap highlights the bar (accent border, others dim) and shows
+  its number; switching Day/Week/Month clears the selection.
 - [ ] **Day chart mislabels midnight–4 am smokes** (self-identified): a 1 am
   smoke correctly counts toward the previous day (4 am boundary) but renders
   in that day's "6–9" morning bucket. Extend the night bucket to cover

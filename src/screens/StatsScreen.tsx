@@ -138,7 +138,8 @@ export function StatsScreen() {
       <Text style={{ fontFamily: font.regular, fontSize: 12, color: color.neutral500, marginTop: 24, marginBottom: 10 }}>
         {chartTitle}
       </Text>
-      <BarChart bars={bars} />
+      {/* key by range so switching Day/Week/Month clears the selection */}
+      <BarChart bars={bars} key={range} />
 
       {/* tiles (S6) */}
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 24 }}>
@@ -225,27 +226,57 @@ function Ring({ fraction }: { fraction: number }) {
   );
 }
 
+// Values reveal on touch (Apple Fitness pattern): tap a bar to see its
+// number and highlight it; tap again to dismiss.
 function BarChart({ bars }: { bars: Bar[] }) {
+  const [selected, setSelected] = useState<number | null>(null);
   return (
     <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 8, height: 140 }}>
-      {bars.map((b, i) => (
-        <View key={i} style={{ flex: 1, alignItems: 'center', height: '100%', justifyContent: 'flex-end' }}>
-          <Text style={{ fontFamily: font.regular, fontSize: 10, color: color.neutral500, marginBottom: 4 }}>
-            {b.val}
-          </Text>
-          <View
-            style={{
-              alignSelf: 'stretch',
-              height: `${b.h * 0.75}%`,
-              borderRadius: radius.sm,
-              backgroundColor: b.accent ? color.accent500 : color.neutral800,
-            }}
-          />
-          <Text style={{ fontFamily: font.regular, fontSize: 10, color: color.neutral600, marginTop: 6 }}>
-            {b.label}
-          </Text>
-        </View>
-      ))}
+      {bars.map((b, i) => {
+        const on = selected === i;
+        const dimmed = selected != null && !on;
+        return (
+          <Pressable
+            key={i}
+            onPress={() => setSelected(on ? null : i)}
+            style={{ flex: 1, alignItems: 'center', height: '100%', justifyContent: 'flex-end' }}
+          >
+            {/* kept in layout at opacity 0 so bars don't jump when revealed */}
+            <Text
+              style={{
+                fontFamily: font.medium,
+                fontSize: 11,
+                color: color.accent300,
+                marginBottom: 4,
+                opacity: on ? 1 : 0,
+              }}
+            >
+              {b.val}
+            </Text>
+            <View
+              style={{
+                alignSelf: 'stretch',
+                height: `${b.h * 0.75}%`,
+                borderRadius: radius.sm,
+                backgroundColor: b.accent ? color.accent500 : color.neutral800,
+                opacity: dimmed ? 0.45 : 1,
+                borderWidth: on ? 1 : 0,
+                borderColor: color.accent,
+              }}
+            />
+            <Text
+              style={{
+                fontFamily: font.regular,
+                fontSize: 10,
+                color: on ? color.accent300 : color.neutral600,
+                marginTop: 6,
+              }}
+            >
+              {b.label}
+            </Text>
+          </Pressable>
+        );
+      })}
     </View>
   );
 }
