@@ -10,13 +10,12 @@ import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { GoalScreen } from './src/screens/GoalScreen';
 import { LogScreen } from './src/screens/LogScreen';
 import { MoneyScreen } from './src/screens/MoneyScreen';
-import { SosScreen } from './src/screens/SosScreen';
 import { SetupScreen } from './src/screens/SetupScreen';
 import { StatsScreen } from './src/screens/StatsScreen';
 import { useAppData } from './src/store';
 import { color, font } from './src/theme';
 
-type Tab = 'log' | 'stats' | 'goal' | 'money' | 'sos';
+type Tab = 'log' | 'stats' | 'goal' | 'money';
 
 export default function App() {
   const [fontsLoaded] = useFonts({ Inter_400Regular, Inter_500Medium });
@@ -51,7 +50,9 @@ export default function App() {
             <LogScreen
               profile={data.profile}
               entries={data.entries}
+              cravings={data.cravings}
               addEntry={addEntry}
+              addCraving={addCraving}
               undoLast={undoLast}
               editEntry={editEntry}
               removeEntry={removeEntry}
@@ -60,17 +61,11 @@ export default function App() {
             <StatsScreen profile={data.profile} entries={data.entries} setBrandId={setBrandId} />
           ) : tab === 'goal' ? (
             <GoalScreen profile={data.profile} entries={data.entries} setPace={setPace} />
-          ) : tab === 'money' ? (
+          ) : (
             <MoneyScreen
               profile={data.profile}
               entries={data.entries}
               setPricePerStick={setPricePerStick}
-            />
-          ) : (
-            <SosScreen
-              cravings={data.cravings}
-              addCraving={addCraving}
-              logSmoked={() => addEntry(6)}
             />
           )}
           <TabBar tab={tab} setTab={setTab} />
@@ -91,7 +86,7 @@ function TabBar({ tab, setTab }: { tab: Tab; setTab: (t: Tab) => void }) {
         backgroundColor: color.bg,
       }}
     >
-      {(['log', 'stats', 'goal', 'money', 'sos'] as const).map((t) => (
+      {(['log', 'stats', 'goal', 'money'] as const).map((t) => (
         <Pressable
           key={t}
           onPress={() => setTab(t)}

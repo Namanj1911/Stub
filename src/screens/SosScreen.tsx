@@ -1,6 +1,7 @@
-// Craving SOS — S20, per the 2e mockup. Idle → 5:00 countdown with a shrinking
-// ring and rotating distraction prompts → outcome. Survived cravings become a
-// weekly stat; "I smoked it anyway" logs a full cigarette against today's
+// Craving SOS — S20, per the 2e mockup. Opened from the floating button on
+// the Log screen. Idle → 5:00 countdown with a shrinking ring and rotating
+// distraction prompts → outcome. Survived cravings become a weekly stat;
+// "I smoked it anyway" asks how much (1/½/⅓) and logs it against today's
 // budget (honesty over enforcement).
 
 import React, { useEffect, useRef, useState } from 'react';
@@ -14,16 +15,18 @@ const TOTAL = 300; // seconds
 const R = 96;
 const CIRC = 2 * Math.PI * R; // ≈ 603, as in the prototype
 
-type Phase = 'idle' | 'on' | 'result';
+type Phase = 'idle' | 'on' | 'pickAmount' | 'result';
 
 export function SosScreen({
   cravings,
   addCraving,
   logSmoked,
+  onClose,
 }: {
   cravings: Craving[];
   addCraving: (outcome: 'survived' | 'smoked') => void;
-  logSmoked: () => void;
+  logSmoked: (sixths: number) => void;
+  onClose: () => void;
 }) {
   const [phase, setPhase] = useState<Phase>('idle');
   const [left, setLeft] = useState(TOTAL);
@@ -36,11 +39,17 @@ export function SosScreen({
   };
   useEffect(() => stopTimer, []);
 
-  const finish = (o: 'survived' | 'smoked') => {
+  const finishSurvived = () => {
     stopTimer();
-    setOutcome(o);
-    addCraving(o);
-    if (o === 'smoked') logSmoked();
+    setOutcome('survived');
+    addCraving('survived');
+    setPhase('result');
+  };
+
+  const finishSmoked = (sixths: number) => {
+    setOutcome('smoked');
+    addCraving('smoked');
+    logSmoked(sixths);
     setPhase('result');
   };
 
@@ -62,6 +71,12 @@ export function SosScreen({
     }, 1000);
   };
 
+  const cancelToIdle = () => {
+    stopTimer();
+    setPhase('idle');
+    setLeft(TOTAL);
+  };
+
   const weeklySurvived = cravings.filter(
     (c) => c.outcome === 'survived' && c.timestamp >= Date.now() - 7 * 86_400_000,
   ).length;
@@ -70,10 +85,22 @@ export function SosScreen({
   const prompt = left > 200 ? SOS_PROMPTS.early : left > 100 ? SOS_PROMPTS.mid : SOS_PROMPTS.late;
 
   return (
-    <View style={{ flex: 1, backgroundColor: color.bg, alignItems: 'center', padding: 22 }}>
-      <Text style={{ fontFamily: font.medium, fontSize: 22, color: color.text, alignSelf: 'flex-start' }}>
-        sos<Text style={{ color: color.accent }}>.</Text>
-      </Text>
+    <View style={{ flex: 1, backgroundColor: color.bg, alignItems: 'center', padding: 22, paddingTop: 16 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, alignSelf: 'stretch' }}>
+        <Pressable
+          onPress={() => {
+            // leaving mid-countdown abandons the craving without judging it
+            stopTimer();
+            onClose();
+          }}
+          hitSlop={12}
+        >
+          <Text style={{ fontSize: 18, color: color.neutral500 }}>←</Text>
+        </Pressable>
+        <Text style={{ fontFamily: font.medium, fontSize: 20, color: color.text }}>
+          Craving SOS
+        </Text>
+      </View>
 
       {phase === 'idle' && (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 36 }}>
@@ -149,7 +176,7 @@ export function SosScreen({
           </Text>
           <View style={{ alignItems: 'center', gap: 18, marginTop: 10 }}>
             <Pressable
-              onPress={() => finish('survived')}
+              onPress={finishSurvived}
               style={({ pressed }) => ({
                 borderWidth: 1,
                 borderColor: color.accent,
@@ -164,7 +191,13 @@ export function SosScreen({
                 It passed. I win.
               </Text>
             </Pressable>
-            <Pressable onPress={() => finish('smoked')} hitSlop={8}>
+            <Pressable
+              onPress={() => {
+                stopTimer();
+                setPhase('pickAmount');
+              }}
+              hitSlop={8}
+            >
               <Text
                 style={{
                   fontFamily: font.regular,
@@ -177,6 +210,52 @@ export function SosScreen({
               </Text>
             </Pressable>
           </View>
+        </View>
+      )}
+
+      {phase === 'pickAmount' && (
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 14, alignSelf: 'stretch' }}>
+          <Text style={{ fontFamily: font.medium, fontSize: 24, color: color.text, textAlign: 'center' }}>
+            How much was it?
+          </Text>
+          <Text style={{ fontFamily: font.regular, fontSize: 13, color: color.neutral500 }}>
+            No judgement — it goes against today's budget.
+          </Text>
+          <View style={{ flexDirection: 'row', gap: 8, marginTop: 14, alignSelf: 'stretch' }}>
+            {([['1', 6], ['½', 3], ['⅓ shared', 2]] as const).map(([label, sixths]) => (
+              <Pressable
+                key={label}
+                onPress={() => finishSmoked(sixths)}
+                style={({ pressed }) => ({
+                  flex: 1,
+                  minHeight: 48,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: color.surface,
+                  borderWidth: 1,
+                  borderColor: pressed ? color.accent : color.neutral800,
+                  borderRadius: radius.md,
+                  transform: [{ scale: pressed ? 0.96 : 1 }],
+                })}
+              >
+                <Text style={{ fontFamily: font.medium, fontSize: 16, color: color.text }}>
+                  {label}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+          <Pressable onPress={cancelToIdle} hitSlop={8} style={{ marginTop: 10 }}>
+            <Text
+              style={{
+                fontFamily: font.regular,
+                fontSize: 12,
+                color: color.neutral500,
+                textDecorationLine: 'underline',
+              }}
+            >
+              never mind
+            </Text>
+          </Pressable>
         </View>
       )}
 
