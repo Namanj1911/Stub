@@ -41,15 +41,15 @@ export function StatsScreen({
   const today = entriesForDay(entries, todayKey);
   const total = totalSixths(today);
 
-  const t = tiles(entries, todayKey, profile.installDayKey, baseline, budget, now);
+  const t = tiles(entries, todayKey, profile.installDayKey, budget, now);
   const insight = pickInsight(entries, todayKey, profile.installDayKey, budget, now);
 
   const bars =
     range === 'day'
       ? dayBars(today)
       : range === 'month'
-        ? monthBars(entries, todayKey, profile.installDayKey, baseline)
-        : weekBars(entries, todayKey, profile.installDayKey, baseline, budget, now);
+        ? monthBars(entries, todayKey, profile.installDayKey)
+        : weekBars(entries, todayKey, profile.installDayKey, budget, now);
   const chartTitle =
     range === 'day'
       ? 'Today by time of day'
