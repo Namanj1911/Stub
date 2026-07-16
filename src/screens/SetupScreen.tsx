@@ -5,6 +5,7 @@
 import React, { useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import Svg, { Defs, Ellipse, RadialGradient, Stop } from 'react-native-svg';
+import { useApp } from '../AppContext';
 import { ONBOARDING_BRANDS } from '../brands';
 import { PACE_RATE, Pace } from '../domain';
 import { setupReaction } from '../strings';
@@ -39,15 +40,8 @@ const NEXT_HINT = [
   'Last one — then your plan',
 ];
 
-export type SetupResult = {
-  countPerDay: number;
-  pace: Pace;
-  brandId: string;
-  pricePerStick: number;
-  triggers: string[];
-};
-
-export function SetupScreen({ onDone }: { onDone: (result: SetupResult) => void }) {
+export function SetupScreen() {
+  const { completeSetup } = useApp();
   const [step, setStep] = useState(0);
   const [count, setCount] = useState(9);
   const [brandId, setBrandId] = useState(ONBOARDING_BRANDS[0].id);
@@ -289,7 +283,7 @@ export function SetupScreen({ onDone }: { onDone: (result: SetupResult) => void 
         <Pressable
           onPress={() => {
             if (step === 5) {
-              onDone({
+              completeSetup({
                 countPerDay: count,
                 pace,
                 brandId,

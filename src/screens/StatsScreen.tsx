@@ -14,25 +14,20 @@ import {
   tiles,
   weekBars,
 } from '../stats';
-import { Profile } from '../store';
+import { useApp, useProfile } from '../AppContext';
+import { useNav } from '../navigation';
 import { insightCopy } from '../strings';
 import { color, font, radius } from '../theme';
 import { BRANDS } from '../brands';
-import { NicotineScreen } from './NicotineScreen';
 
 type Range = 'day' | 'week' | 'month';
 
-export function StatsScreen({
-  profile,
-  entries,
-  setBrandId,
-}: {
-  profile: Profile;
-  entries: Entry[];
-  setBrandId: (id: string) => void;
-}) {
+export function StatsScreen() {
+  const { data } = useApp();
+  const profile = useProfile();
+  const entries = data.entries;
+  const nav = useNav();
   const [range, setRange] = useState<Range>('week');
-  const [showNicotine, setShowNicotine] = useState(false);
 
   const now = Date.now();
   const todayKey = dayKey(now);
@@ -56,17 +51,6 @@ export function StatsScreen({
       : range === 'month'
         ? 'Last 4 weeks — daily average'
         : 'This week — cigarettes per day';
-
-  if (showNicotine) {
-    return (
-      <NicotineScreen
-        profile={profile}
-        entries={entries}
-        setBrandId={setBrandId}
-        onClose={() => setShowNicotine(false)}
-      />
-    );
-  }
 
   const brand = BRANDS.find((b) => b.id === profile.brandId);
   const weekSixths = (() => {
@@ -176,7 +160,7 @@ export function StatsScreen({
 
       {/* weekly nicotine intake (S19) → nicotine database (S18) */}
       <Pressable
-        onPress={() => setShowNicotine(true)}
+        onPress={() => nav.navigate('Nicotine')}
         style={({ pressed }) => ({
           flexDirection: 'row',
           alignItems: 'center',

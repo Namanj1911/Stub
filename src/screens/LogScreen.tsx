@@ -4,7 +4,6 @@ import { Feather } from '@expo/vector-icons';
 import React, { useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import {
-  Entry,
   budgetSixths,
   dayKey,
   entriesForDay,
@@ -13,38 +12,19 @@ import {
   frac,
   totalSixths,
 } from '../domain';
-import { Craving, Profile } from '../store';
+import { useApp, useProfile } from '../AppContext';
+import { useNav } from '../navigation';
 import { StringKey, copy } from '../strings';
 import { color, font, radius } from '../theme';
-import { BackfillScreen } from './BackfillScreen';
-import { SosScreen } from './SosScreen';
 
-type Props = {
-  profile: Profile;
-  entries: Entry[];
-  cravings: Craving[];
-  addEntry: (sixths: number, timestamp?: number, backfilled?: boolean) => void;
-  addCraving: (outcome: 'survived' | 'smoked') => void;
-  undoLast: () => void;
-  editEntry: (id: string, sixths: number) => void;
-  removeEntry: (id: string) => void;
-};
-
-export function LogScreen({
-  profile,
-  entries,
-  cravings,
-  addEntry,
-  addCraving,
-  undoLast,
-  editEntry,
-  removeEntry,
-}: Props) {
+export function LogScreen() {
+  const { data, addEntry, undoLast, editEntry, removeEntry } = useApp();
+  const profile = useProfile();
+  const entries = data.entries;
+  const nav = useNav();
   const [now, setNow] = useState(Date.now());
   const [toast, setToast] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [backfilling, setBackfilling] = useState(false);
-  const [sosOpen, setSosOpen] = useState(false);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // header "since last" updates every minute (S3)
@@ -73,34 +53,6 @@ export function LogScreen({
     const after = total + sixths;
     showToast(after > budget ? 'logOver' : budget - after <= 6 ? 'logNear' : 'logWithin');
   };
-
-  if (sosOpen) {
-    return (
-      <SosScreen
-        cravings={cravings}
-        addCraving={addCraving}
-        logSmoked={(sixths) => {
-          addEntry(sixths);
-          setNow(Date.now());
-        }}
-        onClose={() => setSosOpen(false)}
-      />
-    );
-  }
-
-  if (backfilling) {
-    return (
-      <BackfillScreen
-        onAdd={(sixths, timestamp) => {
-          addEntry(sixths, timestamp, true);
-          setBackfilling(false);
-          setNow(Date.now());
-          showToast('backfilled');
-        }}
-        onClose={() => setBackfilling(false)}
-      />
-    );
-  }
 
   return (
     <View style={{ flex: 1, backgroundColor: color.bg }}>
@@ -177,7 +129,7 @@ export function LogScreen({
               undo last
             </Text>
           </Pressable>
-          <Pressable onPress={() => setBackfilling(true)} hitSlop={10}>
+          <Pressable onPress={() => nav.navigate('Backfill')} hitSlop={10}>
             <Text
               style={{
                 fontFamily: font.regular,
@@ -298,7 +250,7 @@ export function LogScreen({
 
       {/* floating craving SOS button (S20 entry point) */}
       <Pressable
-        onPress={() => setSosOpen(true)}
+        onPress={() => nav.navigate('Sos')}
         style={({ pressed }) => ({
           position: 'absolute',
           right: 20,
