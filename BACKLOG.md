@@ -33,12 +33,13 @@ without discussion.
   (square / circle / diamond + a coin for Money), not text-only labels.
   *(#4)* — **done 2026-07-16**, same branch.
 - [x] **Profile/settings screen** — edit count/day, brand, pace. Design
-  settled 2026-07-17 — **built 2026-07-17** (typecheck + domain scenario
-  tests pass; on-device pass in Expo Go still pending): `Profile` stack
-  screen reached from the Goal header, onboarding trimmed to 4 steps (price
-  step retired), NicotineScreen does the brand switching (with roast) and
-  custom-brand entry. Real sourced MRPs for `src/brands.ts` remain open —
-  see Later.
+  settled 2026-07-17 — **built, device-tested and merged 2026-07-17**:
+  `Profile` stack screen reached from a person-mark on every tab header,
+  onboarding trimmed to 4 steps (price step retired), NicotineScreen does
+  the brand switching (with roast) and custom-brand entry. Same round from
+  device feedback: danger-red reset box (2nd sanctioned theme red), Money
+  temptation pool (rolled per launch), Log's "last one" pill chip. Real
+  sourced MRPs for `src/brands.ts` remain open — see Later.
   - **Baseline (count/day) is effective-dated** at day-key granularity:
     `baselineHistory: {fromDayKey, countPerDay}[]`, seeded at onboarding.
     Edits apply from today's day-key; same-day edits collapse (last write
