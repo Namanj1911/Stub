@@ -13,25 +13,38 @@ import {
   frac,
   totalSixths,
 } from '../domain';
-import { Profile } from '../store';
+import { Craving, Profile } from '../store';
 import { StringKey, copy } from '../strings';
 import { color, font, radius } from '../theme';
 import { BackfillScreen } from './BackfillScreen';
+import { SosScreen } from './SosScreen';
 
 type Props = {
   profile: Profile;
   entries: Entry[];
+  cravings: Craving[];
   addEntry: (sixths: number, timestamp?: number, backfilled?: boolean) => void;
+  addCraving: (outcome: 'survived' | 'smoked') => void;
   undoLast: () => void;
   editEntry: (id: string, sixths: number) => void;
   removeEntry: (id: string) => void;
 };
 
-export function LogScreen({ profile, entries, addEntry, undoLast, editEntry, removeEntry }: Props) {
+export function LogScreen({
+  profile,
+  entries,
+  cravings,
+  addEntry,
+  addCraving,
+  undoLast,
+  editEntry,
+  removeEntry,
+}: Props) {
   const [now, setNow] = useState(Date.now());
   const [toast, setToast] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [backfilling, setBackfilling] = useState(false);
+  const [sosOpen, setSosOpen] = useState(false);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // header "since last" updates every minute (S3)
@@ -60,6 +73,20 @@ export function LogScreen({ profile, entries, addEntry, undoLast, editEntry, rem
     const after = total + sixths;
     showToast(after > budget ? 'logOver' : budget - after <= 6 ? 'logNear' : 'logWithin');
   };
+
+  if (sosOpen) {
+    return (
+      <SosScreen
+        cravings={cravings}
+        addCraving={addCraving}
+        logSmoked={(sixths) => {
+          addEntry(sixths);
+          setNow(Date.now());
+        }}
+        onClose={() => setSosOpen(false)}
+      />
+    );
+  }
 
   if (backfilling) {
     return (
@@ -268,6 +295,30 @@ export function LogScreen({ profile, entries, addEntry, undoLast, editEntry, rem
           ),
         )}
       </ScrollView>
+
+      {/* floating craving SOS button (S20 entry point) */}
+      <Pressable
+        onPress={() => setSosOpen(true)}
+        style={({ pressed }) => ({
+          position: 'absolute',
+          right: 20,
+          bottom: 24,
+          width: 56,
+          height: 56,
+          borderRadius: 28,
+          backgroundColor: color.accent,
+          alignItems: 'center',
+          justifyContent: 'center',
+          shadowColor: '#000',
+          shadowOpacity: 0.4,
+          shadowRadius: 8,
+          shadowOffset: { width: 0, height: 4 },
+          elevation: 6,
+          transform: [{ scale: pressed ? 0.92 : 1 }],
+        })}
+      >
+        <Text style={{ fontFamily: font.medium, fontSize: 13, color: color.bg }}>sos</Text>
+      </Pressable>
 
       {/* toast */}
       {toast !== '' && (

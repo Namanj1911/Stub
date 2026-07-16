@@ -16,11 +16,13 @@ without discussion.
 
 ## P1 — core UX
 
-- [ ] **SOS: floating button, not a tab.** Circular floating button on the Log
+- [x] **SOS: floating button, not a tab.** Circular floating button on the Log
   screen (accent-styled per Nocturne — no alert reds in the system). Frees a
-  tab slot. *(#2)*
-- [ ] **SOS: "I smoked it anyway" asks how much** (1 / ½ / ⅓) instead of
-  silently logging a full cigarette. *(#2)*
+  tab slot. *(#2)* — **done 2026-07-16** (`feat/sos-fab`): 56px accent FAB
+  bottom-right on Log; back to 4 tabs.
+- [x] **SOS: "I smoked it anyway" asks how much** (1 / ½ / ⅓) instead of
+  silently logging a full cigarette. *(#2)* — **done 2026-07-16**: picker
+  phase pauses the timer; "never mind" returns to idle without logging.
 - [ ] **Adopt react-navigation** (bottom tabs + native stack). Replaces
   hand-rolled conditional-render navigation (Backfill, NicotineDB); gives
   back-gestures. Target: 4 tabs (log · stats · goal · money), drill-ins as
