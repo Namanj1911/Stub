@@ -6,11 +6,13 @@ without discussion.
 
 ## P0 — bugs / trust issues
 
-- [ ] **Charts show invented data for new users.** Week/month bars render the
+- [x] **Charts show invented data for new users.** Week/month bars render the
   stated baseline for days before install, showing smokes that were never
   logged. Keep the baseline inside the budget math (needed for a sane day-1
   budget) but render pre-install days as empty (·) in every chart and the
-  heatmap. *(feedback #6)*
+  heatmap. *(feedback #6)* — **done 2026-07-16** (`fix/chart-baseline`): bars,
+  daily-average and days-under-budget tiles, and the trend line now use real
+  days only; trend shows "no trend yet" until 7 full prior days exist.
 
 ## P1 — core UX
 
