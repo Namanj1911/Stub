@@ -39,7 +39,12 @@ export function LogScreen() {
   const total = totalSixths(today);
   const budget = budgetSixths(entries, todayKey, profile.installDayKey, profile.countPerDay * 6);
   const left = budget - total;
-  const lastAt = entries.length ? entries[entries.length - 1].timestamp : null;
+  // max timestamp, not last array element — backfills append out of
+  // chronological order. ("undo last" stays last-array-element by design:
+  // it undoes the most recent *action*, including a just-added backfill.)
+  const lastAt = entries.length
+    ? entries.reduce((m, e) => Math.max(m, e.timestamp), 0)
+    : null;
 
   const showToast = (key: StringKey) => {
     setToast(copy(key));
@@ -274,8 +279,8 @@ export function LogScreen() {
       >
         <Text
           style={{
-            fontFamily: font.medium,
-            fontSize: 16,
+            fontFamily: font.bold,
+            fontSize: 17,
             letterSpacing: 1.5,
             color: color.sosText,
           }}
