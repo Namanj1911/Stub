@@ -218,10 +218,18 @@ deliberately **not** here — deferred until after beta + PMF, see Later.
   "vs last weekday" (useless), "Cravings survived (7d)" (still on the SOS
   result screen) and "Best under-budget streak" (redundant with the card).
   Device-tested.
-- [ ] **SOS breathing exercise** *(easy, Expo Go-safe)* — guided breathing
+- [x] **SOS breathing exercise** *(easy, Expo Go-safe)* — guided breathing
   (box / 4-7-8) inside the SOS countdown as an alternative to the rotating
   prompts. Closes the "active craving tool" gap — competitors build whole
-  apps around this moment; one animation gets us most of the value.
+  apps around this moment; one animation gets us most of the value. —
+  **done 2026-07-17** (`feat/sos-breathing`): "breathe with me instead"
+  link during the countdown swaps the prompt for a growing/shrinking guide
+  circle with phase label; choice is sticky per session, countdown/outcome
+  paths untouched. Device verdict trimmed the plan: one pattern only,
+  in 4 / hold 4 / out 4 — the post-exhale hold dragged and 4-7-8 was cut,
+  which also removed the pattern picker. Breath-cue tick on in/out (not
+  holds) kept after device test; prompt-stage tick silenced while
+  breathing. Pacing lives in `BREATH_SEGMENTS` constants.
 - [ ] **Health-recovery timeline** — the single most motivating screen in
   every leading competitor (WHO/CDC milestones, 20 min → 10 years). One
   design decision needed first: classic timelines key off time-since-last-
