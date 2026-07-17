@@ -124,11 +124,14 @@ without discussion.
 - Product analytics for the maintainer (DAU/MAU, retention, feature usage) —
   the first feature that sends data off-device, so it drags in user consent,
   a privacy policy (DPDP), and a telemetry backend choice. Own design pass.
-- Go-live readiness plan: what shipping to real users requires (EAS dev
-  build → TestFlight → App Store listing, privacy policy, crash reporting,
-  support/feedback channel) and which core-design risks to settle before
-  launch (multi-user means cloud sync + auth + DPDP delete-account).
-  Research and write-up task before anything is built.
+- Go-live readiness plan — **write-up done 2026-07-17**, see
+  `design/GO_LIVE.md`. Headlines: launch local-only ("Data Not Collected"
+  privacy label, near-zero DPDP surface); 18+ age rating is unavoidable and
+  satisfies the age-gate requirement; S15–S17 notifications are local-only
+  so they prototype in Expo Go and only need the dev build to ship; vetted
+  brands data gates *external* TestFlight, not internal. Recommended
+  sequence is §8 of the doc; next concrete steps are Apple Developer
+  enrollment, icon/splash, and the EAS dev build.
 - Cloud sync (SPEC S23) — needs a backend; DPDP delete-account requirement.
 - Vetted nicotine/tar dataset to replace placeholder `src/brands.ts`
   (MRP/pack-size columns land earlier, with the profile screen).
