@@ -13,13 +13,14 @@ import {
   monthBars,
   pickInsight,
   tiles,
+  underBudgetStreaks,
   weekBars,
 } from '../stats';
 import { useApp, useProfile } from '../AppContext';
 import { haptic } from '../haptics';
 import { ProfileButton } from '../ProfileButton';
 import { useNav } from '../navigation';
-import { insightCopy } from '../strings';
+import { insightCopy, streakCopy } from '../strings';
 import { color, font, radius } from '../theme';
 import { BRANDS } from '../brands';
 
@@ -41,13 +42,14 @@ export function StatsScreen() {
   const t = tiles(
     range,
     entries,
-    data.cravings,
     todayKey,
     profile.installDayKey,
     profile.baselineHistory,
+    profile.priceHistory,
     now,
   );
   const insight = pickInsight(entries, todayKey, profile.installDayKey, budget, now);
+  const streaks = underBudgetStreaks(entries, todayKey, profile.installDayKey, profile.baselineHistory);
 
   const bars =
     range === 'day'
@@ -126,38 +128,92 @@ export function StatsScreen() {
         })}
       </View>
 
-      {/* budget ring (S6) */}
-      <View
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          backgroundColor: color.surface,
-          borderRadius: radius.md,
-          padding: 16,
-          marginTop: 16,
-          gap: 16,
-        }}
-      >
-        <Ring fraction={budget > 0 ? Math.min(1, total / budget) : 0} />
-        <View style={{ flex: 1 }}>
-          <Text style={{ fontFamily: font.medium, fontSize: 24, color: color.text }}>
-            {frac(total)} / {frac(budget)}
+      {/* budget ring (S6) — Day only: it's a today-stat, repeating it on
+          Week/Month added nothing and pushed the tiles below the fold */}
+      {range === 'day' && (
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            backgroundColor: color.surface,
+            borderRadius: radius.md,
+            padding: 16,
+            marginTop: 16,
+            gap: 16,
+          }}
+        >
+          <Ring fraction={budget > 0 ? Math.min(1, total / budget) : 0} />
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontFamily: font.medium, fontSize: 24, color: color.text }}>
+              {frac(total)} / {frac(budget)}
+            </Text>
+            <Text style={{ fontFamily: font.regular, fontSize: 12, color: color.neutral500, marginTop: 2 }}>
+              today vs adaptive budget
+            </Text>
+            <Text
+              style={{
+                fontFamily: font.regular,
+                fontSize: 12,
+                color: t.trendDown ? color.accent300 : color.neutral400,
+                marginTop: 8,
+              }}
+            >
+              {t.trendLine}
+            </Text>
+          </View>
+        </View>
+      )}
+
+      {/* under-budget streak (BACKLOG P3) — Week/Month only: a streak is a
+          multi-day stat. Unit is always days (a weekly/monthly-unit streak
+          would read 0 for months). Fills the ring's slot under the segmented
+          control so switching tabs keeps the layout even. "best" shows only
+          when it beats current; at the record the accent color carries it
+          and the line just pokes. */}
+      {range !== 'day' && (
+        <View
+          style={{
+            backgroundColor: color.surface,
+            borderRadius: radius.md,
+            padding: 16,
+            marginTop: 16,
+          }}
+        >
+          <Text style={{ fontFamily: font.regular, fontSize: 12, color: color.neutral500 }}>
+            Under-budget streak
           </Text>
-          <Text style={{ fontFamily: font.regular, fontSize: 12, color: color.neutral500, marginTop: 2 }}>
-            today vs adaptive budget
-          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 8, marginTop: 2 }}>
+            <Text
+              style={{
+                fontFamily: font.medium,
+                fontSize: 24,
+                color:
+                  streaks.current > 0 && streaks.current >= streaks.best
+                    ? color.accent300
+                    : color.text,
+              }}
+            >
+              {streaks.current} day{streaks.current === 1 ? '' : 's'}
+            </Text>
+            {streaks.best > streaks.current && (
+              <Text style={{ fontFamily: font.regular, fontSize: 13, color: color.neutral500 }}>
+                best {streaks.best}
+              </Text>
+            )}
+          </View>
           <Text
             style={{
               fontFamily: font.regular,
               fontSize: 12,
-              color: t.trendDown ? color.accent300 : color.neutral400,
-              marginTop: 8,
+              color: color.neutral400,
+              lineHeight: 17,
+              marginTop: 6,
             }}
           >
-            {t.trendLine}
+            {streakCopy(streaks.current, streaks.best)}
           </Text>
         </View>
-      </View>
+      )}
 
       {/* bar chart (S5) */}
       <Text style={{ fontFamily: font.regular, fontSize: 12, color: color.neutral500, marginTop: 24, marginBottom: 10 }}>

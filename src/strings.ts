@@ -195,6 +195,56 @@ export function moneyTemptation(flights: number): { line: string; emoji: string 
   return TEMPTATIONS[TEMPTATION_ROLL](Math.max(1, flights));
 }
 
+// Under-budget streak card (BACKLOG P3): one line per streak state. Rolled
+// once per launch (module load), like the temptation pool — the line stays
+// put while the user pokes around Stats, and changes next app open.
+//
+// Declutter rule (owner feedback 2026-07-17): the card already shows the
+// numbers, so lines never restate them. The one exception is the broken
+// state, where the card shows 0 and the dead streak's length IS the roast.
+const STREAK_LINES: Record<
+  'none' | 'broken' | 'building' | 'record',
+  ((best: number) => string)[]
+> = {
+  // never had a streak — new user or rough start
+  none: [
+    () => 'One day under budget starts the counter. Today qualifies, technically.',
+    () => 'No streak yet. The counter is ready when you are.',
+    () => 'Nothing to defend yet. Finish today under budget and that changes.',
+  ],
+  // current 0, best > 0 — the streak broke; this is the roast the backlog asked for
+  broken: [
+    (b) => `The last streak lived ${d(b)}. Avenge it.`,
+    (b) => `You've done ${d(b)} straight before. That person is still in there.`,
+    (b) => `${cap(d(b))}, then nothing. The scoreboard remembers.`,
+    (b) => `A ${d(b)} run, gone. Even the heatmap looked away.`,
+  ],
+  // alive but short of the record
+  building: [
+    () => 'Past you is still winning. Go embarrass them.',
+    () => 'Your record is watching nervously.',
+    () => 'Keep it boring — boring is how records fall.',
+  ],
+  // at the personal best — the accent color says "record", the line just pokes
+  record: [
+    () => "Your best run ever. Don't get sentimental about it.",
+    () => 'This is the record. Every day from here is new territory.',
+    () => "The budget is starting to trust you. Don't make it weird.",
+  ],
+};
+
+const d = (n: number) => `${n} day${n === 1 ? '' : 's'}`;
+const cap = (s: string) => s[0].toUpperCase() + s.slice(1);
+
+const STREAK_ROLL = Math.random();
+
+export function streakCopy(current: number, best: number): string {
+  const state =
+    best === 0 ? 'none' : current === 0 ? 'broken' : current < best ? 'building' : 'record';
+  const pool = STREAK_LINES[state];
+  return pool[Math.floor(STREAK_ROLL * pool.length)](best);
+}
+
 // Brand-switch roast (BACKLOG P1): the app noticed, and has opinions.
 export function brandSwitchRoast(
   prev: { nicotineMg: number; estimated: boolean } | null,
