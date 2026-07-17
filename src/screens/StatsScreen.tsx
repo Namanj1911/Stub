@@ -164,24 +164,19 @@ export function StatsScreen() {
         </View>
       )}
 
-      {/* bar chart (S5) */}
-      <Text style={{ fontFamily: font.regular, fontSize: 12, color: color.neutral500, marginTop: 24, marginBottom: 10 }}>
-        {chartTitle}
-      </Text>
-      {/* key by range so switching Day/Week/Month clears the selection */}
-      <BarChart bars={bars} key={range} />
-
       {/* under-budget streak (BACKLOG P3) — Week/Month only: a streak is a
           multi-day stat. Unit is always days (a weekly/monthly-unit streak
-          would read 0 for months). "best" shows only when it beats current;
-          at the record the accent color carries it and the line just pokes. */}
+          would read 0 for months). Fills the ring's slot under the segmented
+          control so switching tabs keeps the layout even. "best" shows only
+          when it beats current; at the record the accent color carries it
+          and the line just pokes. */}
       {range !== 'day' && (
         <View
           style={{
             backgroundColor: color.surface,
             borderRadius: radius.md,
             padding: 16,
-            marginTop: 24,
+            marginTop: 16,
           }}
         >
           <Text style={{ fontFamily: font.regular, fontSize: 12, color: color.neutral500 }}>
@@ -219,6 +214,13 @@ export function StatsScreen() {
           </Text>
         </View>
       )}
+
+      {/* bar chart (S5) */}
+      <Text style={{ fontFamily: font.regular, fontSize: 12, color: color.neutral500, marginTop: 24, marginBottom: 10 }}>
+        {chartTitle}
+      </Text>
+      {/* key by range so switching Day/Week/Month clears the selection */}
+      <BarChart bars={bars} key={range} />
 
       {/* tiles (S6) — the set adapts to the selected range */}
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 24 }}>
