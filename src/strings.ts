@@ -2,9 +2,6 @@
 // speaks in one voice — roast — by product decision (gentle mode removed).
 
 const TABLE = {
-  logOver: 'Over budget. Your lungs saw that, by the way.',
-  logNear: 'Logged. That leaves basically fumes for the rest of the day.',
-  logWithin: 'Logged. Still on plan — annoyingly responsible of you.',
   undone: 'Undone. It never happened.',
   edited: 'Fixed. Revisionist history, but fine.',
   deleted: 'Deleted. We saw nothing.',
@@ -25,6 +22,90 @@ export type StringKey = keyof typeof TABLE;
 
 export function copy(key: StringKey): string {
   return TABLE[key];
+}
+
+// Log toast pools (BACKLOG P2 round 2): every log rolls a fresh roast from
+// the pool for its budget state, so the second cigarette of the day doesn't
+// hear the same line as the first. States are checked severity-first; a
+// ⅓-shared log mixes in the "splitting the bill" pool as extra candidates.
+const LOG_TOASTS = {
+  // first log of the day, budget still comfortable
+  firstOfDay: [
+    "Day's open. Let's see if today's the day you embarrass the budget.",
+    'First one logged. The scoreboard is watching now.',
+    "And we're off. Slow start is a strategy — keep it.",
+    'Logged. The day had a perfect record for a while there.',
+  ],
+  // comfortably within budget
+  within: [
+    'Logged. Still on plan — annoyingly responsible of you.',
+    'Logged. The budget barely felt that one.',
+    "Noted. At this pace you'll finish the day insufferably smug.",
+    "Logged. Plenty of runway — don't take that as a challenge.",
+  ],
+  // one-ish cigarette left in the budget
+  oneLeft: [
+    'Logged. That leaves basically fumes for the rest of the day.',
+    'One-ish left. Choose its moment wisely.',
+    'Logged. The budget is down to its last life.',
+    "That's the second-to-last call. Make the next one count — or don't have it.",
+  ],
+  // landed exactly on budget
+  exact: [
+    "Logged. That's the budget, to the drag. Walk away clean.",
+    'Dead on budget. End on this and you win the day on a technicality.',
+    'Budget: exactly spent. Anything more is officially freelancing.',
+    "That's the whole allowance. The next one has no alibi.",
+  ],
+  // over budget, under 150%
+  over: [
+    'Over budget. Your lungs saw that, by the way.',
+    'Logged, and over. The budget filed a complaint.',
+    'That one was off the books. We logged it anyway — honesty hurts.',
+    "Over the line. Tomorrow's you just sighed audibly.",
+  ],
+  // ≥150% of budget
+  torched: [
+    "Budget torched. At this point we're just doing archaeology.",
+    "That's 150% and climbing. The budget has left the chat.",
+    "Logged. The budget stopped watching a while ago — we didn't.",
+    "We're deep in bonus territory now. Nobody's proud, but it's logged.",
+  ],
+  // ⅓-shared logs — mixed into whichever state pool applies
+  shared: [
+    "A third, logged. Splitting the bill with someone else's lungs.",
+    'One-third. Communal damage — very generous of you.',
+    'Logged the ⅓. Sharing is caring, technically still smoking.',
+    "A polite third. The group discount doesn't apply to tar.",
+  ],
+} as const;
+
+// Remember the last line shown so back-to-back logs never repeat verbatim —
+// the repeat complaint is what created this pool in the first place.
+let lastLogToast = '';
+
+export function logToast(args: { priorTotal: number; budget: number; sixths: number }): string {
+  const after = args.priorTotal + args.sixths;
+  const state =
+    after >= args.budget * 1.5
+      ? 'torched'
+      : after > args.budget
+        ? 'over'
+        : after === args.budget
+          ? 'exact'
+          : args.budget - after <= 6
+            ? 'oneLeft'
+            : args.priorTotal === 0
+              ? 'firstOfDay'
+              : 'within';
+  const candidates: readonly string[] =
+    args.sixths === 2 ? [...LOG_TOASTS[state], ...LOG_TOASTS.shared] : LOG_TOASTS[state];
+  let line = candidates[Math.floor(Math.random() * candidates.length)];
+  if (line === lastLogToast && candidates.length > 1) {
+    line = candidates[(candidates.indexOf(line) + 1) % candidates.length];
+  }
+  lastLogToast = line;
+  return line;
 }
 
 // S20 craving SOS copy — a pool per countdown stage; one is picked at random

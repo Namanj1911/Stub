@@ -17,7 +17,7 @@ import { useApp, useProfile } from '../AppContext';
 import { haptic } from '../haptics';
 import { ProfileButton } from '../ProfileButton';
 import { useNav } from '../navigation';
-import { StringKey, copy } from '../strings';
+import { copy, logToast } from '../strings';
 import { color, font, radius } from '../theme';
 
 export function LogScreen() {
@@ -73,8 +73,8 @@ export function LogScreen() {
     ? entries.reduce((m, e) => Math.max(m, e.timestamp), 0)
     : null;
 
-  const showToast = (key: StringKey) => {
-    setToast(copy(key));
+  const showToast = (message: string) => {
+    setToast(message);
     if (toastTimer.current) clearTimeout(toastTimer.current);
     toastTimer.current = setTimeout(() => setToast(''), 3500);
   };
@@ -83,8 +83,7 @@ export function LogScreen() {
     haptic.logged();
     addEntry(sixths); // optimistic, never blocked (S4)
     setNow(Date.now());
-    const after = total + sixths;
-    showToast(after > budget ? 'logOver' : budget - after <= 6 ? 'logNear' : 'logWithin');
+    showToast(logToast({ priorTotal: total, budget, sixths }));
   };
 
   return (
@@ -172,7 +171,7 @@ export function LogScreen() {
               haptic.select();
               undoLast();
               setEditingId(null);
-              showToast('undone');
+              showToast(copy('undone'));
             }}
             hitSlop={10}
             accessibilityRole="button"
@@ -247,7 +246,7 @@ export function LogScreen() {
                     haptic.select();
                     editEntry(e.id, sixths);
                     setEditingId(null);
-                    showToast('edited');
+                    showToast(copy('edited'));
                   }}
                   accessibilityRole="button"
                   accessibilityLabel={`Change to ${label === '1' ? 'one' : label === '½' ? 'half' : 'a third'}`}
@@ -320,7 +319,7 @@ export function LogScreen() {
                   haptic.destructive();
                   removeEntry(e.id);
                   setEditingId(null);
-                  showToast('deleted');
+                  showToast(copy('deleted'));
                 }}
               />
             </View>
