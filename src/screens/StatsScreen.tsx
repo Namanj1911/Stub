@@ -81,6 +81,9 @@ export function StatsScreen() {
             <Pressable
               key={r}
               onPress={() => setRange(r)}
+              accessibilityRole="button"
+              accessibilityLabel={`Show ${r} view`}
+              accessibilityState={{ selected: on }}
               style={{
                 flex: 1,
                 alignItems: 'center',
@@ -167,6 +170,8 @@ export function StatsScreen() {
       {/* weekly nicotine intake (S19) → nicotine database (S18) */}
       <Pressable
         onPress={() => nav.navigate('Nicotine')}
+        accessibilityRole="button"
+        accessibilityLabel="Nicotine this week — open brands"
         style={({ pressed }) => ({
           flexDirection: 'row',
           alignItems: 'center',
@@ -244,6 +249,10 @@ function BarChart({ bars }: { bars: Bar[] }) {
           <Pressable
             key={i}
             onPress={() => setSelected(on ? null : i)}
+            accessibilityRole="button"
+            // bar values are visually tap-to-reveal; VoiceOver gets them up front
+            accessibilityLabel={`${b.label}: ${b.val}`}
+            accessibilityState={{ selected: on }}
             style={{ flex: 1, alignItems: 'center', height: '100%', justifyContent: 'flex-end' }}
           >
             {/* kept in layout at opacity 0 so bars don't jump when revealed */}
@@ -273,7 +282,7 @@ function BarChart({ bars }: { bars: Bar[] }) {
               style={{
                 fontFamily: font.regular,
                 fontSize: 10,
-                color: on ? color.accent300 : color.neutral600,
+                color: on ? color.accent300 : color.neutral500,
                 marginTop: 6,
               }}
             >
@@ -347,11 +356,11 @@ function Heatmap(props: { entries: Entry[]; todayKey: number; installDayKey: num
         ))}
       </View>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 10 }}>
-        <Text style={{ fontFamily: font.regular, fontSize: 10, color: color.neutral600 }}>less</Text>
+        <Text style={{ fontFamily: font.regular, fontSize: 10, color: color.neutral500 }}>less</Text>
         {(['low', 'mid', 'high', 'over'] as const).map((k) => (
           <View key={k} style={{ width: 10, height: 10, borderRadius: 2, backgroundColor: HEAT_COLOR[k] }} />
         ))}
-        <Text style={{ fontFamily: font.regular, fontSize: 10, color: color.neutral600 }}>more</Text>
+        <Text style={{ fontFamily: font.regular, fontSize: 10, color: color.neutral500 }}>more</Text>
       </View>
     </View>
   );

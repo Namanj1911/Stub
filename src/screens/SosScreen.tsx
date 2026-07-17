@@ -97,6 +97,8 @@ export function SosScreen() {
             nav.goBack();
           }}
           hitSlop={12}
+          accessibilityRole="button"
+          accessibilityLabel="Back"
         >
           <Text style={{ fontSize: 18, color: color.neutral500 }}>←</Text>
         </Pressable>
@@ -109,6 +111,8 @@ export function SosScreen() {
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 36 }}>
           <Pressable
             onPress={start}
+            accessibilityRole="button"
+            accessibilityLabel="I'm craving — start the five-minute timer"
             style={({ pressed }) => ({
               width: 190,
               height: 190,
@@ -180,6 +184,8 @@ export function SosScreen() {
           <View style={{ alignItems: 'center', gap: 18, marginTop: 10 }}>
             <Pressable
               onPress={finishSurvived}
+              accessibilityRole="button"
+              accessibilityLabel="It passed. I win."
               style={({ pressed }) => ({
                 borderWidth: 1,
                 borderColor: color.accent,
@@ -200,6 +206,8 @@ export function SosScreen() {
                 setPhase('pickAmount');
               }}
               hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel="I smoked it anyway"
             >
               <Text
                 style={{
@@ -225,10 +233,13 @@ export function SosScreen() {
             No judgement — it goes against today's budget.
           </Text>
           <View style={{ flexDirection: 'row', gap: 8, marginTop: 14, alignSelf: 'stretch' }}>
-            {([['1', 6], ['½', 3], ['⅓ shared', 2]] as const).map(([label, sixths]) => (
+            {([['1', 6, 'One cigarette'], ['½', 3, 'Half'], ['⅓ shared', 2, 'A third, shared']] as const).map(
+              ([label, sixths, spoken]) => (
               <Pressable
                 key={label}
                 onPress={() => finishSmoked(sixths)}
+                accessibilityRole="button"
+                accessibilityLabel={spoken}
                 style={({ pressed }) => ({
                   flex: 1,
                   minHeight: 48,
@@ -247,7 +258,13 @@ export function SosScreen() {
               </Pressable>
             ))}
           </View>
-          <Pressable onPress={cancelToIdle} hitSlop={8} style={{ marginTop: 10 }}>
+          <Pressable
+            onPress={cancelToIdle}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel="Never mind, cancel"
+            style={{ marginTop: 10 }}
+          >
             <Text
               style={{
                 fontFamily: font.regular,
@@ -301,9 +318,12 @@ function ResultView({
       </Text>
       <Pressable
         onPress={onDone}
+        accessibilityRole="button"
+        accessibilityLabel="Done"
         style={({ pressed }) => ({
           borderWidth: 1,
-          borderColor: color.neutral700,
+          // neutral600, not 700 — border-only boundary needs ≥3:1 (NFR5)
+          borderColor: color.neutral600,
           borderRadius: radius.md,
           paddingVertical: 12,
           paddingHorizontal: 24,

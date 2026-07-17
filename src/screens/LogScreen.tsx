@@ -159,9 +159,9 @@ export function LogScreen() {
 
         {/* log buttons (S1) */}
         <View style={{ flexDirection: 'row', gap: 8, marginTop: 20 }}>
-          <LogButton label="1" onPress={() => log(6)} />
-          <LogButton label="½" onPress={() => log(3)} />
-          <LogButton label="⅓ shared" onPress={() => log(2)} />
+          <LogButton label="1" a11yLabel="Log one cigarette" onPress={() => log(6)} />
+          <LogButton label="½" a11yLabel="Log half a cigarette" onPress={() => log(3)} />
+          <LogButton label="⅓ shared" a11yLabel="Log a third, shared" onPress={() => log(2)} />
         </View>
 
         {/* undo (S2) + backfill entry point (S14) */}
@@ -175,6 +175,8 @@ export function LogScreen() {
               showToast('undone');
             }}
             hitSlop={10}
+            accessibilityRole="button"
+            accessibilityLabel="Undo last entry"
           >
             <Text
               style={{
@@ -187,7 +189,12 @@ export function LogScreen() {
               undo last
             </Text>
           </Pressable>
-          <Pressable onPress={() => nav.navigate('Backfill')} hitSlop={10}>
+          <Pressable
+            onPress={() => nav.navigate('Backfill')}
+            hitSlop={10}
+            accessibilityRole="button"
+            accessibilityLabel="Log a missed cigarette"
+          >
             <Text
               style={{
                 fontFamily: font.regular,
@@ -208,7 +215,7 @@ export function LogScreen() {
             fontSize: 11,
             letterSpacing: 1,
             textTransform: 'uppercase',
-            color: color.neutral600,
+            color: color.neutral500,
             marginTop: 28,
             marginBottom: 8,
           }}
@@ -216,7 +223,7 @@ export function LogScreen() {
           Today's drags
         </Text>
         {today.length === 0 && (
-          <Text style={{ fontFamily: font.regular, fontSize: 13, color: color.neutral600 }}>
+          <Text style={{ fontFamily: font.regular, fontSize: 13, color: color.neutral500 }}>
             Nothing yet today. Keep it that way?
           </Text>
         )}
@@ -241,6 +248,9 @@ export function LogScreen() {
                     setEditingId(null);
                     showToast('edited');
                   }}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Change to ${label === '1' ? 'one' : label === '½' ? 'half' : 'a third'}`}
+                  accessibilityState={{ selected: e.sixths === sixths }}
                   style={({ pressed }) => ({
                     flex: 1,
                     alignItems: 'center',
@@ -256,7 +266,12 @@ export function LogScreen() {
                   </Text>
                 </Pressable>
               ))}
-              <Pressable onPress={() => setEditingId(null)} hitSlop={8}>
+              <Pressable
+                onPress={() => setEditingId(null)}
+                hitSlop={8}
+                accessibilityRole="button"
+                accessibilityLabel="Cancel editing"
+              >
                 <Text style={{ fontFamily: font.regular, fontSize: 12, color: color.neutral500 }}>
                   cancel
                 </Text>
@@ -292,9 +307,14 @@ export function LogScreen() {
               <Text style={{ fontFamily: font.regular, fontSize: 12, color: color.neutral500, marginRight: 10 }}>
                 {fmtTime(e.timestamp)}
               </Text>
-              <IconButton name="edit-2" onPress={() => setEditingId(e.id)} />
+              <IconButton
+                name="edit-2"
+                label={`Edit ${frac(e.sixths)} at ${fmtTime(e.timestamp)}`}
+                onPress={() => setEditingId(e.id)}
+              />
               <IconButton
                 name="trash-2"
+                label={`Delete ${frac(e.sixths)} at ${fmtTime(e.timestamp)}`}
                 onPress={() => {
                   removeEntry(e.id);
                   setEditingId(null);
@@ -324,6 +344,8 @@ export function LogScreen() {
       />
       <Pressable
         onPress={() => nav.navigate('Sos')}
+        accessibilityRole="button"
+        accessibilityLabel="Craving SOS"
         style={({ pressed }) => ({
           position: 'absolute',
           right: 20,
@@ -380,10 +402,20 @@ export function LogScreen() {
   );
 }
 
-function LogButton({ label, onPress }: { label: string; onPress: () => void }) {
+function LogButton({
+  label,
+  a11yLabel,
+  onPress,
+}: {
+  label: string;
+  a11yLabel: string;
+  onPress: () => void;
+}) {
   return (
     <Pressable
       onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={a11yLabel}
       style={({ pressed }) => ({
         flex: 1,
         minHeight: 48,
@@ -401,11 +433,21 @@ function LogButton({ label, onPress }: { label: string; onPress: () => void }) {
   );
 }
 
-function IconButton({ name, onPress }: { name: 'edit-2' | 'trash-2'; onPress: () => void }) {
+function IconButton({
+  name,
+  label,
+  onPress,
+}: {
+  name: 'edit-2' | 'trash-2';
+  label: string;
+  onPress: () => void;
+}) {
   return (
     <Pressable
       onPress={onPress}
       hitSlop={8}
+      accessibilityRole="button"
+      accessibilityLabel={label}
       style={({ pressed }) => ({
         width: 28,
         height: 28,

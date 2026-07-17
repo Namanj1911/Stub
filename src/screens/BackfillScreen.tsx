@@ -62,7 +62,12 @@ export function BackfillScreen() {
     <View style={{ flex: 1, backgroundColor: color.bg }}>
       <ScrollView contentContainerStyle={{ padding: 22, paddingTop: 16, paddingBottom: 120 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-          <Pressable onPress={() => nav.goBack()} hitSlop={12}>
+          <Pressable
+            onPress={() => nav.goBack()}
+            hitSlop={12}
+            accessibilityRole="button"
+            accessibilityLabel="Back"
+          >
             <Text style={{ fontSize: 18, color: color.neutral500 }}>←</Text>
           </Pressable>
           <Text style={{ fontFamily: font.medium, fontSize: 20, color: color.text }}>
@@ -76,7 +81,7 @@ export function BackfillScreen() {
         <SectionLabel>Which day</SectionLabel>
         <View style={{ flexDirection: 'row', gap: 8, marginTop: 10 }}>
           {days.map((d, i) => (
-            <Select key={i} on={dayIdx === i} onPress={() => setDayIdx(i)} style={{ flex: 1 }}>
+            <Select key={i} on={dayIdx === i} onPress={() => setDayIdx(i)} label={d.name} style={{ flex: 1 }}>
               <Text style={{ fontFamily: font.medium, fontSize: 13, color: color.text }}>
                 {d.label}
               </Text>
@@ -103,8 +108,14 @@ export function BackfillScreen() {
 
         <SectionLabel>How much</SectionLabel>
         <View style={{ flexDirection: 'row', gap: 8, marginTop: 10 }}>
-          {([['1', 6], ['½', 3], ['⅓', 2]] as const).map(([label, sixths]) => (
-            <Select key={label} on={step === sixths} onPress={() => setStep(sixths)} style={{ flex: 1 }}>
+          {([['1', 6, 'one'], ['½', 3, 'half'], ['⅓', 2, 'a third']] as const).map(([label, sixths, spoken]) => (
+            <Select
+              key={label}
+              on={step === sixths}
+              onPress={() => setStep(sixths)}
+              label={spoken}
+              style={{ flex: 1 }}
+            >
               <Text style={{ fontFamily: font.medium, fontSize: 14, color: color.text }}>{label}</Text>
             </Select>
           ))}
@@ -127,7 +138,13 @@ export function BackfillScreen() {
               {frac(total)}
             </Text>
           </View>
-          <Pressable onPress={() => setTotal(0)} hitSlop={8} style={{ marginRight: 16 }}>
+          <Pressable
+            onPress={() => setTotal(0)}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel="Reset total"
+            style={{ marginRight: 16 }}
+          >
             <Text
               style={{
                 fontFamily: font.regular,
@@ -139,9 +156,9 @@ export function BackfillScreen() {
               reset
             </Text>
           </Pressable>
-          <Circle label="−" onPress={() => setTotal((t) => Math.max(0, t - step))} />
+          <Circle label="−" a11yLabel="Decrease total" onPress={() => setTotal((t) => Math.max(0, t - step))} />
           <View style={{ width: 10 }} />
-          <Circle label="+" onPress={() => setTotal((t) => Math.min(120, t + step))} />
+          <Circle label="+" a11yLabel="Increase total" onPress={() => setTotal((t) => Math.min(120, t + step))} />
         </View>
 
         <Pressable
@@ -202,17 +219,22 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 function Select({
   on,
   onPress,
+  label,
   style,
   children,
 }: {
   on: boolean;
   onPress: () => void;
+  label?: string;
   style?: object;
   children: React.ReactNode;
 }) {
   return (
     <Pressable
       onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ selected: on }}
       style={({ pressed }) => ({
         alignItems: 'center',
         borderWidth: 1,
@@ -230,17 +252,21 @@ function Select({
   );
 }
 
-function Circle({ label, onPress }: { label: string; onPress: () => void }) {
+function Circle({ label, a11yLabel, onPress }: { label: string; a11yLabel: string; onPress: () => void }) {
   return (
     <Pressable
       onPress={onPress}
       hitSlop={8}
+      accessibilityRole="button"
+      accessibilityLabel={a11yLabel}
       style={({ pressed }) => ({
         width: 36,
         height: 36,
         borderRadius: 18,
         borderWidth: 1,
-        borderColor: pressed ? color.accent : color.neutral700,
+        // neutral600, not 700 — the border is this control's only boundary
+        // and needs ≥3:1 against the surface behind it (NFR5)
+        borderColor: pressed ? color.accent : color.neutral600,
         alignItems: 'center',
         justifyContent: 'center',
         transform: [{ scale: pressed ? 0.94 : 1 }],

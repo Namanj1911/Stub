@@ -223,7 +223,7 @@ export function MoneyScreen() {
         </View>
       </View>
 
-      <Text style={{ fontFamily: font.regular, fontSize: 11, color: color.neutral600, marginTop: 24 }}>
+      <Text style={{ fontFamily: font.regular, fontSize: 11, color: color.neutral500, marginTop: 24 }}>
         Savings = (baseline − actual) × your brand's MRP per stick, updated daily. Baseline and
         brand changes count from when you made them — history keeps its old numbers. MRPs as of{' '}
         {DATASET_AS_OF}.

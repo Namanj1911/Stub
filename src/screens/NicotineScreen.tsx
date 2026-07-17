@@ -148,7 +148,7 @@ export function NicotineScreen() {
         value={query}
         onChangeText={setQuery}
         placeholder="Search brands…"
-        placeholderTextColor={color.neutral600}
+        placeholderTextColor={color.neutral500}
         accessibilityLabel="Search brands"
         style={{
           backgroundColor: color.surface,
@@ -200,7 +200,7 @@ export function NicotineScreen() {
         )}
       </View>
 
-      <Text style={{ fontFamily: font.regular, fontSize: 11, color: color.neutral600, marginTop: 20 }}>
+      <Text style={{ fontFamily: font.regular, fontSize: 11, color: color.neutral500, marginTop: 20 }}>
         Placeholder figures for reference only — not medical guidance. Prices are pack MRP.
       </Text>
     </ScrollView>
@@ -315,6 +315,7 @@ function AddCustomBrand({ name, onAdd }: { name: string; onAdd: (price: number) 
       </View>
       <Pressable
         onPress={() => onAdd(price)}
+        accessibilityRole="button"
         style={({ pressed }) => ({
           backgroundColor: color.accent,
           borderRadius: radius.md,

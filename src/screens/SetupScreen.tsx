@@ -99,6 +99,8 @@ export function SetupScreen() {
             <StepperRow
               display={String(count)}
               unit="per day"
+              decLabel="Decrease smokes a day"
+              incLabel="Increase smokes a day"
               onDec={() => setCount((c) => Math.max(1, c - 1))}
               onInc={() => setCount((c) => Math.min(40, c + 1))}
             />
@@ -120,6 +122,9 @@ export function SetupScreen() {
                   <Pressable
                     key={b.id}
                     onPress={() => setBrandId(b.id)}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${b.name}, ${b.variant}, ₹${b.price}`}
+                    accessibilityState={{ selected }}
                     style={({ pressed }) => ({
                       flexDirection: 'row',
                       justifyContent: 'space-between',
@@ -144,6 +149,9 @@ export function SetupScreen() {
               })}
               <Pressable
                 onPress={() => setBrandId(null)}
+                accessibilityRole="button"
+                accessibilityLabel="Something else — we'll assume average"
+                accessibilityState={{ selected: brandId === null }}
                 style={({ pressed }) => ({
                   flexDirection: 'row',
                   justifyContent: 'space-between',
@@ -180,6 +188,9 @@ export function SetupScreen() {
                   <Pressable
                     key={t.id}
                     onPress={() => setTriggers((prev) => ({ ...prev, [t.id]: !prev[t.id] }))}
+                    accessibilityRole="checkbox"
+                    accessibilityLabel={t.label}
+                    accessibilityState={{ checked: on }}
                     style={({ pressed }) => ({
                       flexBasis: '48%',
                       flexGrow: 1,
@@ -217,6 +228,9 @@ export function SetupScreen() {
                   <Pressable
                     key={p.id}
                     onPress={() => setPace(p.id)}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${p.name}, ${p.rate}`}
+                    accessibilityState={{ selected }}
                     style={({ pressed }) => ({
                       flexDirection: 'row',
                       justifyContent: 'space-between',
@@ -305,6 +319,7 @@ export function SetupScreen() {
               setStep((s) => s + 1);
             }
           }}
+          accessibilityRole="button"
           style={({ pressed }) => ({
             backgroundColor: color.accent,
             borderRadius: radius.md,
@@ -320,7 +335,12 @@ export function SetupScreen() {
         {!done && (
           <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 12 }}>
             {step > 0 && (
-              <Pressable onPress={() => setStep((s) => s - 1)} hitSlop={8}>
+              <Pressable
+                onPress={() => setStep((s) => s - 1)}
+                hitSlop={8}
+                accessibilityRole="button"
+                accessibilityLabel="Back to previous step"
+              >
                 <Text
                   style={{
                     fontFamily: font.regular,
@@ -333,7 +353,7 @@ export function SetupScreen() {
                 </Text>
               </Pressable>
             )}
-            <Text style={{ fontFamily: font.regular, fontSize: 12, color: color.neutral600 }}>
+            <Text style={{ fontFamily: font.regular, fontSize: 12, color: color.neutral500 }}>
               {NEXT_HINT[step]}
             </Text>
           </View>
@@ -380,11 +400,15 @@ function ReactionCard({ text }: { text: string }) {
 function StepperRow({
   display,
   unit,
+  decLabel,
+  incLabel,
   onDec,
   onInc,
 }: {
   display: string;
   unit: string;
+  decLabel: string;
+  incLabel: string;
   onDec: () => void;
   onInc: () => void;
 }) {
@@ -398,7 +422,7 @@ function StepperRow({
         marginTop: 38,
       }}
     >
-      <StepperButton label="−" onPress={onDec} />
+      <StepperButton label="−" a11yLabel={decLabel} onPress={onDec} />
       <View style={{ alignItems: 'center', minWidth: 110 }}>
         <Text style={{ fontFamily: font.medium, fontSize: display.length > 2 ? 64 : 72, color: color.text }}>
           {display}
@@ -416,16 +440,26 @@ function StepperRow({
           {unit}
         </Text>
       </View>
-      <StepperButton label="+" onPress={onInc} />
+      <StepperButton label="+" a11yLabel={incLabel} onPress={onInc} />
     </View>
   );
 }
 
-function StepperButton({ label, onPress }: { label: string; onPress: () => void }) {
+function StepperButton({
+  label,
+  a11yLabel,
+  onPress,
+}: {
+  label: string;
+  a11yLabel: string;
+  onPress: () => void;
+}) {
   return (
     <Pressable
       onPress={onPress}
       hitSlop={8}
+      accessibilityRole="button"
+      accessibilityLabel={a11yLabel}
       style={({ pressed }) => ({
         width: 52,
         height: 52,

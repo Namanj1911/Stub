@@ -101,9 +101,15 @@ without discussion.
 - [x] **Money saved can go negative** (self-identified) — **done 2026-07-16**:
   decision was show honestly, roast copy ("Goa is drifting further away");
   amounts render as −₹84, Goa progress clamps at 0%.
-- [ ] **Accessibility pass** (self-identified): icon-only controls (edit,
+- [x] **Accessibility pass** (self-identified): icon-only controls (edit,
   delete, SOS button, steppers) need `accessibilityLabel`s for VoiceOver;
-  audit contrast per NFR5.
+  audit contrast per NFR5. — **done 2026-07-17** (`fix/a11y-pass`): labels +
+  roles on all icon-only/ambiguous controls, `accessibilityState` on toggles
+  (selects, segmented control, triggers), Stats bars announce their hidden
+  values. Contrast audit: `neutral600` as text failed AA (4.08:1 on bg) —
+  bumped 8 usages to `neutral500`; border-only buttons (SOS done, backfill
+  steppers) bumped `neutral700`→`600` borders for the 3:1 non-text minimum.
+  Hit targets were already ≥44px effective via `hitSlop`. Tokens untouched.
 - [ ] **Replace default Expo app icon/splash** before anyone else installs —
   part of the ROADMAP launch checklist.
 

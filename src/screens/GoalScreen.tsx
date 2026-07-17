@@ -89,6 +89,9 @@ export function GoalScreen() {
             <Pressable
               key={p.id}
               onPress={() => setPace(p.id)}
+              accessibilityRole="button"
+              accessibilityLabel={`Set pace to ${p.name}, ${p.rate}`}
+              accessibilityState={{ selected }}
               style={({ pressed }) => ({
                 flexDirection: 'row',
                 alignItems: 'center',
