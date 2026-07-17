@@ -3,11 +3,11 @@
 // in that unit. The entry is marked backfilled; all stats recompute since
 // they derive from the entries array.
 
-import * as Haptics from 'expo-haptics';
 import React, { useRef, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { useApp } from '../AppContext';
 import { frac } from '../domain';
+import { haptic } from '../haptics';
 import { useNav } from '../navigation';
 import { copy } from '../strings';
 import { color, font, radius } from '../theme';
@@ -49,7 +49,7 @@ export function BackfillScreen() {
     }
     const d = days[dayIdx].date;
     const ts = new Date(d.getFullYear(), d.getMonth(), d.getDate(), bucket.hour, 0, 0).getTime();
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    haptic.logged();
     addEntry(total, Math.min(ts, Date.now()), true);
     setTotal(0);
     // confirm in place (prototype 2b behavior) — user backs out when done
@@ -139,7 +139,10 @@ export function BackfillScreen() {
             </Text>
           </View>
           <Pressable
-            onPress={() => setTotal(0)}
+            onPress={() => {
+              haptic.select();
+              setTotal(0);
+            }}
             hitSlop={8}
             accessibilityRole="button"
             accessibilityLabel="Reset total"
@@ -231,7 +234,10 @@ function Select({
 }) {
   return (
     <Pressable
-      onPress={onPress}
+      onPress={() => {
+        haptic.select();
+        onPress();
+      }}
       accessibilityRole="button"
       accessibilityLabel={label}
       accessibilityState={{ selected: on }}
@@ -255,7 +261,10 @@ function Select({
 function Circle({ label, a11yLabel, onPress }: { label: string; a11yLabel: string; onPress: () => void }) {
   return (
     <Pressable
-      onPress={onPress}
+      onPress={() => {
+        haptic.select();
+        onPress();
+      }}
       hitSlop={8}
       accessibilityRole="button"
       accessibilityLabel={a11yLabel}

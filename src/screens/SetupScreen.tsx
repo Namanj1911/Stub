@@ -9,6 +9,7 @@ import Svg, { Defs, Ellipse, RadialGradient, Stop } from 'react-native-svg';
 import { useApp } from '../AppContext';
 import { BRAND_AVERAGES, ONBOARDING_BRANDS } from '../brands';
 import { PACE_RATE, Pace } from '../domain';
+import { haptic } from '../haptics';
 import { setupReaction } from '../strings';
 import { color, font, radius } from '../theme';
 
@@ -121,7 +122,10 @@ export function SetupScreen() {
                 return (
                   <Pressable
                     key={b.id}
-                    onPress={() => setBrandId(b.id)}
+                    onPress={() => {
+                      haptic.select();
+                      setBrandId(b.id);
+                    }}
                     accessibilityRole="button"
                     accessibilityLabel={`${b.name}, ${b.variant}, ₹${b.price}`}
                     accessibilityState={{ selected }}
@@ -148,7 +152,10 @@ export function SetupScreen() {
                 );
               })}
               <Pressable
-                onPress={() => setBrandId(null)}
+                onPress={() => {
+                  haptic.select();
+                  setBrandId(null);
+                }}
                 accessibilityRole="button"
                 accessibilityLabel="Something else — we'll assume average"
                 accessibilityState={{ selected: brandId === null }}
@@ -187,7 +194,10 @@ export function SetupScreen() {
                 return (
                   <Pressable
                     key={t.id}
-                    onPress={() => setTriggers((prev) => ({ ...prev, [t.id]: !prev[t.id] }))}
+                    onPress={() => {
+                      haptic.select();
+                      setTriggers((prev) => ({ ...prev, [t.id]: !prev[t.id] }));
+                    }}
                     accessibilityRole="checkbox"
                     accessibilityLabel={t.label}
                     accessibilityState={{ checked: on }}
@@ -227,7 +237,10 @@ export function SetupScreen() {
                 return (
                   <Pressable
                     key={p.id}
-                    onPress={() => setPace(p.id)}
+                    onPress={() => {
+                      haptic.select();
+                      setPace(p.id);
+                    }}
                     accessibilityRole="button"
                     accessibilityLabel={`${p.name}, ${p.rate}`}
                     accessibilityState={{ selected }}
@@ -456,7 +469,10 @@ function StepperButton({
 }) {
   return (
     <Pressable
-      onPress={onPress}
+      onPress={() => {
+        haptic.select();
+        onPress();
+      }}
       hitSlop={8}
       accessibilityRole="button"
       accessibilityLabel={a11yLabel}

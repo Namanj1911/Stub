@@ -1,7 +1,6 @@
 // Log screen — S1 quick log, S2 undo, S3 today view, S4 over-budget state.
 
 import { Feather } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
 import React, { useEffect, useRef, useState } from 'react';
 import { Animated, Easing, Pressable, ScrollView, Text, View } from 'react-native';
 import {
@@ -15,6 +14,7 @@ import {
   totalSixths,
 } from '../domain';
 import { useApp, useProfile } from '../AppContext';
+import { haptic } from '../haptics';
 import { ProfileButton } from '../ProfileButton';
 import { useNav } from '../navigation';
 import { copy, logToast } from '../strings';
@@ -80,7 +80,7 @@ export function LogScreen() {
   };
 
   const log = (sixths: number) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    haptic.logged();
     addEntry(sixths); // optimistic, never blocked (S4)
     setNow(Date.now());
     showToast(logToast({ priorTotal: total, budget, sixths }));
@@ -168,7 +168,7 @@ export function LogScreen() {
           <Pressable
             onPress={() => {
               if (!entries.length) return;
-              Haptics.selectionAsync();
+              haptic.select();
               undoLast();
               setEditingId(null);
               showToast(copy('undone'));
@@ -243,6 +243,7 @@ export function LogScreen() {
                 <Pressable
                   key={label}
                   onPress={() => {
+                    haptic.select();
                     editEntry(e.id, sixths);
                     setEditingId(null);
                     showToast(copy('edited'));
@@ -315,6 +316,7 @@ export function LogScreen() {
                 name="trash-2"
                 label={`Delete ${frac(e.sixths)} at ${fmtTime(e.timestamp)}`}
                 onPress={() => {
+                  haptic.destructive();
                   removeEntry(e.id);
                   setEditingId(null);
                   showToast(copy('deleted'));
@@ -342,7 +344,10 @@ export function LogScreen() {
         }}
       />
       <Pressable
-        onPress={() => nav.navigate('Sos')}
+        onPress={() => {
+          haptic.emergency();
+          nav.navigate('Sos');
+        }}
         accessibilityRole="button"
         accessibilityLabel="Craving SOS"
         style={({ pressed }) => ({

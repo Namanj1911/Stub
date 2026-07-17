@@ -118,8 +118,16 @@ without discussion.
 All four are Expo Go-safe and local-only; the haptics pass and toast pools
 are small, the other two are small-to-medium.
 
-- [ ] **Haptics vocabulary pass** *(easy)* — haptics exist at only 4 call
-  sites today; survey (2026-07-17) found the gaps. Define one mapping and
+- [x] **Haptics vocabulary pass** *(easy)* — haptics exist at only 4 call
+  sites today; survey (2026-07-17) found the gaps. — **done 2026-07-17**
+  (`feat/haptics-vocabulary`): vocabulary centralized in `src/haptics.ts`
+  (logged / select / destructive / emergency / survived — screens never
+  import expo-haptics directly); applied at every listed site, plus the
+  remaining select-style controls (Backfill day/when/unit + reset, Setup
+  brand choice) for consistency. Natural timer expiry now routes through
+  `finishSurvived` (bug fixed). The SOS stage-transition tick is in behind
+  a marked comment — device-tested 2026-07-17 with the rest of the pass
+  and kept. Define one mapping and
   apply it everywhere so feel is consistent, not per-screen:
   - *light impact* = something entered the log — already on log buttons,
     backfill-add, SOS-smoked; no change.
