@@ -163,14 +163,17 @@ are small, the other two are small-to-medium.
   - Also scope the "Nicotine this week" row to the selected range while
     in there. `tiles()` in `src/stats.ts` grows a range parameter;
     "days under budget" must state its window in the label either way.
-- [ ] **Budget-aware log toast pools** *(easy)* — every log currently shows
+- [x] **Budget-aware log toast pools** *(easy)* — every log currently shows
   one of 3 fixed lines (`logOver/logNear/logWithin`), so the roast repeats
   by the second cigarette. Split into finer budget states — first of the
   day · comfortably within · one-ish left · exactly at budget · over ·
   torched (≥150%) — with 3–5 lines each in `src/strings.ts`, rolled at
   random per log (same pattern as SOS prompts / temptation pool). Bonus
   hook: ⅓-shared logs can draw from a "splitting the bill" variant pool.
-  Roast stays the moat; funny > mean — same bar as the existing copy.
+  Roast stays the moat; funny > mean — same bar as the existing copy. —
+  **done 2026-07-17** (`feat/log-toast-pools`): 6 states, 4 lines each,
+  severity-first selection, shared pool mixed in for ⅓ logs, no verbatim
+  back-to-back repeats; device-tested.
 
 ## P3 — growth (from competition analysis, 2026-07-17)
 
