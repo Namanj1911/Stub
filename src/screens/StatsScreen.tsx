@@ -15,6 +15,7 @@ import {
   weekBars,
 } from '../stats';
 import { useApp, useProfile } from '../AppContext';
+import { haptic } from '../haptics';
 import { ProfileButton } from '../ProfileButton';
 import { useNav } from '../navigation';
 import { insightCopy } from '../strings';
@@ -80,7 +81,10 @@ export function StatsScreen() {
           return (
             <Pressable
               key={r}
-              onPress={() => setRange(r)}
+              onPress={() => {
+                haptic.select();
+                setRange(r);
+              }}
               accessibilityRole="button"
               accessibilityLabel={`Show ${r} view`}
               accessibilityState={{ selected: on }}
@@ -248,7 +252,10 @@ function BarChart({ bars }: { bars: Bar[] }) {
         return (
           <Pressable
             key={i}
-            onPress={() => setSelected(on ? null : i)}
+            onPress={() => {
+              haptic.select();
+              setSelected(on ? null : i);
+            }}
             accessibilityRole="button"
             // bar values are visually tap-to-reveal; VoiceOver gets them up front
             accessibilityLabel={`${b.label}: ${b.val}`}

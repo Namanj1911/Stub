@@ -18,6 +18,7 @@ import {
   weeksToQuit,
 } from '../domain';
 import { useApp, useProfile } from '../AppContext';
+import { haptic } from '../haptics';
 import { ProfileButton } from '../ProfileButton';
 import { color, font, radius } from '../theme';
 
@@ -88,7 +89,10 @@ export function GoalScreen() {
           return (
             <Pressable
               key={p.id}
-              onPress={() => setPace(p.id)}
+              onPress={() => {
+                haptic.select();
+                setPace(p.id);
+              }}
               accessibilityRole="button"
               accessibilityLabel={`Set pace to ${p.name}, ${p.rate}`}
               accessibilityState={{ selected }}

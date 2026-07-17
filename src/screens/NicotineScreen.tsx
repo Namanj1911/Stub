@@ -11,6 +11,7 @@ import Svg, { Defs, Ellipse, RadialGradient, Stop } from 'react-native-svg';
 import { useApp, useProfile } from '../AppContext';
 import { BRANDS, BRAND_AVERAGES, brandInfo } from '../brands';
 import { dayKey, entriesForDay, totalSixths } from '../domain';
+import { haptic } from '../haptics';
 import { useNav } from '../navigation';
 import { brandSwitchRoast } from '../strings';
 import { color, font, radius } from '../theme';
@@ -46,6 +47,7 @@ export function NicotineScreen() {
   const pick = (input: { brandId?: string; customBrandName?: string; pricePerStick: number }) => {
     const next = brandInfo(input.brandId, input.customBrandName);
     if (!next) return;
+    haptic.select(); // pairs with the roast line
     setRoast(brandSwitchRoast(yourBrand, next));
     switchBrand(input);
   };
@@ -336,7 +338,10 @@ function AddCustomBrand({ name, onAdd }: { name: string; onAdd: (price: number) 
 function MiniStepper({ label, onPress }: { label: string; onPress: () => void }) {
   return (
     <Pressable
-      onPress={onPress}
+      onPress={() => {
+        haptic.select();
+        onPress();
+      }}
       hitSlop={8}
       accessibilityLabel={label === '−' ? 'Decrease price' : 'Increase price'}
       style={({ pressed }) => ({

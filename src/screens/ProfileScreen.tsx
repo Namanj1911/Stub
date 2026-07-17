@@ -9,6 +9,7 @@ import { Alert, Pressable, ScrollView, Share, Text, View } from 'react-native';
 import { useApp, useProfile } from '../AppContext';
 import { brandInfo } from '../brands';
 import { Pace } from '../domain';
+import { haptic } from '../haptics';
 import { useNav } from '../navigation';
 import { copy } from '../strings';
 import { color, font, radius } from '../theme';
@@ -35,7 +36,14 @@ export function ProfileScreen() {
   const confirmReset = () => {
     Alert.alert(copy('resetTitle'), copy('resetBody'), [
       { text: 'Keep my data', style: 'cancel' },
-      { text: copy('resetConfirm'), style: 'destructive', onPress: resetAll },
+      {
+        text: copy('resetConfirm'),
+        style: 'destructive',
+        onPress: () => {
+          haptic.destructive();
+          resetAll();
+        },
+      },
     ]);
   };
 
@@ -126,7 +134,10 @@ export function ProfileScreen() {
           return (
             <Pressable
               key={p.id}
-              onPress={() => setPace(p.id)}
+              onPress={() => {
+                haptic.select();
+                setPace(p.id);
+              }}
               accessibilityLabel={`Set pace to ${p.name}`}
               style={({ pressed }) => ({
                 flex: 1,
@@ -222,7 +233,10 @@ function RoundButton({
 }) {
   return (
     <Pressable
-      onPress={onPress}
+      onPress={() => {
+        haptic.select();
+        onPress();
+      }}
       hitSlop={8}
       accessibilityLabel={accessibilityLabel}
       style={({ pressed }) => ({

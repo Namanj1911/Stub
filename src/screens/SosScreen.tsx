@@ -4,11 +4,11 @@
 // "I smoked it anyway" asks how much (1/½/⅓) and logs it against today's
 // budget (honesty over enforcement).
 
-import * as Haptics from 'expo-haptics';
 import React, { useEffect, useRef, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 import { useApp } from '../AppContext';
+import { haptic } from '../haptics';
 import { useNav } from '../navigation';
 import { pickPrompts, sosResult } from '../strings';
 import { color, font, radius } from '../theme';
@@ -41,33 +41,47 @@ export function SosScreen() {
 
   const finishSurvived = () => {
     stopTimer();
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    haptic.survived();
     setOutcome('survived');
     addCraving('survived');
     setPhase('result');
   };
 
   const finishSmoked = (sixths: number) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    haptic.logged();
     setOutcome('smoked');
     addCraving('smoked');
     addEntry(sixths);
     setPhase('result');
   };
 
+  // prompt stage for a remaining-seconds value — drives copy and the
+  // stage-transition tick below
+  const stageFor = (s: number) => (s > 200 ? 'early' : s > 100 ? 'mid' : 'late');
+  const stage = useRef<'early' | 'mid' | 'late'>('early');
+
   const start = () => {
+    haptic.emergency();
     prompts.current = pickPrompts();
     endAt.current = Date.now() + TOTAL * 1000;
+    stage.current = 'early';
     setLeft(TOTAL);
     setPhase('on');
     stopTimer();
     timer.current = setInterval(() => {
       const remaining = Math.max(0, Math.round((endAt.current - Date.now()) / 1000));
       if (remaining <= 0) {
-        stopTimer();
-        setOutcome('survived');
-        addCraving('survived');
-        setPhase('result');
+        // natural expiry is a survived craving too — same haptic + stat path
+        // as the "I made it" button (BACKLOG haptics pass)
+        finishSurvived();
+        return;
+      }
+      // subtle tick when the prompt changes stage — decide-on-device
+      // (BACKLOG haptics pass): delete this block if it reads as noise
+      const s = stageFor(remaining);
+      if (s !== stage.current) {
+        stage.current = s;
+        haptic.select();
       }
       setLeft(remaining);
     }, 500);
