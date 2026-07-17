@@ -164,7 +164,9 @@ are small, the other two are small-to-medium.
   budget (not today's tapered one) and state their window in the label;
   nicotine row follows the range; `underBudgetStreaks()` (current + best)
   pulled forward from P3 for the Month tile — the P3 item's Stats display
-  + roast strings remain open. Device-tested. — the 4 tiles
+  + roast strings remain open. Device-tested. *(Tile sets revised 2026-07-17
+  with the P3 streak work — each range's 4th tile is now money spent; see
+  the streak entry.)* — the 4 tiles
   render identically in all three ranges; "Longest gap today" is
   meaningless on Month (owner ask). Precedent exists: the heatmap is
   already month-only. Proposed sets (agree before build):
@@ -198,11 +200,24 @@ Way). Ordered by value-for-effort; the first two are small, Expo Go-safe
 add-ons that can be pulled forward between bigger items. Monetization is
 deliberately **not** here — deferred until after beta + PMF, see Later.
 
-- [ ] **Days-under-budget streak** *(easy, Expo Go-safe)* — current + best
+- [x] **Days-under-budget streak** *(easy, Expo Go-safe)* — current + best
   streak on Stats, computed from the per-day budget data the tiles already
   use; roast strings for a broken streak. Loss-aversion is our answer to
   Kwit-style gamification — no XP, no badge spam. Pairs with the milestone
-  roast notifications (Later) once those land.
+  roast notifications (Later) once those land. — **done 2026-07-17**
+  (`feat/streak-display`): streak card on Week/Month only (a streak is a
+  multi-day stat; unit stays days — weekly/monthly-unit streaks would read
+  0 for months), filling the ring's slot under the segmented control.
+  Declutter rules: "best" shows only when it beats current, roast lines
+  (4 states × 3–4, rolled per launch) never restate a number the card shows —
+  except broken, where the dead streak's length is the roast. Same round
+  (owner feedback on device): budget ring is now **Day-only** (it's a
+  today-stat; on Week/Month it repeated itself and buried the tiles), and
+  each range's 4th tile became **money spent** (today/7d/28d, entries valued
+  at the price in effect when lit, `~₹` for MRP-approximate) — replacing
+  "vs last weekday" (useless), "Cravings survived (7d)" (still on the SOS
+  result screen) and "Best under-budget streak" (redundant with the card).
+  Device-tested.
 - [ ] **SOS breathing exercise** *(easy, Expo Go-safe)* — guided breathing
   (box / 4-7-8) inside the SOS countdown as an alternative to the rotating
   prompts. Closes the "active craving tool" gap — competitors build whole
