@@ -7,6 +7,7 @@ import Svg, { Circle } from 'react-native-svg';
 import { Entry, baselineSixthsFor, budgetSixths, dayKey, entriesForDay, frac, totalSixths } from '../domain';
 import {
   Bar,
+  StatsRange,
   dayBars,
   heatCells,
   monthBars,
@@ -22,14 +23,12 @@ import { insightCopy } from '../strings';
 import { color, font, radius } from '../theme';
 import { BRANDS } from '../brands';
 
-type Range = 'day' | 'week' | 'month';
-
 export function StatsScreen() {
   const { data } = useApp();
   const profile = useProfile();
   const entries = data.entries;
   const nav = useNav();
-  const [range, setRange] = useState<Range>('week');
+  const [range, setRange] = useState<StatsRange>('week');
 
   const now = Date.now();
   const todayKey = dayKey(now);
@@ -39,7 +38,15 @@ export function StatsScreen() {
   const today = entriesForDay(entries, todayKey);
   const total = totalSixths(today);
 
-  const t = tiles(entries, todayKey, profile.installDayKey, budget, now);
+  const t = tiles(
+    range,
+    entries,
+    data.cravings,
+    todayKey,
+    profile.installDayKey,
+    profile.baselineHistory,
+    now,
+  );
   const insight = pickInsight(entries, todayKey, profile.installDayKey, budget, now);
 
   const bars =
@@ -56,9 +63,15 @@ export function StatsScreen() {
         : 'This week — cigarettes per day';
 
   const brand = BRANDS.find((b) => b.id === profile.brandId);
-  const weekSixths = (() => {
+  // nicotine row follows the selected range (day / 7d / 28d, like the charts)
+  const rangeDays = range === 'day' ? 1 : range === 'week' ? 7 : 28;
+  const nicotineLabel =
+    range === 'day' ? 'Nicotine today' : range === 'week' ? 'Nicotine this week' : 'Nicotine — last 4 weeks';
+  const rangeSixths = (() => {
     let s = 0;
-    for (let k = todayKey - 6; k <= todayKey; k++) s += totalSixths(entriesForDay(entries, k));
+    for (let k = todayKey - rangeDays + 1; k <= todayKey; k++) {
+      s += totalSixths(entriesForDay(entries, k));
+    }
     return s;
   })();
 
@@ -153,12 +166,11 @@ export function StatsScreen() {
       {/* key by range so switching Day/Week/Month clears the selection */}
       <BarChart bars={bars} key={range} />
 
-      {/* tiles (S6) */}
+      {/* tiles (S6) — the set adapts to the selected range */}
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 24 }}>
-        <Tile label="Daily average (7d)" value={t.avg7} />
-        <Tile label="vs last week" value={t.vsLastWeek} accent={t.trendDown} />
-        <Tile label="Days under budget" value={t.underBudget} />
-        <Tile label="Longest gap today" value={t.longestGap} />
+        {t.tiles.map((tile) => (
+          <Tile key={tile.label} label={tile.label} value={tile.value} accent={tile.accent} />
+        ))}
       </View>
 
       {/* month heatmap (S8) */}
@@ -171,11 +183,11 @@ export function StatsScreen() {
         </>
       )}
 
-      {/* weekly nicotine intake (S19) → nicotine database (S18) */}
+      {/* nicotine intake for the selected range (S19) → nicotine database (S18) */}
       <Pressable
         onPress={() => nav.navigate('Nicotine')}
         accessibilityRole="button"
-        accessibilityLabel="Nicotine this week — open brands"
+        accessibilityLabel={`${nicotineLabel} — open brands`}
         style={({ pressed }) => ({
           flexDirection: 'row',
           alignItems: 'center',
@@ -187,10 +199,10 @@ export function StatsScreen() {
       >
         <View style={{ flex: 1 }}>
           <Text style={{ fontFamily: font.regular, fontSize: 12, color: color.neutral500 }}>
-            Nicotine this week
+            {nicotineLabel}
           </Text>
           <Text style={{ fontFamily: font.medium, fontSize: 20, color: color.text, marginTop: 2 }}>
-            {brand ? `~${Math.round((weekSixths / 6) * brand.nicotineMg)} mg` : 'pick your brand'}
+            {brand ? `~${Math.round((rangeSixths / 6) * brand.nicotineMg)} mg` : 'pick your brand'}
           </Text>
         </View>
         <Text style={{ fontFamily: font.regular, fontSize: 13, color: color.accent300 }}>

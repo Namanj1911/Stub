@@ -157,7 +157,14 @@ are small, the other two are small-to-medium.
   so the SOS FAB never covers the last row; long-day edit rows must stay
   reachable. — **done 2026-07-17** (`feat/log-scroll`): chrome fixed,
   drags list is a FlatList and the only scroll region; device-tested.
-- [ ] **Stats tiles adapt to Day / Week / Month** *(medium)* — the 4 tiles
+- [x] **Stats tiles adapt to Day / Week / Month** *(medium)* — **done
+  2026-07-17** (`feat/stats-range-tiles`): tile sets as proposed below;
+  day's "vs same weekday" shows absolute cigarettes (percent is silly at
+  single-day scale); under-budget counts grade each day against its own
+  budget (not today's tapered one) and state their window in the label;
+  nicotine row follows the range; `underBudgetStreaks()` (current + best)
+  pulled forward from P3 for the Month tile — the P3 item's Stats display
+  + roast strings remain open. Device-tested. — the 4 tiles
   render identically in all three ranges; "Longest gap today" is
   meaningless on Month (owner ask). Precedent exists: the heatmap is
   already month-only. Proposed sets (agree before build):

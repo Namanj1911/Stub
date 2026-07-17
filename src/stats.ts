@@ -6,9 +6,22 @@
 // budget math (domain.budgetSixths), where it's needed for a sane day-1
 // budget; it must not leak into anything the user sees as "their data".
 
-import { Entry, entriesForDay, fmtSince, frac, totalSixths } from './domain';
+import {
+  BaselineRecord,
+  Entry,
+  baselineSixthsFor,
+  budgetSixths,
+  entriesForDay,
+  fmtSince,
+  fmtTime,
+  frac,
+  totalSixths,
+} from './domain';
+import { Craving } from './store';
 
 export type Bar = { label: string; val: string; h: number; accent: boolean };
+export type StatsRange = 'day' | 'week' | 'month';
+export type TileData = { label: string; value: string; accent?: boolean };
 
 const WEEKDAY = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -87,15 +100,73 @@ export function monthBars(
   }));
 }
 
-// S6 tiles + ring trend — averages only over days that actually have data;
-// '—' until there is enough real history for a comparison.
-export function tiles(
+// Budget in effect on a given day — the same adaptive math the ring uses,
+// against the baseline in effect that day. Streaks and "under budget" counts
+// judge each day by its own bar, not today's (the budget tapers, so grading
+// last week against today's tighter number would rewrite the past).
+function budgetForDay(
+  entries: Entry[],
+  k: number,
+  installDayKey: number,
+  baselineHistory: BaselineRecord[],
+): number {
+  return budgetSixths(entries, k, installDayKey, baselineSixthsFor(baselineHistory, k));
+}
+
+// Under-budget day count over the `n` day-keys ending today. Only post-install
+// days are graded; `days` is how many real days the window holds.
+function underBudgetCount(
   entries: Entry[],
   todayKey: number,
   installDayKey: number,
-  budget: number,
+  baselineHistory: BaselineRecord[],
+  n: number,
+): { under: number; days: number } {
+  let under = 0;
+  let days = 0;
+  for (let k = Math.max(installDayKey, todayKey - n + 1); k <= todayKey; k++) {
+    days += 1;
+    if (totalSixths(entriesForDay(entries, k)) <= budgetForDay(entries, k, installDayKey, baselineHistory)) {
+      under += 1;
+    }
+  }
+  return { under, days };
+}
+
+// Days-under-budget streaks (BACKLOG P3, pulled forward for the Month tile).
+// A day counts when its total stayed within that day's own budget; today
+// counts as it stands — an over-budget evening breaks the streak honestly.
+export function underBudgetStreaks(
+  entries: Entry[],
+  todayKey: number,
+  installDayKey: number,
+  baselineHistory: BaselineRecord[],
+): { current: number; best: number } {
+  let current = 0;
+  let best = 0;
+  for (let k = installDayKey; k <= todayKey; k++) {
+    const under =
+      totalSixths(entriesForDay(entries, k)) <=
+      budgetForDay(entries, k, installDayKey, baselineHistory);
+    current = under ? current + 1 : 0;
+    best = Math.max(best, current);
+  }
+  return { current, best };
+}
+
+// S6 tiles + ring trend, per range (BACKLOG P2 round 2) — averages only over
+// days that actually have data; '—' until there is enough real history for a
+// comparison. The trend line is always the 7-day trend (it captions the
+// budget ring, which is a today-thing regardless of range).
+export function tiles(
+  range: StatsRange,
+  entries: Entry[],
+  cravings: Craving[],
+  todayKey: number,
+  installDayKey: number,
+  baselineHistory: BaselineRecord[],
   now: number,
-) {
+): { tiles: TileData[]; trendLine: string; trendDown: boolean } {
   const last7 = dailyTotals(entries, todayKey, installDayKey, 7).filter(
     (v): v is number => v != null,
   );
@@ -106,26 +177,92 @@ export function tiles(
   const prevAvg = prev7.length === 7 ? prev7.reduce((a, b) => a + b, 0) / 7 : null;
   const delta =
     prevAvg != null && prevAvg > 0 ? Math.round(((avg7 - prevAvg) / prevAvg) * 100) : null;
+  const trendLine =
+    delta == null
+      ? 'no trend yet — keep logging'
+      : `${delta < 0 ? '↓' : '↑'} ${Math.abs(delta)}% vs last week`;
+  const trendDown = delta != null && delta < 0;
+  const pct = (d: number) => (d < 0 ? '−' : '+') + Math.abs(d) + '%';
 
-  const today = entriesForDay(entries, todayKey).sort((a, b) => a.timestamp - b.timestamp);
-  let longest = 0;
-  for (let i = 1; i < today.length; i++) {
-    longest = Math.max(longest, today[i].timestamp - today[i - 1].timestamp);
-  }
-  if (today.length > 0) {
-    longest = Math.max(longest, now - today[today.length - 1].timestamp);
+  if (range === 'day') {
+    const today = entriesForDay(entries, todayKey).sort((a, b) => a.timestamp - b.timestamp);
+    // gaps between consecutive smokes, plus the still-open gap since the last
+    const gaps: number[] = [];
+    for (let i = 1; i < today.length; i++) gaps.push(today[i].timestamp - today[i - 1].timestamp);
+    if (today.length) gaps.push(now - today[today.length - 1].timestamp);
+    const longest = gaps.length ? Math.max(...gaps) : 0;
+    const avgGap = gaps.length ? gaps.reduce((a, b) => a + b, 0) / gaps.length : 0;
+    // same weekday last week, in absolute cigarettes (percentages are silly
+    // at single-day scale); weekday named from the 4am-shifted day
+    const prevTotal =
+      todayKey - 7 >= installDayKey ? totalSixths(entriesForDay(entries, todayKey - 7)) : null;
+    const dayDelta = prevTotal == null ? null : totalSixths(today) - prevTotal;
+    const weekday = WEEKDAY[new Date(now - 4 * 3600_000).getDay()];
+    return {
+      trendLine,
+      trendDown,
+      tiles: [
+        { label: 'Longest gap today', value: today.length ? fmtSince(now - longest, now) : '—' },
+        { label: 'Average gap today', value: today.length ? fmtSince(now - avgGap, now) : '—' },
+        { label: 'First smoke', value: today.length ? fmtTime(today[0].timestamp) : '—' },
+        {
+          label: `vs last ${weekday}`,
+          value:
+            dayDelta == null
+              ? '—'
+              : dayDelta === 0
+                ? '±0'
+                : (dayDelta < 0 ? '−' : '+') + frac(Math.abs(dayDelta)),
+          accent: dayDelta != null && dayDelta < 0,
+        },
+      ],
+    };
   }
 
+  if (range === 'week') {
+    const u = underBudgetCount(entries, todayKey, installDayKey, baselineHistory, 7);
+    const survived = cravings.filter(
+      (c) => c.outcome === 'survived' && c.timestamp >= now - 7 * 86_400_000,
+    ).length;
+    return {
+      trendLine,
+      trendDown,
+      tiles: [
+        { label: 'Daily average (7d)', value: (avg7 / 6).toFixed(1) },
+        { label: 'vs last week', value: delta == null ? '—' : pct(delta), accent: trendDown },
+        { label: 'Under budget (7d)', value: `${u.under} / ${u.days || 1}` },
+        { label: 'Cravings survived (7d)', value: String(survived) },
+      ],
+    };
+  }
+
+  const last28 = dailyTotals(entries, todayKey, installDayKey, 28).filter(
+    (v): v is number => v != null,
+  );
+  const prev28 = dailyTotals(entries, todayKey - 28, installDayKey, 28).filter(
+    (v): v is number => v != null,
+  );
+  const avg28 = last28.length ? last28.reduce((a, b) => a + b, 0) / last28.length : 0;
+  const prevAvg28 = prev28.length === 28 ? prev28.reduce((a, b) => a + b, 0) / 28 : null;
+  const delta28 =
+    prevAvg28 != null && prevAvg28 > 0
+      ? Math.round(((avg28 - prevAvg28) / prevAvg28) * 100)
+      : null;
+  const u28 = underBudgetCount(entries, todayKey, installDayKey, baselineHistory, 28);
+  const best = underBudgetStreaks(entries, todayKey, installDayKey, baselineHistory).best;
   return {
-    avg7: (avg7 / 6).toFixed(1),
-    vsLastWeek: delta == null ? '—' : (delta < 0 ? '−' : '+') + Math.abs(delta) + '%',
-    trendLine:
-      delta == null
-        ? 'no trend yet — keep logging'
-        : `${delta < 0 ? '↓' : '↑'} ${Math.abs(delta)}% vs last week`,
-    trendDown: delta != null && delta < 0,
-    underBudget: `${last7.filter((v) => v <= budget).length} / ${last7.length || 1}`,
-    longestGap: today.length ? fmtSince(now - longest, now) : '—',
+    trendLine,
+    trendDown,
+    tiles: [
+      { label: 'Daily average (28d)', value: (avg28 / 6).toFixed(1) },
+      {
+        label: 'vs prev 4 weeks',
+        value: delta28 == null ? '—' : pct(delta28),
+        accent: delta28 != null && delta28 < 0,
+      },
+      { label: 'Under budget (28d)', value: `${u28.under} / ${u28.days || 1}` },
+      { label: 'Best under-budget streak', value: `${best}d` },
+    ],
   };
 }
 
