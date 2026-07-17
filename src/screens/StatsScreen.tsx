@@ -42,10 +42,10 @@ export function StatsScreen() {
   const t = tiles(
     range,
     entries,
-    data.cravings,
     todayKey,
     profile.installDayKey,
     profile.baselineHistory,
+    profile.priceHistory,
     now,
   );
   const insight = pickInsight(entries, todayKey, profile.installDayKey, budget, now);
@@ -128,80 +128,41 @@ export function StatsScreen() {
         })}
       </View>
 
-      {/* budget ring (S6) */}
-      <View
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          backgroundColor: color.surface,
-          borderRadius: radius.md,
-          padding: 16,
-          marginTop: 16,
-          gap: 16,
-        }}
-      >
-        <Ring fraction={budget > 0 ? Math.min(1, total / budget) : 0} />
-        <View style={{ flex: 1 }}>
-          <Text style={{ fontFamily: font.medium, fontSize: 24, color: color.text }}>
-            {frac(total)} / {frac(budget)}
-          </Text>
-          <Text style={{ fontFamily: font.regular, fontSize: 12, color: color.neutral500, marginTop: 2 }}>
-            today vs adaptive budget
-          </Text>
-          <Text
-            style={{
-              fontFamily: font.regular,
-              fontSize: 12,
-              color: t.trendDown ? color.accent300 : color.neutral400,
-              marginTop: 8,
-            }}
-          >
-            {t.trendLine}
-          </Text>
-        </View>
-      </View>
-
-      {/* under-budget streak (BACKLOG P3) — same in all ranges, like the ring */}
-      <View
-        style={{
-          backgroundColor: color.surface,
-          borderRadius: radius.md,
-          padding: 16,
-          marginTop: 8,
-        }}
-      >
-        <Text style={{ fontFamily: font.regular, fontSize: 12, color: color.neutral500 }}>
-          Under-budget streak
-        </Text>
-        <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 8, marginTop: 2 }}>
-          <Text
-            style={{
-              fontFamily: font.medium,
-              fontSize: 24,
-              color:
-                streaks.current > 0 && streaks.current >= streaks.best
-                  ? color.accent300
-                  : color.text,
-            }}
-          >
-            {streaks.current} day{streaks.current === 1 ? '' : 's'}
-          </Text>
-          <Text style={{ fontFamily: font.regular, fontSize: 13, color: color.neutral500 }}>
-            best {streaks.best}
-          </Text>
-        </View>
-        <Text
+      {/* budget ring (S6) — Day only: it's a today-stat, repeating it on
+          Week/Month added nothing and pushed the tiles below the fold */}
+      {range === 'day' && (
+        <View
           style={{
-            fontFamily: font.regular,
-            fontSize: 12,
-            color: color.neutral400,
-            lineHeight: 17,
-            marginTop: 6,
+            flexDirection: 'row',
+            alignItems: 'center',
+            backgroundColor: color.surface,
+            borderRadius: radius.md,
+            padding: 16,
+            marginTop: 16,
+            gap: 16,
           }}
         >
-          {streakCopy(streaks.current, streaks.best)}
-        </Text>
-      </View>
+          <Ring fraction={budget > 0 ? Math.min(1, total / budget) : 0} />
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontFamily: font.medium, fontSize: 24, color: color.text }}>
+              {frac(total)} / {frac(budget)}
+            </Text>
+            <Text style={{ fontFamily: font.regular, fontSize: 12, color: color.neutral500, marginTop: 2 }}>
+              today vs adaptive budget
+            </Text>
+            <Text
+              style={{
+                fontFamily: font.regular,
+                fontSize: 12,
+                color: t.trendDown ? color.accent300 : color.neutral400,
+                marginTop: 8,
+              }}
+            >
+              {t.trendLine}
+            </Text>
+          </View>
+        </View>
+      )}
 
       {/* bar chart (S5) */}
       <Text style={{ fontFamily: font.regular, fontSize: 12, color: color.neutral500, marginTop: 24, marginBottom: 10 }}>
@@ -209,6 +170,55 @@ export function StatsScreen() {
       </Text>
       {/* key by range so switching Day/Week/Month clears the selection */}
       <BarChart bars={bars} key={range} />
+
+      {/* under-budget streak (BACKLOG P3) — Week/Month only: a streak is a
+          multi-day stat. Unit is always days (a weekly/monthly-unit streak
+          would read 0 for months). "best" shows only when it beats current;
+          at the record the accent color carries it and the line just pokes. */}
+      {range !== 'day' && (
+        <View
+          style={{
+            backgroundColor: color.surface,
+            borderRadius: radius.md,
+            padding: 16,
+            marginTop: 24,
+          }}
+        >
+          <Text style={{ fontFamily: font.regular, fontSize: 12, color: color.neutral500 }}>
+            Under-budget streak
+          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 8, marginTop: 2 }}>
+            <Text
+              style={{
+                fontFamily: font.medium,
+                fontSize: 24,
+                color:
+                  streaks.current > 0 && streaks.current >= streaks.best
+                    ? color.accent300
+                    : color.text,
+              }}
+            >
+              {streaks.current} day{streaks.current === 1 ? '' : 's'}
+            </Text>
+            {streaks.best > streaks.current && (
+              <Text style={{ fontFamily: font.regular, fontSize: 13, color: color.neutral500 }}>
+                best {streaks.best}
+              </Text>
+            )}
+          </View>
+          <Text
+            style={{
+              fontFamily: font.regular,
+              fontSize: 12,
+              color: color.neutral400,
+              lineHeight: 17,
+              marginTop: 6,
+            }}
+          >
+            {streakCopy(streaks.current, streaks.best)}
+          </Text>
+        </View>
+      )}
 
       {/* tiles (S6) — the set adapts to the selected range */}
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 24 }}>
