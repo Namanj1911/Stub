@@ -195,6 +195,51 @@ export function moneyTemptation(flights: number): { line: string; emoji: string 
   return TEMPTATIONS[TEMPTATION_ROLL](Math.max(1, flights));
 }
 
+// Under-budget streak card (BACKLOG P3): one line per streak state. Rolled
+// once per launch (module load), like the temptation pool — the line stays
+// put while the user pokes around Stats, and changes next app open.
+const d = (n: number) => `${n} day${n === 1 ? '' : 's'}`;
+
+const STREAK_LINES: Record<
+  'none' | 'broken' | 'building' | 'record',
+  ((current: number, best: number) => string)[]
+> = {
+  // never had a streak — new user or rough start
+  none: [
+    () => 'No streak yet. Finish one day under budget and the counter starts.',
+    () => 'Zero so far. Today is a perfectly good day one — just saying.',
+    () => 'The streak counter is idle. It would love a reason not to be.',
+  ],
+  // current 0, best > 0 — the streak broke; this is the roast the backlog asked for
+  broken: [
+    (_, b) => `Best run: ${d(b)}. Current run: zero. The scoreboard remembers.`,
+    (_, b) => `You once did ${d(b)} straight. That person is still in there somewhere.`,
+    (_, b) => `Streak's dead. It lived ${d(b)} good days — avenge it tomorrow.`,
+    (_, b) => `From ${d(b)} in a row to nothing. Even the heatmap looked away.`,
+  ],
+  // alive but short of the record
+  building: [
+    (c, b) => `Day ${c} and counting. Your record (${d(b)}) is watching nervously.`,
+    (c, b) => `${d(c)} in a row. Past you managed ${d(b)} — go embarrass them.`,
+    (c) => `${d(c)} straight under budget. Keep it boring — boring wins.`,
+  ],
+  // at or setting the personal best
+  record: [
+    (c) => `${d(c)} straight — your best run ever. Don't get sentimental, get to ${c + 1}.`,
+    (c) => `Personal best: ${d(c)} in a row. Day-1 you would not believe this.`,
+    (c) => `${d(c)} straight, a new record. The budget is starting to trust you. Don't make it weird.`,
+  ],
+};
+
+const STREAK_ROLL = Math.random();
+
+export function streakCopy(current: number, best: number): string {
+  const state =
+    best === 0 ? 'none' : current === 0 ? 'broken' : current < best ? 'building' : 'record';
+  const pool = STREAK_LINES[state];
+  return pool[Math.floor(STREAK_ROLL * pool.length)](current, best);
+}
+
 // Brand-switch roast (BACKLOG P1): the app noticed, and has opinions.
 export function brandSwitchRoast(
   prev: { nicotineMg: number; estimated: boolean } | null,

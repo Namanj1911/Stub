@@ -13,13 +13,14 @@ import {
   monthBars,
   pickInsight,
   tiles,
+  underBudgetStreaks,
   weekBars,
 } from '../stats';
 import { useApp, useProfile } from '../AppContext';
 import { haptic } from '../haptics';
 import { ProfileButton } from '../ProfileButton';
 import { useNav } from '../navigation';
-import { insightCopy } from '../strings';
+import { insightCopy, streakCopy } from '../strings';
 import { color, font, radius } from '../theme';
 import { BRANDS } from '../brands';
 
@@ -48,6 +49,7 @@ export function StatsScreen() {
     now,
   );
   const insight = pickInsight(entries, todayKey, profile.installDayKey, budget, now);
+  const streaks = underBudgetStreaks(entries, todayKey, profile.installDayKey, profile.baselineHistory);
 
   const bars =
     range === 'day'
@@ -157,6 +159,48 @@ export function StatsScreen() {
             {t.trendLine}
           </Text>
         </View>
+      </View>
+
+      {/* under-budget streak (BACKLOG P3) — same in all ranges, like the ring */}
+      <View
+        style={{
+          backgroundColor: color.surface,
+          borderRadius: radius.md,
+          padding: 16,
+          marginTop: 8,
+        }}
+      >
+        <Text style={{ fontFamily: font.regular, fontSize: 12, color: color.neutral500 }}>
+          Under-budget streak
+        </Text>
+        <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 8, marginTop: 2 }}>
+          <Text
+            style={{
+              fontFamily: font.medium,
+              fontSize: 24,
+              color:
+                streaks.current > 0 && streaks.current >= streaks.best
+                  ? color.accent300
+                  : color.text,
+            }}
+          >
+            {streaks.current} day{streaks.current === 1 ? '' : 's'}
+          </Text>
+          <Text style={{ fontFamily: font.regular, fontSize: 13, color: color.neutral500 }}>
+            best {streaks.best}
+          </Text>
+        </View>
+        <Text
+          style={{
+            fontFamily: font.regular,
+            fontSize: 12,
+            color: color.neutral400,
+            lineHeight: 17,
+            marginTop: 6,
+          }}
+        >
+          {streakCopy(streaks.current, streaks.best)}
+        </Text>
       </View>
 
       {/* bar chart (S5) */}
