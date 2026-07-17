@@ -5,7 +5,7 @@
 // budget (honesty over enforcement).
 
 import React, { useEffect, useRef, useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Animated, Easing, Pressable, Text, View } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 import { useApp } from '../AppContext';
 import { haptic } from '../haptics';
@@ -17,7 +17,39 @@ const TOTAL = 300; // seconds
 const R = 96;
 const CIRC = 2 * Math.PI * R; // ≈ 603, as in the prototype
 
+// Guided breathing (BACKLOG P3) — an alternative to the rotating prompts
+// inside the same 5:00 countdown. `to` is the guide circle's target (0 =
+// contracted, 1 = full); a segment that repeats the previous `to` is a hold.
+// Durations in ms, named so pacing tweaks are one-line edits.
+const BREATH_PATTERNS = {
+  box: {
+    chip: 'box',
+    spoken: 'Box breathing, four seconds each side',
+    segments: [
+      { label: 'breathe in', to: 1, dur: 4000 },
+      { label: 'hold', to: 1, dur: 4000 },
+      { label: 'breathe out', to: 0, dur: 4000 },
+      { label: 'hold', to: 0, dur: 4000 },
+    ],
+  },
+  relax: {
+    chip: '4-7-8',
+    spoken: 'Relaxing breath, in four, hold seven, out eight',
+    segments: [
+      { label: 'breathe in', to: 1, dur: 4000 },
+      { label: 'hold', to: 1, dur: 7000 },
+      { label: 'breathe out', to: 0, dur: 8000 },
+    ],
+  },
+} as const;
+type PatternKey = keyof typeof BREATH_PATTERNS;
+
+// circle diameter range the 0..1 value maps to
+const BREATH_MAX = 132;
+const BREATH_MIN_SCALE = 0.55;
+
 type Phase = 'idle' | 'on' | 'pickAmount' | 'result';
+type SosMode = 'prompts' | 'breathe';
 
 export function SosScreen() {
   const { data, addCraving, addEntry } = useApp();
@@ -25,6 +57,15 @@ export function SosScreen() {
   const nav = useNav();
   const [phase, setPhase] = useState<Phase>('idle');
   const [left, setLeft] = useState(TOTAL);
+  // prompts vs guided breathing; sticky within the screen so a re-run of the
+  // timer keeps the user's choice. Mirrored in a ref for the interval closure.
+  const [mode, setMode] = useState<SosMode>('prompts');
+  const modeRef = useRef<SosMode>('prompts');
+  const switchMode = (m: SosMode) => {
+    haptic.select();
+    modeRef.current = m;
+    setMode(m);
+  };
   const [outcome, setOutcome] = useState<'survived' | 'smoked'>('survived');
   const timer = useRef<ReturnType<typeof setInterval> | null>(null);
   // wall-clock deadline — iOS pauses JS timers in the background, so remaining
@@ -77,11 +118,12 @@ export function SosScreen() {
         return;
       }
       // subtle tick when the prompt changes stage — decide-on-device
-      // (BACKLOG haptics pass): delete this block if it reads as noise
+      // (BACKLOG haptics pass): delete this block if it reads as noise.
+      // Prompts mode only: breathing has its own rhythm to protect.
       const s = stageFor(remaining);
       if (s !== stage.current) {
         stage.current = s;
-        haptic.select();
+        if (modeRef.current === 'prompts') haptic.select();
       }
       setLeft(remaining);
     }, 500);
@@ -165,7 +207,8 @@ export function SosScreen() {
       )}
 
       {phase === 'on' && (
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 30 }}>
+        // gap 22 (was 30): the mode toggle added a fourth child to this column
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 22 }}>
           <View style={{ width: 210, height: 210, alignItems: 'center', justifyContent: 'center' }}>
             <Svg width={210} height={210} viewBox="0 0 210 210" style={{ position: 'absolute' }}>
               <Circle cx={105} cy={105} r={R} stroke={color.neutral900} strokeWidth={8} fill="none" />
@@ -183,19 +226,43 @@ export function SosScreen() {
             </Svg>
             <Text style={{ fontFamily: font.medium, fontSize: 44, color: color.text }}>{clock}</Text>
           </View>
-          <Text
-            style={{
-              fontFamily: font.regular,
-              fontSize: 14,
-              color: color.neutral300,
-              textAlign: 'center',
-              lineHeight: 20,
-              paddingHorizontal: 20,
-            }}
+          {mode === 'prompts' ? (
+            <Text
+              style={{
+                fontFamily: font.regular,
+                fontSize: 14,
+                color: color.neutral300,
+                textAlign: 'center',
+                lineHeight: 20,
+                paddingHorizontal: 20,
+                minHeight: 40,
+              }}
+            >
+              {prompt}
+            </Text>
+          ) : (
+            <BreathGuide />
+          )}
+          <Pressable
+            onPress={() => switchMode(mode === 'prompts' ? 'breathe' : 'prompts')}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel={
+              mode === 'prompts' ? 'Switch to guided breathing' : 'Switch back to prompts'
+            }
           >
-            {prompt}
-          </Text>
-          <View style={{ alignItems: 'center', gap: 18, marginTop: 10 }}>
+            <Text
+              style={{
+                fontFamily: font.regular,
+                fontSize: 12,
+                color: color.accent300,
+                textDecorationLine: 'underline',
+              }}
+            >
+              {mode === 'prompts' ? 'breathe with me instead' : 'back to prompts'}
+            </Text>
+          </Pressable>
+          <View style={{ alignItems: 'center', gap: 18, marginTop: 4 }}>
             <Pressable
               onPress={finishSurvived}
               accessibilityRole="button"
@@ -300,6 +367,108 @@ export function SosScreen() {
           onDone={() => nav.goBack()}
         />
       )}
+    </View>
+  );
+}
+
+// The guide circle grows on inhale, holds, and shrinks on exhale, looping
+// until the countdown ends or the user switches back to prompts. The loop is
+// driven segment-by-segment (timing → callback → next segment) so the phase
+// label always matches the animation; a hold is a timing to the same value.
+function BreathGuide() {
+  const [patternKey, setPatternKey] = useState<PatternKey>('box');
+  const pattern = BREATH_PATTERNS[patternKey];
+  const [segLabel, setSegLabel] = useState<string>(pattern.segments[0].label);
+  const anim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    let alive = true;
+    anim.setValue(0);
+    const run = (i: number) => {
+      if (!alive) return;
+      const seg = pattern.segments[i];
+      setSegLabel(seg.label);
+      // breath-cue tick on in/out only — decide-on-device (same bar as the
+      // stage tick): delete if it fights the calm instead of guiding it
+      if (seg.label !== 'hold') haptic.select();
+      Animated.timing(anim, {
+        toValue: seg.to,
+        duration: seg.dur,
+        easing: Easing.inOut(Easing.quad),
+        useNativeDriver: true,
+      }).start(({ finished }) => {
+        if (finished) run((i + 1) % pattern.segments.length);
+      });
+    };
+    run(0);
+    return () => {
+      alive = false;
+      anim.stopAnimation();
+    };
+  }, [patternKey]);
+
+  const scale = anim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [BREATH_MIN_SCALE, 1],
+  });
+
+  return (
+    <View style={{ alignItems: 'center', gap: 16 }}>
+      <View
+        style={{ width: BREATH_MAX, height: BREATH_MAX, alignItems: 'center', justifyContent: 'center' }}
+        accessibilityLabel={`Breathing guide: ${segLabel}`}
+      >
+        <Animated.View
+          style={{
+            position: 'absolute',
+            width: BREATH_MAX,
+            height: BREATH_MAX,
+            borderRadius: BREATH_MAX / 2,
+            borderWidth: 2,
+            borderColor: color.accent,
+            backgroundColor: color.accentTint12,
+            transform: [{ scale }],
+          }}
+        />
+        <Text style={{ fontFamily: font.regular, fontSize: 13, color: color.accent300 }}>
+          {segLabel}
+        </Text>
+      </View>
+      <View style={{ flexDirection: 'row', gap: 8 }}>
+        {(Object.keys(BREATH_PATTERNS) as PatternKey[]).map((k) => {
+          const on = patternKey === k;
+          return (
+            <Pressable
+              key={k}
+              onPress={() => {
+                haptic.select();
+                setPatternKey(k);
+              }}
+              accessibilityRole="button"
+              accessibilityLabel={BREATH_PATTERNS[k].spoken}
+              accessibilityState={{ selected: on }}
+              style={{
+                paddingVertical: 6,
+                paddingHorizontal: 14,
+                borderRadius: radius.md,
+                borderWidth: 1,
+                borderColor: on ? color.accent : color.neutral600,
+                backgroundColor: on ? color.accentTint12 : 'transparent',
+              }}
+            >
+              <Text
+                style={{
+                  fontFamily: font.medium,
+                  fontSize: 12,
+                  color: on ? color.accent300 : color.neutral500,
+                }}
+              >
+                {BREATH_PATTERNS[k].chip}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
     </View>
   );
 }
