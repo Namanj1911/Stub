@@ -5,11 +5,14 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
+    "scheme": "stubapp",
     "userInterfaceStyle": "light",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.namanj1911.stubapp"
     },
     "android": {
+      "package": "com.namanj1911.stubapp",
       "adaptiveIcon": {
         "backgroundColor": "#161826",
         "foregroundImage": "./assets/adaptive-icon.png"
