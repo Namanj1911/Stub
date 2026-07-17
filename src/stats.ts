@@ -27,14 +27,16 @@ function dailyTotals(
   return out;
 }
 
-// S5 Day view — today's smokes by time-of-day bucket. Bucket by clock hour;
-// the 4–6 am tail of the day folds into the first slot.
+// S5 Day view — today's smokes by time-of-day bucket. The night bucket wraps
+// past midnight (9pm–4am) to match the 4am day boundary: a 1am smoke belongs
+// to the previous evening and must render as night, not morning. The 4–6am
+// sliver folds into the first slot.
 export function dayBars(todayEntries: Entry[]): Bar[] {
-  const labels = ['6–9', '9–12', '12–3', '3–6', '6–9p', '9–12p'];
+  const labels = ['6–9', '9–12', '12–3', '3–6', '6–9p', '9p–4'];
   const totals = [0, 0, 0, 0, 0, 0];
   for (const e of todayEntries) {
     const h = new Date(e.timestamp).getHours();
-    const i = h < 9 ? 0 : h < 12 ? 1 : h < 15 ? 2 : h < 18 ? 3 : h < 21 ? 4 : 5;
+    const i = h < 4 ? 5 : h < 9 ? 0 : h < 12 ? 1 : h < 15 ? 2 : h < 18 ? 3 : h < 21 ? 4 : 5;
     totals[i] += e.sixths;
   }
   const m = Math.max(...totals, 6);
