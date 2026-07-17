@@ -113,6 +113,96 @@ without discussion.
 - [ ] **Replace default Expo app icon/splash** before anyone else installs —
   part of the ROADMAP launch checklist.
 
+## P2 — round 2 (owner feedback, 2026-07-17)
+
+All four are Expo Go-safe and local-only; the haptics pass and toast pools
+are small, the other two are small-to-medium.
+
+- [ ] **Haptics vocabulary pass** *(easy)* — haptics exist at only 4 call
+  sites today; survey (2026-07-17) found the gaps. Define one mapping and
+  apply it everywhere so feel is consistent, not per-screen:
+  - *light impact* = something entered the log — already on log buttons,
+    backfill-add, SOS-smoked; no change.
+  - *warning notification* = destructive — **new:** entry delete on Log
+    (owner ask), reset-all confirm on Profile.
+  - *selection tick* = choice/value changed — already on undo; **new:**
+    edit-save on Log, every stepper (Profile count/day, Backfill −/+,
+    Setup steppers, unlisted-brand price), pace pickers (Goal, Profile,
+    Setup), Setup trigger toggles, brand switch on Nicotine (pairs with
+    the roast line), Stats segmented control and bar tap-to-reveal.
+  - *medium impact* = emergency — **new:** SOS FAB press (owner ask) and
+    the "I'm craving" start button; an emergency control should feel
+    heavier than a log tap.
+  - *success notification* = craving survived — **bug:** only the "I made
+    it" button path fires it; natural timer expiry marks survived with no
+    haptic (SosScreen `start()` interval). Route both through
+    `finishSurvived`.
+  - Decide on-device: subtle tick at SOS stage transitions (200s/100s
+    prompt changes). Nothing per-second — a countdown that vibrates
+    constantly is a stress machine.
+- [ ] **Today's Drags scrolls by itself** *(small-medium)* — owner ask:
+  scroll the list, not the page. Restructure LogScreen: header, count,
+  meter and log buttons become fixed chrome; the drags list becomes the
+  only scrollable region (list-as-scroller with the rest as fixed views
+  above — avoids nested same-axis ScrollViews, which need
+  `nestedScrollEnabled` on Android and feel glitchy). Keep bottom padding
+  so the SOS FAB never covers the last row; long-day edit rows must stay
+  reachable.
+- [ ] **Stats tiles adapt to Day / Week / Month** *(medium)* — the 4 tiles
+  render identically in all three ranges; "Longest gap today" is
+  meaningless on Month (owner ask). Precedent exists: the heatmap is
+  already month-only. Proposed sets (agree before build):
+  - *Day:* longest gap today · average gap today · first smoke (time) ·
+    vs same weekday last week.
+  - *Week:* daily average (7d) · vs last week · days under budget (x/7) ·
+    cravings survived (7d) — the data already exists in the store and is
+    currently visible only on the SOS result screen.
+  - *Month:* daily average (28d) · vs previous 4 weeks · days under
+    budget (x/28) · best under-budget streak — reuses the P3 streak
+    computation once it lands.
+  - Also scope the "Nicotine this week" row to the selected range while
+    in there. `tiles()` in `src/stats.ts` grows a range parameter;
+    "days under budget" must state its window in the label either way.
+- [ ] **Budget-aware log toast pools** *(easy)* — every log currently shows
+  one of 3 fixed lines (`logOver/logNear/logWithin`), so the roast repeats
+  by the second cigarette. Split into finer budget states — first of the
+  day · comfortably within · one-ish left · exactly at budget · over ·
+  torched (≥150%) — with 3–5 lines each in `src/strings.ts`, rolled at
+  random per log (same pattern as SOS prompts / temptation pool). Bonus
+  hook: ⅓-shared logs can draw from a "splitting the bill" variant pool.
+  Roast stays the moat; funny > mean — same bar as the existing copy.
+
+## P3 — growth (from competition analysis, 2026-07-17)
+
+Gaps vs the segment leaders (Smoke Free, Kwit, QuitNow, QuitSure, Smoke Less
+Way). Ordered by value-for-effort; the first two are small, Expo Go-safe
+add-ons that can be pulled forward between bigger items. Monetization is
+deliberately **not** here — deferred until after beta + PMF, see Later.
+
+- [ ] **Days-under-budget streak** *(easy, Expo Go-safe)* — current + best
+  streak on Stats, computed from the per-day budget data the tiles already
+  use; roast strings for a broken streak. Loss-aversion is our answer to
+  Kwit-style gamification — no XP, no badge spam. Pairs with the milestone
+  roast notifications (Later) once those land.
+- [ ] **SOS breathing exercise** *(easy, Expo Go-safe)* — guided breathing
+  (box / 4-7-8) inside the SOS countdown as an alternative to the rotating
+  prompts. Closes the "active craving tool" gap — competitors build whole
+  apps around this moment; one animation gets us most of the value.
+- [ ] **Health-recovery timeline** — the single most motivating screen in
+  every leading competitor (WHO/CDC milestones, 20 min → 10 years). One
+  design decision needed first: classic timelines key off time-since-last-
+  smoke, which resets constantly in a reduction app — either render the
+  reset honestly (very roastable) or model partial recovery from actual
+  reduction (novel; no competitor does it). Milestone data needs a citable
+  source — same sourcing bar as brand MRPs.
+- [ ] **Post-zero mode** — the product story currently ends at the quit
+  date; for Smoke Free/Kwit, what comes after *is* the product. At zero,
+  flip into a smoke-free companion: smoke-free streak, money saved keeps
+  compounding, SOS stays, a relapse is logged honestly without resetting
+  the world. Needs its own design pass — but must ship before the first
+  real cohort reaches its quit date, or we lose users at the moment the
+  app succeeds.
+
 ## Later / needs discussion
 
 - Notifications (SPEC S15–S17) — needs expo-notifications; limited inside
@@ -138,6 +228,31 @@ without discussion.
 - Remote-fetch brand/price database (server-hosted, updatable without app
   releases) — decided 2026-07-17 to ship the dataset inside the app for now;
   remote fetch needs real research + design.
+- Android build (EAS) — India is ~95% Android, so it's the actual market for
+  an India-first app. Expo keeps it cheap (mostly an EAS build target) and it
+  rides the same dev-build infra as notifications. Sequence alongside
+  GO_LIVE §8; on both stores, sell local-only privacy ("your data never
+  leaves your phone") as a listed feature, not a footnote.
+- Hindi / Hinglish roast localization — `src/strings.ts` already centralizes
+  every user-facing string, so the plumbing is half-done; the real work is
+  roast copy that genuinely lands in Hinglish, plus i18n details (plurals,
+  numerals). No competitor serves Indian languages. Wait until copy
+  stabilizes — every string change before then costs double.
+- Widgets + Apple Health / Google Fit — cheap retention surface competitors
+  ship (QuitNow); needs the dev build (not available in Expo Go), so it
+  rides the notifications infra. Widget candidates: today vs budget, time
+  since last.
+- Bidi / smokeless tobacco support — bidi smokers outnumber cigarette
+  smokers in India and no app serves them; the sixths/fraction model and
+  MRP-based money math extend naturally. Big scope (dataset, budget
+  semantics, tone) — v3 territory, revisit after PMF.
+- Monetization — **deferred until beta testing + PMF (decided 2026-07-17).**
+  Direction when revisited: one-time Pro unlock (~₹199–299, India-priced),
+  possibly a tip jar; constraints that hold regardless: no ads ever (breaks
+  the "Data Not Collected" privacy label and the trust positioning), and
+  never paywall logging or SOS ("never blocks logging" applies to payment
+  too). Decide the free/Pro split from beta retention data — pay for what
+  people demonstrably stay for.
 
 ## Issues faced so far (for the record)
 
