@@ -2,7 +2,7 @@
 
 import { Feather } from '@expo/vector-icons';
 import React, { useEffect, useRef, useState } from 'react';
-import { Animated, Easing, Pressable, ScrollView, Text, View } from 'react-native';
+import { Animated, Easing, FlatList, Pressable, Text, View } from 'react-native';
 import {
   baselineSixthsFor,
   budgetSixths,
@@ -88,7 +88,9 @@ export function LogScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: color.bg }}>
-      <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 100 }}>
+      {/* fixed chrome — header through the drags heading never scrolls; the
+          drags list below is the screen's only scrollable region */}
+      <View style={{ paddingHorizontal: 20, paddingTop: 20 }}>
         {/* header — wordmark and profile mark only. 26 (vs 22 elsewhere) on
             purpose: this is the app's front door, and the profile mark beside
             it visually shrinks anything smaller */}
@@ -207,7 +209,6 @@ export function LogScreen() {
           </Pressable>
         </View>
 
-        {/* today's drags (S3) — newest first */}
         <Text
           style={{
             fontFamily: font.medium,
@@ -221,15 +222,25 @@ export function LogScreen() {
         >
           Today's drags
         </Text>
-        {today.length === 0 && (
+      </View>
+
+      {/* today's drags (S3) — newest first. The list is its own scroller
+          (list-as-scroller, not a nested ScrollView); bottom padding keeps
+          the SOS FAB off the last row */}
+      <FlatList
+        data={[...today].reverse()}
+        keyExtractor={(e) => e.id}
+        extraData={editingId}
+        style={{ flex: 1 }}
+        contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 100 }}
+        ListEmptyComponent={
           <Text style={{ fontFamily: font.regular, fontSize: 13, color: color.neutral500 }}>
             Nothing yet today. Keep it that way?
           </Text>
-        )}
-        {[...today].reverse().map((e) =>
+        }
+        renderItem={({ item: e }) =>
           editingId === e.id ? (
             <View
-              key={e.id}
               style={{
                 flexDirection: 'row',
                 alignItems: 'center',
@@ -279,7 +290,6 @@ export function LogScreen() {
             </View>
           ) : (
             <View
-              key={e.id}
               style={{
                 flexDirection: 'row',
                 alignItems: 'center',
@@ -323,9 +333,9 @@ export function LogScreen() {
                 }}
               />
             </View>
-          ),
-        )}
-      </ScrollView>
+          )
+        }
+      />
 
       {/* floating craving SOS button (S20 entry point) — deliberately breaks
           theme: an emergency control has to look like one */}

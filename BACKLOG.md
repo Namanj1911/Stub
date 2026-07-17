@@ -148,14 +148,15 @@ are small, the other two are small-to-medium.
   - Decide on-device: subtle tick at SOS stage transitions (200s/100s
     prompt changes). Nothing per-second — a countdown that vibrates
     constantly is a stress machine.
-- [ ] **Today's Drags scrolls by itself** *(small-medium)* — owner ask:
+- [x] **Today's Drags scrolls by itself** *(small-medium)* — owner ask:
   scroll the list, not the page. Restructure LogScreen: header, count,
   meter and log buttons become fixed chrome; the drags list becomes the
   only scrollable region (list-as-scroller with the rest as fixed views
   above — avoids nested same-axis ScrollViews, which need
   `nestedScrollEnabled` on Android and feel glitchy). Keep bottom padding
   so the SOS FAB never covers the last row; long-day edit rows must stay
-  reachable.
+  reachable. — **done 2026-07-17** (`feat/log-scroll`): chrome fixed,
+  drags list is a FlatList and the only scroll region; device-tested.
 - [ ] **Stats tiles adapt to Day / Week / Month** *(medium)* — the 4 tiles
   render identically in all three ranges; "Longest gap today" is
   meaningless on Month (owner ask). Precedent exists: the heatmap is
