@@ -20,29 +20,14 @@ const CIRC = 2 * Math.PI * R; // ≈ 603, as in the prototype
 // Guided breathing (BACKLOG P3) — an alternative to the rotating prompts
 // inside the same 5:00 countdown. `to` is the guide circle's target (0 =
 // contracted, 1 = full); a segment that repeats the previous `to` is a hold.
+// One pattern, in 4 / hold 4 / out 4 — device verdict 2026-07-17: the
+// post-exhale hold dragged and 4-7-8 earned no keep, so both are gone.
 // Durations in ms, named so pacing tweaks are one-line edits.
-const BREATH_PATTERNS = {
-  box: {
-    chip: 'box',
-    spoken: 'Box breathing, four seconds each side',
-    segments: [
-      { label: 'breathe in', to: 1, dur: 4000 },
-      { label: 'hold', to: 1, dur: 4000 },
-      { label: 'breathe out', to: 0, dur: 4000 },
-      { label: 'hold', to: 0, dur: 4000 },
-    ],
-  },
-  relax: {
-    chip: '4-7-8',
-    spoken: 'Relaxing breath, in four, hold seven, out eight',
-    segments: [
-      { label: 'breathe in', to: 1, dur: 4000 },
-      { label: 'hold', to: 1, dur: 7000 },
-      { label: 'breathe out', to: 0, dur: 8000 },
-    ],
-  },
-} as const;
-type PatternKey = keyof typeof BREATH_PATTERNS;
+const BREATH_SEGMENTS = [
+  { label: 'breathe in', to: 1, dur: 4000 },
+  { label: 'hold', to: 1, dur: 4000 },
+  { label: 'breathe out', to: 0, dur: 4000 },
+] as const;
 
 // circle diameter range the 0..1 value maps to
 const BREATH_MAX = 132;
@@ -376,9 +361,7 @@ export function SosScreen() {
 // driven segment-by-segment (timing → callback → next segment) so the phase
 // label always matches the animation; a hold is a timing to the same value.
 function BreathGuide() {
-  const [patternKey, setPatternKey] = useState<PatternKey>('box');
-  const pattern = BREATH_PATTERNS[patternKey];
-  const [segLabel, setSegLabel] = useState<string>(pattern.segments[0].label);
+  const [segLabel, setSegLabel] = useState<string>(BREATH_SEGMENTS[0].label);
   const anim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -386,7 +369,7 @@ function BreathGuide() {
     anim.setValue(0);
     const run = (i: number) => {
       if (!alive) return;
-      const seg = pattern.segments[i];
+      const seg = BREATH_SEGMENTS[i];
       setSegLabel(seg.label);
       // breath-cue tick on in/out only — decide-on-device (same bar as the
       // stage tick): delete if it fights the calm instead of guiding it
@@ -397,7 +380,7 @@ function BreathGuide() {
         easing: Easing.inOut(Easing.quad),
         useNativeDriver: true,
       }).start(({ finished }) => {
-        if (finished) run((i + 1) % pattern.segments.length);
+        if (finished) run((i + 1) % BREATH_SEGMENTS.length);
       });
     };
     run(0);
@@ -405,7 +388,7 @@ function BreathGuide() {
       alive = false;
       anim.stopAnimation();
     };
-  }, [patternKey]);
+  }, []);
 
   const scale = anim.interpolate({
     inputRange: [0, 1],
@@ -433,41 +416,6 @@ function BreathGuide() {
         <Text style={{ fontFamily: font.regular, fontSize: 13, color: color.accent300 }}>
           {segLabel}
         </Text>
-      </View>
-      <View style={{ flexDirection: 'row', gap: 8 }}>
-        {(Object.keys(BREATH_PATTERNS) as PatternKey[]).map((k) => {
-          const on = patternKey === k;
-          return (
-            <Pressable
-              key={k}
-              onPress={() => {
-                haptic.select();
-                setPatternKey(k);
-              }}
-              accessibilityRole="button"
-              accessibilityLabel={BREATH_PATTERNS[k].spoken}
-              accessibilityState={{ selected: on }}
-              style={{
-                paddingVertical: 6,
-                paddingHorizontal: 14,
-                borderRadius: radius.md,
-                borderWidth: 1,
-                borderColor: on ? color.accent : color.neutral600,
-                backgroundColor: on ? color.accentTint12 : 'transparent',
-              }}
-            >
-              <Text
-                style={{
-                  fontFamily: font.medium,
-                  fontSize: 12,
-                  color: on ? color.accent300 : color.neutral500,
-                }}
-              >
-                {BREATH_PATTERNS[k].chip}
-              </Text>
-            </Pressable>
-          );
-        })}
       </View>
     </View>
   );
