@@ -126,8 +126,8 @@ are small, the other two are small-to-medium.
   remaining select-style controls (Backfill day/when/unit + reset, Setup
   brand choice) for consistency. Natural timer expiry now routes through
   `finishSurvived` (bug fixed). The SOS stage-transition tick is in behind
-  a marked comment — decide on-device, delete the block if it reads as
-  noise. Define one mapping and
+  a marked comment — device-tested 2026-07-17 with the rest of the pass
+  and kept. Define one mapping and
   apply it everywhere so feel is consistent, not per-screen:
   - *light impact* = something entered the log — already on log buttons,
     backfill-add, SOS-smoked; no change.
