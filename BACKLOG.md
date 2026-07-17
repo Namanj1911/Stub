@@ -96,7 +96,7 @@ without discussion.
 - [x] **Day chart mislabels midnight–4 am smokes** (self-identified): a 1 am
   smoke correctly counts toward the previous day (4 am boundary) but renders
   in that day's "6–9" morning bucket. Extend the night bucket to cover
-  9 pm–4 am. — **done 2026-07-18** (`fix/day-chart-night-bucket`): last
+  9 pm–4 am. — **done 2026-07-17** (`fix/day-chart-night-bucket`): last
   bucket is now "9p–4" (21:00–03:59); 4–6 am still folds into morning.
 - [x] **Money saved can go negative** (self-identified) — **done 2026-07-16**:
   decision was show honestly, roast copy ("Goa is drifting further away");
