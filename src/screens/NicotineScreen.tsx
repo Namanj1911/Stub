@@ -8,15 +8,28 @@
 // §7(5) never in force), so ~ is the honest default here.
 
 import React, { useState } from 'react';
-import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import {
+  LayoutAnimation,
+  Platform,
+  Pressable,
+  ScrollView,
+  Text,
+  TextInput,
+  UIManager,
+  View,
+} from 'react-native';
 import Svg, { Defs, Ellipse, RadialGradient, Stop } from 'react-native-svg';
 import { useApp, useProfile } from '../AppContext';
-import { BRANDS, BRAND_AVERAGES, brandInfo, isSoft } from '../brands';
+import { BRANDS, BRAND_AVERAGES, brandInfo, findBrand, isSoft } from '../brands';
 import { dayKey, entriesForDay, totalSixths } from '../domain';
 import { haptic } from '../haptics';
 import { useNav } from '../navigation';
 import { brandSwitchRoast } from '../strings';
 import { color, font, radius } from '../theme';
+
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
 export function NicotineScreen() {
   const { data, switchBrand } = useApp();
@@ -41,15 +54,23 @@ export function NicotineScreen() {
   const tar = yourBrand ? (thisWeek / 6) * yourBrand.tarMg : null;
   const delta = lastWeek > 0 ? Math.round(((thisWeek - lastWeek) / lastWeek) * 100) : null;
 
+  // profile.brandId may be a legacy v1 id — resolve it so the "yours"
+  // treatment matches the row it maps to.
+  const selectedId = findBrand(profile.brandId)?.id;
+
   const trimmed = query.trim();
+  // Your brand pins to the top of the list — a real "it moved" selection,
+  // not just a highlight. Stable sort keeps the rest in dataset order.
   const results = BRANDS.filter((b) =>
     `${b.name} ${b.variant}`.toLowerCase().includes(trimmed.toLowerCase()),
-  );
+  ).sort((a, b) => Number(b.id === selectedId) - Number(a.id === selectedId));
 
   const pick = (input: { brandId?: string; customBrandName?: string; pricePerStick: number }) => {
     const next = brandInfo(input.brandId, input.customBrandName);
     if (!next) return;
     haptic.select(); // pairs with the roast line
+    // Animate the picked row rising to the top (and the roast card in).
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setRoast(brandSwitchRoast(yourBrand, next));
     switchBrand(input);
   };
@@ -185,13 +206,13 @@ export function NicotineScreen() {
         {results.map((b) => (
           <BrandRow
             key={b.id}
-            yours={profile.brandId === b.id}
+            yours={selectedId === b.id}
             name={b.name}
             sub={`${b.variant} · ₹${b.price}/stick MRP`}
             right={`${isSoft(b.src.nicotineMg.confidence) ? '~' : ''}${b.nicotineMg.toFixed(1)} mg nic`}
             rightSub={`${isSoft(b.src.tarMg.confidence) ? '~' : ''}${b.tarMg} mg tar`}
             onPress={() => {
-              if (profile.brandId !== b.id) pick({ brandId: b.id, pricePerStick: b.price });
+              if (selectedId !== b.id) pick({ brandId: b.id, pricePerStick: b.price });
             }}
           />
         ))}
@@ -238,7 +259,7 @@ function BrandRow({
         alignItems: 'center',
         borderWidth: 1,
         borderColor: yours ? color.accent : color.neutral800,
-        backgroundColor: pressed ? color.accentTint10 : color.surface,
+        backgroundColor: yours || pressed ? color.accentTint10 : color.surface,
         borderRadius: radius.md,
         paddingVertical: 13,
         paddingHorizontal: 16,
