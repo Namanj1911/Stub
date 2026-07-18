@@ -23,12 +23,12 @@ import { ProfileButton } from '../ProfileButton';
 import { color, font, radius } from '../theme';
 
 const PACES: { id: Pace; name: string; rate: string; desc: string }[] = [
-  { id: 'chill', name: 'Chill', rate: '−¼ a week', desc: 'Barely feel it. Slow and certain.' },
-  { id: 'steady', name: 'Steady', rate: '−½ a week', desc: 'The sweet spot for most people.' },
-  { id: 'beast', name: 'Beast', rate: '−1 a week', desc: 'Aggressive. For the impatient.' },
+  { id: 'chill', name: 'Chill', rate: '−½ a week', desc: 'Barely feel it. Slow and certain.' },
+  { id: 'steady', name: 'Steady', rate: '−1 a week', desc: 'The sweet spot for most people.' },
+  { id: 'beast', name: 'Beast', rate: '−2 a week', desc: 'Aggressive. For the impatient.' },
 ];
 
-const PACE_LABEL: Record<Pace, string> = { chill: '¼', steady: '½', beast: '1' };
+const PACE_LABEL: Record<Pace, string> = { chill: '½', steady: '1', beast: '2' };
 
 export function GoalScreen() {
   const { data, setPace } = useApp();
@@ -36,10 +36,10 @@ export function GoalScreen() {
   const entries = data.entries;
   const now = Date.now();
   const todayKey = dayKey(now);
-  // Budget's pre-install fallback and quit-day progress measure against the
-  // onboarding baseline; profile edits only redate the money math.
+  // Quit-day progress and the 7-day-average fallback measure against the
+  // onboarding baseline; the budget itself follows the dated history.
   const baseline = baselineSixthsFor(profile.baselineHistory, profile.installDayKey);
-  const budget = budgetSixths(entries, todayKey, profile.installDayKey, baseline);
+  const budget = budgetSixths(entries, todayKey, profile.installDayKey, profile.baselineHistory);
   const avg7 =
     trailing7Totals(entries, todayKey + 1, profile.installDayKey, baseline).reduce((a, b) => a + b, 0) / 7;
 
@@ -65,7 +65,7 @@ export function GoalScreen() {
   });
 
   const progress = Math.min(100, Math.max(0, Math.round((1 - budget / baseline) * 100)));
-  const tomorrow = tomorrowBudgetSixths(budget, pace);
+  const tomorrow = tomorrowBudgetSixths(entries, todayKey, profile.installDayKey, profile.baselineHistory);
 
   return (
     <ScrollView

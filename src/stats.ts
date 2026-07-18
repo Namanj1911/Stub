@@ -10,14 +10,14 @@ import {
   BaselineRecord,
   Entry,
   PriceRecord,
-  baselineSixthsFor,
-  budgetSixths,
+  budgetSeries,
   entriesForDay,
   fmtSince,
   fmtTime,
   frac,
   priceAt,
   totalSixths,
+  weekdayOfKey,
 } from './domain';
 
 export type Bar = { label: string; val: string; h: number; accent: boolean };
@@ -62,21 +62,29 @@ export function dayBars(todayEntries: Entry[]): Bar[] {
   }));
 }
 
-// S5 Week view — cigarettes per day, last 7 days ending today.
+// S5 Week view — cigarettes per day, last 7 days ending today. Labels come
+// from the day key, not the wall clock — between midnight and 4am the last
+// bar holds yesterday evening's day and must carry yesterday's name. Each
+// bar is accented against its own day's budget, same rule as the streaks.
 export function weekBars(
   entries: Entry[],
   todayKey: number,
   installDayKey: number,
-  budget: number,
-  now: number,
+  baselineHistory: BaselineRecord[],
 ): Bar[] {
   const week = dailyTotals(entries, todayKey, installDayKey, 7);
-  const max = Math.max(...week.map((v) => v ?? 0), budget, 1);
+  const budgets = budgetSeries(entries, todayKey, installDayKey, baselineHistory);
+  const keys = week.map((_, i) => todayKey - 6 + i);
+  const max = Math.max(
+    ...week.map((v) => v ?? 0),
+    ...keys.filter((k) => k >= installDayKey).map((k) => budgets[k - installDayKey]),
+    1,
+  );
   return week.map((v, i) => ({
-    label: WEEKDAY[new Date(now - (6 - i) * 86_400_000).getDay()],
+    label: WEEKDAY[weekdayOfKey(keys[i])],
     val: v ? frac(v) : '·',
     h: v ? Math.max(6, (v / max) * 100) : 4,
-    accent: v != null && v > budget,
+    accent: v != null && keys[i] >= installDayKey && v > budgets[keys[i] - installDayKey],
   }));
 }
 
@@ -101,21 +109,10 @@ export function monthBars(
   }));
 }
 
-// Budget in effect on a given day — the same adaptive math the ring uses,
-// against the baseline in effect that day. Streaks and "under budget" counts
-// judge each day by its own bar, not today's (the budget tapers, so grading
-// last week against today's tighter number would rewrite the past).
-function budgetForDay(
-  entries: Entry[],
-  k: number,
-  installDayKey: number,
-  baselineHistory: BaselineRecord[],
-): number {
-  return budgetSixths(entries, k, installDayKey, baselineSixthsFor(baselineHistory, k));
-}
-
 // Under-budget day count over the `n` day-keys ending today. Only post-install
-// days are graded; `days` is how many real days the window holds.
+// days are graded, each against its own day's budget, not today's (the budget
+// tapers, so grading last week against today's tighter number would rewrite
+// the past). `days` is how many real days the window holds.
 function underBudgetCount(
   entries: Entry[],
   todayKey: number,
@@ -123,11 +120,12 @@ function underBudgetCount(
   baselineHistory: BaselineRecord[],
   n: number,
 ): { under: number; days: number } {
+  const budgets = budgetSeries(entries, todayKey, installDayKey, baselineHistory);
   let under = 0;
   let days = 0;
   for (let k = Math.max(installDayKey, todayKey - n + 1); k <= todayKey; k++) {
     days += 1;
-    if (totalSixths(entriesForDay(entries, k)) <= budgetForDay(entries, k, installDayKey, baselineHistory)) {
+    if (totalSixths(entriesForDay(entries, k)) <= budgets[k - installDayKey]) {
       under += 1;
     }
   }
@@ -143,12 +141,11 @@ export function underBudgetStreaks(
   installDayKey: number,
   baselineHistory: BaselineRecord[],
 ): { current: number; best: number } {
+  const budgets = budgetSeries(entries, todayKey, installDayKey, baselineHistory);
   let current = 0;
   let best = 0;
   for (let k = installDayKey; k <= todayKey; k++) {
-    const under =
-      totalSixths(entriesForDay(entries, k)) <=
-      budgetForDay(entries, k, installDayKey, baselineHistory);
+    const under = totalSixths(entriesForDay(entries, k)) <= budgets[k - installDayKey];
     current = under ? current + 1 : 0;
     best = Math.max(best, current);
   }
@@ -288,8 +285,7 @@ export function pickInsight(
     let satTotal = 0;
     let satDays = 0;
     for (let k = Math.max(installDayKey, todayKey - 27); k < todayKey; k++) {
-      const dow = new Date(now - (todayKey - k) * 86_400_000).getDay();
-      if (dow !== 6) continue;
+      if (weekdayOfKey(k) !== 6) continue;
       satTotal += totalSixths(entriesForDay(entries, k));
       satDays += 1;
     }
@@ -314,21 +310,24 @@ export function pickInsight(
   return { kind: 'newUser' };
 }
 
-// S8 heatmap — last 28 days, intensity relative to today's budget.
+// S8 heatmap — last 28 days, each day's intensity relative to its own day's
+// budget, same grading rule as the streaks and under-budget tiles.
 export type HeatCell = { key: number; color: 'none' | 'low' | 'mid' | 'high' | 'over' };
 
 export function heatCells(
   entries: Entry[],
   todayKey: number,
   installDayKey: number,
-  budget: number,
+  baselineHistory: BaselineRecord[],
 ): HeatCell[] {
+  const budgets = budgetSeries(entries, todayKey, installDayKey, baselineHistory);
   const cells: HeatCell[] = [];
   for (let k = todayKey - 27; k <= todayKey; k++) {
     if (k < installDayKey) {
       cells.push({ key: k, color: 'none' });
       continue;
     }
+    const budget = budgets[k - installDayKey];
     const v = totalSixths(entriesForDay(entries, k));
     cells.push({
       key: k,

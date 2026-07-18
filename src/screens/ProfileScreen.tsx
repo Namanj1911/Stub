@@ -15,9 +15,9 @@ import { copy } from '../strings';
 import { color, font, radius } from '../theme';
 
 const PACE_LABEL: { id: Pace; name: string; rate: string }[] = [
-  { id: 'chill', name: 'Chill', rate: '−¼/wk' },
-  { id: 'steady', name: 'Steady', rate: '−½/wk' },
-  { id: 'beast', name: 'Beast', rate: '−1/wk' },
+  { id: 'chill', name: 'Chill', rate: '−½/wk' },
+  { id: 'steady', name: 'Steady', rate: '−1/wk' },
+  { id: 'beast', name: 'Beast', rate: '−2/wk' },
 ];
 
 export function ProfileScreen() {

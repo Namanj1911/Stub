@@ -80,8 +80,10 @@ export function computeSavings(
   return { saved, savedWeek };
 }
 
-// sixths/day reduced per week
-export const PACE_RATE: Record<Pace, number> = { chill: 1.5, steady: 3, beast: 6 };
+// sixths/day reduced per week. Retuned 2026-07-18 from ¼/½/1 cigs — ¼/wk sat
+// below the half-cig display granularity and stretched a 10/day smoker's
+// quit to 40 weeks; every pace now moves at least one visible step per week.
+export const PACE_RATE: Record<Pace, number> = { chill: 3, steady: 6, beast: 12 };
 
 const FRACTION_GLYPH: Record<number, string> = { 1: '⅙', 2: '⅓', 3: '½', 4: '⅔', 5: '⅚' };
 
@@ -100,6 +102,13 @@ export function dayKey(timestamp: number): number {
   return Math.floor(
     (shifted.getTime() - shifted.getTimezoneOffset() * 60_000) / 86_400_000,
   );
+}
+
+// Weekday of a day key (getDay() convention, 0 = Sunday). Day-key 0 covers
+// 1970-01-01, a Thursday. Charts must label days from the key, not the wall
+// clock — between midnight and 4am the current key is still "yesterday".
+export function weekdayOfKey(key: number): number {
+  return (key + 4) % 7;
 }
 
 export function entriesForDay(entries: Entry[], key: number): Entry[] {
@@ -127,22 +136,73 @@ export function trailing7Totals(
 }
 
 // Adaptive budget = max(½ cig, 90% of trailing 7-day average rounded to
-// nearest ½). On install day there is no history yet: budget = stated
-// baseline (S13 — taper begins day 2).
+// nearest ½) — clamped so it only ever tapers: a day's budget never exceeds
+// the previous day's, so smoking over budget can't raise tomorrow's bar.
+// A baseline edit re-seeds the taper from its effective day (the one honest
+// way the budget may rise: "I actually smoke more than I said"). On install
+// day there is no history yet: budget = stated baseline (S13 — taper begins
+// day 2).
+//
+// The clamp chains each day on the previous one, so per-day grading
+// (streaks, under-budget counts, heatmap) must read from this series —
+// index = key − installDayKey — rather than recompute the chain per day,
+// which is quadratic in days of use.
+export function budgetSeries(
+  entries: Entry[],
+  todayKey: number,
+  installDayKey: number,
+  baselineHistory: BaselineRecord[],
+): number[] {
+  const preInstall = baselineSixthsFor(baselineHistory, installDayKey);
+  const totals = new Map<number, number>();
+  for (const e of entries) {
+    const k = dayKey(e.timestamp);
+    totals.set(k, (totals.get(k) ?? 0) + e.sixths);
+  }
+  const totalFor = (k: number) => (k >= installDayKey ? totals.get(k) ?? 0 : preInstall);
+
+  let budget = preInstall;
+  const out = [budget];
+  // sliding sum of the 7 days before k, seeded for k = installDayKey + 1
+  let window = 0;
+  for (let j = installDayKey - 6; j <= installDayKey; j++) window += totalFor(j);
+  for (let k = installDayKey + 1; k <= todayKey; k++) {
+    const base = baselineSixthsFor(baselineHistory, k);
+    if (base !== baselineSixthsFor(baselineHistory, k - 1)) budget = base;
+    budget = Math.min(budget, Math.max(3, Math.round(((window / 7) * 0.9) / 3) * 3));
+    out.push(budget);
+    window += totalFor(k) - totalFor(k - 7);
+  }
+  return out;
+}
+
 export function budgetSixths(
   entries: Entry[],
   todayKey: number,
   installDayKey: number,
-  baselineSixths: number,
+  baselineHistory: BaselineRecord[],
 ): number {
-  if (todayKey <= installDayKey) return baselineSixths;
-  const avg =
-    trailing7Totals(entries, todayKey, installDayKey, baselineSixths).reduce((a, b) => a + b, 0) / 7;
-  return Math.max(3, Math.round((avg * 0.9) / 3) * 3);
+  const series = budgetSeries(entries, todayKey, installDayKey, baselineHistory);
+  return series[series.length - 1];
 }
 
-export function tomorrowBudgetSixths(budget: number, pace: Pace): number {
-  return Math.max(0, budget - Math.round(PACE_RATE[pace] / 7));
+// Tomorrow's budget (S11), predicted with the real formula: one more chain
+// step, assuming no more smokes today. The spec's budget − paceRate/7 rounded
+// to whole sixths, which was 0 for chill and steady — the card promised a
+// taper it never showed, and could disagree with what the Log screen actually
+// says tomorrow.
+export function tomorrowBudgetSixths(
+  entries: Entry[],
+  todayKey: number,
+  installDayKey: number,
+  baselineHistory: BaselineRecord[],
+): number {
+  const today = budgetSixths(entries, todayKey, installDayKey, baselineHistory);
+  const preInstall = baselineSixthsFor(baselineHistory, installDayKey);
+  const avg =
+    trailing7Totals(entries, todayKey + 1, installDayKey, preInstall).reduce((a, b) => a + b, 0) /
+    7;
+  return Math.min(today, Math.max(3, Math.round((avg * 0.9) / 3) * 3));
 }
 
 export function weeksToQuit(budget: number, pace: Pace): number {

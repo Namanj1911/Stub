@@ -4,7 +4,7 @@
 import React, { useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
-import { Entry, baselineSixthsFor, budgetSixths, dayKey, entriesForDay, frac, totalSixths } from '../domain';
+import { BaselineRecord, Entry, budgetSixths, dayKey, entriesForDay, frac, totalSixths } from '../domain';
 import {
   Bar,
   StatsRange,
@@ -33,9 +33,7 @@ export function StatsScreen() {
 
   const now = Date.now();
   const todayKey = dayKey(now);
-  // budget's pre-install fallback uses the onboarding baseline (first record)
-  const baseline = baselineSixthsFor(profile.baselineHistory, profile.installDayKey);
-  const budget = budgetSixths(entries, todayKey, profile.installDayKey, baseline);
+  const budget = budgetSixths(entries, todayKey, profile.installDayKey, profile.baselineHistory);
   const today = entriesForDay(entries, todayKey);
   const total = totalSixths(today);
 
@@ -56,7 +54,7 @@ export function StatsScreen() {
       ? dayBars(today)
       : range === 'month'
         ? monthBars(entries, todayKey, profile.installDayKey)
-        : weekBars(entries, todayKey, profile.installDayKey, budget, now);
+        : weekBars(entries, todayKey, profile.installDayKey, profile.baselineHistory);
   const chartTitle =
     range === 'day'
       ? 'Today by time of day'
@@ -235,7 +233,7 @@ export function StatsScreen() {
           <Text style={{ fontFamily: font.regular, fontSize: 12, color: color.neutral500, marginTop: 24, marginBottom: 10 }}>
             Last 28 days
           </Text>
-          <Heatmap entries={entries} todayKey={todayKey} installDayKey={profile.installDayKey} budget={budget} />
+          <Heatmap entries={entries} todayKey={todayKey} installDayKey={profile.installDayKey} baselineHistory={profile.baselineHistory} />
         </>
       )}
 
@@ -404,8 +402,13 @@ const HEAT_COLOR = {
   over: color.accent500,
 } as const;
 
-function Heatmap(props: { entries: Entry[]; todayKey: number; installDayKey: number; budget: number }) {
-  const cells = heatCells(props.entries, props.todayKey, props.installDayKey, props.budget);
+function Heatmap(props: {
+  entries: Entry[];
+  todayKey: number;
+  installDayKey: number;
+  baselineHistory: BaselineRecord[];
+}) {
+  const cells = heatCells(props.entries, props.todayKey, props.installDayKey, props.baselineHistory);
   // explicit rows of 7 — percentage-based wrapping breaks rows unevenly and
   // leaves ragged vertical space
   const rows = [0, 1, 2, 3].map((r) => cells.slice(r * 7, r * 7 + 7));
