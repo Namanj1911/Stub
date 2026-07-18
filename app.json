@@ -8,9 +8,10 @@
     "userInterfaceStyle": "dark",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.anonymous.stub-app"
+      "bundleIdentifier": "com.stubapp.stub"
     },
     "android": {
+      "package": "com.stubapp.stub",
       "adaptiveIcon": {
         "backgroundColor": "#161826",
         "foregroundImage": "./assets/adaptive-icon.png"
