@@ -110,8 +110,22 @@ without discussion.
   bumped 8 usages to `neutral500`; border-only buttons (SOS done, backfill
   steppers) bumped `neutral700`→`600` borders for the 3:1 non-text minimum.
   Hit targets were already ≥44px effective via `hitSlop`. Tokens untouched.
-- [ ] **Replace default Expo app icon/splash** before anyone else installs —
-  part of the ROADMAP launch checklist.
+- [x] **Replace default Expo app icon/splash** before anyone else installs —
+  part of the ROADMAP launch checklist. Icon **done 2026-07-17** (`418d746`):
+  "Snapped, still lit" mark → `icon.png`, `adaptive-icon.png`, `favicon.png`,
+  source `icon.svg`. Splash **built 2026-07-19** (`feat/splash-screen`): the
+  stock template `splash-icon.png` was still in place *and* unreferenced —
+  app.json had no `splash` key and no `expo-splash-screen` plugin, so launches
+  used Expo's default white screen before dropping into a dark UI. Now:
+  `splash-icon.svg`/`.png` (mark centred on transparent, `backgroundColor`
+  paints `#161826` = `theme.bg`), `expo-splash-screen` plugin at
+  `imageWidth: 200`. Same pass: `userInterfaceStyle` `light`→`dark` (with
+  `expo-system-ui`, without which Android ignores it) and `name`
+  `stub-app`→`Stub` for the home-screen label; `slug` left alone (EAS
+  identity). A `dark:` splash variant was tried and dropped — it conflicts
+  with `userInterfaceStyle: dark` and is redundant on a dark-only app.
+  **Not device-verified:** Expo Go renders its own launch screen, so this
+  can only be confirmed on the EAS dev build (GO_LIVE §8).
 
 ## P2 — round 2 (owner feedback, 2026-07-17)
 
