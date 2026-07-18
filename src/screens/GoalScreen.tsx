@@ -36,10 +36,10 @@ export function GoalScreen() {
   const entries = data.entries;
   const now = Date.now();
   const todayKey = dayKey(now);
-  // Budget's pre-install fallback and quit-day progress measure against the
-  // onboarding baseline; profile edits only redate the money math.
+  // Quit-day progress and the 7-day-average fallback measure against the
+  // onboarding baseline; the budget itself follows the dated history.
   const baseline = baselineSixthsFor(profile.baselineHistory, profile.installDayKey);
-  const budget = budgetSixths(entries, todayKey, profile.installDayKey, baseline);
+  const budget = budgetSixths(entries, todayKey, profile.installDayKey, profile.baselineHistory);
   const avg7 =
     trailing7Totals(entries, todayKey + 1, profile.installDayKey, baseline).reduce((a, b) => a + b, 0) / 7;
 

@@ -10,7 +10,6 @@ import {
   BaselineRecord,
   Entry,
   PriceRecord,
-  baselineSixthsFor,
   budgetSixths,
   entriesForDay,
   fmtSince,
@@ -111,7 +110,7 @@ function budgetForDay(
   installDayKey: number,
   baselineHistory: BaselineRecord[],
 ): number {
-  return budgetSixths(entries, k, installDayKey, baselineSixthsFor(baselineHistory, k));
+  return budgetSixths(entries, k, installDayKey, baselineHistory);
 }
 
 // Under-budget day count over the `n` day-keys ending today. Only post-install

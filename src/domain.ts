@@ -127,18 +127,28 @@ export function trailing7Totals(
 }
 
 // Adaptive budget = max(½ cig, 90% of trailing 7-day average rounded to
-// nearest ½). On install day there is no history yet: budget = stated
-// baseline (S13 — taper begins day 2).
+// nearest ½) — clamped so it only ever tapers: a day's budget never exceeds
+// the previous day's, so smoking over budget can't raise tomorrow's bar.
+// A baseline edit re-seeds the taper from its effective day (the one honest
+// way the budget may rise: "I actually smoke more than I said"). On install
+// day there is no history yet: budget = stated baseline (S13 — taper begins
+// day 2).
 export function budgetSixths(
   entries: Entry[],
   todayKey: number,
   installDayKey: number,
-  baselineSixths: number,
+  baselineHistory: BaselineRecord[],
 ): number {
-  if (todayKey <= installDayKey) return baselineSixths;
-  const avg =
-    trailing7Totals(entries, todayKey, installDayKey, baselineSixths).reduce((a, b) => a + b, 0) / 7;
-  return Math.max(3, Math.round((avg * 0.9) / 3) * 3);
+  const preInstall = baselineSixthsFor(baselineHistory, installDayKey);
+  let budget = preInstall;
+  for (let k = installDayKey + 1; k <= todayKey; k++) {
+    const base = baselineSixthsFor(baselineHistory, k);
+    if (base !== baselineSixthsFor(baselineHistory, k - 1)) budget = base;
+    const avg =
+      trailing7Totals(entries, k, installDayKey, preInstall).reduce((a, b) => a + b, 0) / 7;
+    budget = Math.min(budget, Math.max(3, Math.round((avg * 0.9) / 3) * 3));
+  }
+  return budget;
 }
 
 export function tomorrowBudgetSixths(budget: number, pace: Pace): number {

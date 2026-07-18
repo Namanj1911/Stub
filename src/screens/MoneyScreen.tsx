@@ -10,7 +10,6 @@ import Svg, { Defs, Ellipse, RadialGradient, Stop } from 'react-native-svg';
 import { DATASET_AS_OF, brandInfo } from '../brands';
 import {
   PACE_RATE,
-  baselineSixthsFor,
   budgetSixths,
   computeSavings,
   dayKey,
@@ -61,12 +60,7 @@ export function MoneyScreen() {
 
   // projections: budget tapers weekly from here to zero. The budget's
   // pre-install fallback is the onboarding baseline, not today's.
-  const budget = budgetSixths(
-    entries,
-    todayKey,
-    profile.installDayKey,
-    baselineSixthsFor(profile.baselineHistory, profile.installDayKey),
-  );
+  const budget = budgetSixths(entries, todayKey, profile.installDayKey, profile.baselineHistory);
   const rate = PACE_RATE[profile.pace];
   const weeks = weeksToQuit(budget, profile.pace);
   let byQuitDay = saved;
