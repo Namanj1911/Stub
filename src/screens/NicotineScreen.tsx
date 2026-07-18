@@ -7,8 +7,9 @@
 // backed renders with ~ — India publishes no per-brand tar/nicotine (COTPA
 // §7(5) never in force), so ~ is the honest default here.
 
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
+  Animated,
   LayoutAnimation,
   Platform,
   Pressable,
@@ -38,6 +39,23 @@ export function NicotineScreen() {
   const nav = useNav();
   const [query, setQuery] = useState('');
   const [roast, setRoast] = useState<string | null>(null);
+  // Bumped on every pick so the roast re-animates even if the line repeats.
+  const [pickNonce, setPickNonce] = useState(0);
+  const scrollRef = useRef<ScrollView>(null);
+  const roastAnim = useRef(new Animated.Value(0)).current;
+
+  // Spring the roast card in (fade + rise + slight overshoot) so a new pick
+  // grabs the eye instead of just materialising.
+  useEffect(() => {
+    if (!roast) return;
+    roastAnim.setValue(0);
+    Animated.spring(roastAnim, {
+      toValue: 1,
+      useNativeDriver: true,
+      friction: 6,
+      tension: 90,
+    }).start();
+  }, [pickNonce, roast, roastAnim]);
 
   const yourBrand = brandInfo(profile.brandId, profile.customBrandName);
   const todayKey = dayKey(Date.now());
@@ -72,11 +90,16 @@ export function NicotineScreen() {
     // Animate the picked row rising to the top (and the roast card in).
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setRoast(brandSwitchRoast(yourBrand, next));
+    setPickNonce((n) => n + 1);
     switchBrand(input);
+    // Bring the top back into view — the pinned pick + roast live up there,
+    // so a pick made from the bottom of the list isn't invisible.
+    scrollRef.current?.scrollTo({ y: 0, animated: true });
   };
 
   return (
     <ScrollView
+      ref={scrollRef}
       style={{ flex: 1, backgroundColor: color.bg }}
       contentContainerStyle={{ padding: 22, paddingTop: 16, paddingBottom: 40 }}
       keyboardShouldPersistTaps="handled"
@@ -153,7 +176,7 @@ export function NicotineScreen() {
 
       {/* brand-switch roast */}
       {roast && (
-        <View
+        <Animated.View
           style={{
             borderWidth: 1,
             borderColor: color.accent,
@@ -162,12 +185,27 @@ export function NicotineScreen() {
             paddingVertical: 12,
             paddingHorizontal: 14,
             marginTop: 12,
+            opacity: roastAnim,
+            transform: [
+              {
+                translateY: roastAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [12, 0],
+                }),
+              },
+              {
+                scale: roastAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0.96, 1],
+                }),
+              },
+            ],
           }}
         >
           <Text style={{ fontFamily: font.regular, fontSize: 13, color: color.accent200, lineHeight: 19 }}>
             {roast}
           </Text>
-        </View>
+        </Animated.View>
       )}
 
       {/* search (S18) */}
