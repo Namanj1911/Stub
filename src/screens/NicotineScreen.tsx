@@ -3,18 +3,34 @@
 // Tapping a row switches your brand — and re-prices your money math from
 // this moment (BACKLOG P1): old smokes keep their old price. Brands we don't
 // know can be added by name; they get dataset averages, marked ~estimated.
-// Brand data is placeholder — production needs a vetted dataset.
+// Health numbers carry provenance (src/brands.ts): anything not study/proxy-
+// backed renders with ~ — India publishes no per-brand tar/nicotine (COTPA
+// §7(5) never in force), so ~ is the honest default here.
 
-import React, { useState } from 'react';
-import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import {
+  Animated,
+  LayoutAnimation,
+  Platform,
+  Pressable,
+  ScrollView,
+  Text,
+  TextInput,
+  UIManager,
+  View,
+} from 'react-native';
 import Svg, { Defs, Ellipse, RadialGradient, Stop } from 'react-native-svg';
 import { useApp, useProfile } from '../AppContext';
-import { BRANDS, BRAND_AVERAGES, brandInfo } from '../brands';
+import { BRANDS, BRAND_AVERAGES, brandInfo, findBrand, isSoft } from '../brands';
 import { dayKey, entriesForDay, totalSixths } from '../domain';
 import { haptic } from '../haptics';
 import { useNav } from '../navigation';
 import { brandSwitchRoast } from '../strings';
 import { color, font, radius } from '../theme';
+
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
 export function NicotineScreen() {
   const { data, switchBrand } = useApp();
@@ -23,6 +39,23 @@ export function NicotineScreen() {
   const nav = useNav();
   const [query, setQuery] = useState('');
   const [roast, setRoast] = useState<string | null>(null);
+  // Bumped on every pick so the roast re-animates even if the line repeats.
+  const [pickNonce, setPickNonce] = useState(0);
+  const scrollRef = useRef<ScrollView>(null);
+  const roastAnim = useRef(new Animated.Value(0)).current;
+
+  // Spring the roast card in (fade + rise + slight overshoot) so a new pick
+  // grabs the eye instead of just materialising.
+  useEffect(() => {
+    if (!roast) return;
+    roastAnim.setValue(0);
+    Animated.spring(roastAnim, {
+      toValue: 1,
+      useNativeDriver: true,
+      friction: 6,
+      tension: 90,
+    }).start();
+  }, [pickNonce, roast, roastAnim]);
 
   const yourBrand = brandInfo(profile.brandId, profile.customBrandName);
   const todayKey = dayKey(Date.now());
@@ -39,21 +72,34 @@ export function NicotineScreen() {
   const tar = yourBrand ? (thisWeek / 6) * yourBrand.tarMg : null;
   const delta = lastWeek > 0 ? Math.round(((thisWeek - lastWeek) / lastWeek) * 100) : null;
 
+  // profile.brandId may be a legacy v1 id — resolve it so the "yours"
+  // treatment matches the row it maps to.
+  const selectedId = findBrand(profile.brandId)?.id;
+
   const trimmed = query.trim();
+  // Your brand pins to the top of the list — a real "it moved" selection,
+  // not just a highlight. Stable sort keeps the rest in dataset order.
   const results = BRANDS.filter((b) =>
     `${b.name} ${b.variant}`.toLowerCase().includes(trimmed.toLowerCase()),
-  );
+  ).sort((a, b) => Number(b.id === selectedId) - Number(a.id === selectedId));
 
   const pick = (input: { brandId?: string; customBrandName?: string; pricePerStick: number }) => {
     const next = brandInfo(input.brandId, input.customBrandName);
     if (!next) return;
     haptic.select(); // pairs with the roast line
+    // Animate the picked row rising to the top (and the roast card in).
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setRoast(brandSwitchRoast(yourBrand, next));
+    setPickNonce((n) => n + 1);
     switchBrand(input);
+    // Bring the top back into view — the pinned pick + roast live up there,
+    // so a pick made from the bottom of the list isn't invisible.
+    scrollRef.current?.scrollTo({ y: 0, animated: true });
   };
 
   return (
     <ScrollView
+      ref={scrollRef}
       style={{ flex: 1, backgroundColor: color.bg }}
       contentContainerStyle={{ padding: 22, paddingTop: 16, paddingBottom: 40 }}
       keyboardShouldPersistTaps="handled"
@@ -113,9 +159,11 @@ export function NicotineScreen() {
               {delta == null ? 'first week of data' : delta <= 0 ? `↓ ${Math.abs(delta)}% vs last week` : `↑ ${delta}% vs last week`}
               {tar != null ? ` · plus ~${Math.round(tar)} mg of tar` : ''}
             </Text>
-            {yourBrand?.estimated && (
+            {yourBrand && (yourBrand.estimated || isSoft(yourBrand.nicotineConfidence)) && (
               <Text style={{ fontFamily: font.regular, fontSize: 12, color: color.neutral400, marginTop: 6 }}>
-                ~ dataset averages — no lab data for {yourBrand.label}
+                {yourBrand.estimated
+                  ? `~ dataset averages — no lab data for ${yourBrand.label}`
+                  : `~ estimated — no published per-variant data for ${yourBrand.label}`}
               </Text>
             )}
           </>
@@ -128,7 +176,7 @@ export function NicotineScreen() {
 
       {/* brand-switch roast */}
       {roast && (
-        <View
+        <Animated.View
           style={{
             borderWidth: 1,
             borderColor: color.accent,
@@ -137,12 +185,27 @@ export function NicotineScreen() {
             paddingVertical: 12,
             paddingHorizontal: 14,
             marginTop: 12,
+            opacity: roastAnim,
+            transform: [
+              {
+                translateY: roastAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [12, 0],
+                }),
+              },
+              {
+                scale: roastAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0.96, 1],
+                }),
+              },
+            ],
           }}
         >
           <Text style={{ fontFamily: font.regular, fontSize: 13, color: color.accent200, lineHeight: 19 }}>
             {roast}
           </Text>
-        </View>
+        </Animated.View>
       )}
 
       {/* search (S18) */}
@@ -181,13 +244,13 @@ export function NicotineScreen() {
         {results.map((b) => (
           <BrandRow
             key={b.id}
-            yours={profile.brandId === b.id}
+            yours={selectedId === b.id}
             name={b.name}
             sub={`${b.variant} · ₹${b.price}/stick MRP`}
-            right={`${b.nicotineMg.toFixed(1)} mg nic`}
-            rightSub={`${b.tarMg} mg tar`}
+            right={`${isSoft(b.src.nicotineMg.confidence) ? '~' : ''}${b.nicotineMg.toFixed(1)} mg nic`}
+            rightSub={`${isSoft(b.src.tarMg.confidence) ? '~' : ''}${b.tarMg} mg tar`}
             onPress={() => {
-              if (profile.brandId !== b.id) pick({ brandId: b.id, pricePerStick: b.price });
+              if (selectedId !== b.id) pick({ brandId: b.id, pricePerStick: b.price });
             }}
           />
         ))}
@@ -203,7 +266,8 @@ export function NicotineScreen() {
       </View>
 
       <Text style={{ fontFamily: font.regular, fontSize: 11, color: color.neutral500, marginTop: 20 }}>
-        Placeholder figures for reference only — not medical guidance. Prices are pack MRP.
+        ~ = estimate. India doesn't publish per-brand tar/nicotine, so these numbers are
+        indicative, not a health claim — and never a safety ranking. Prices are pack MRP.
       </Text>
     </ScrollView>
   );
@@ -233,7 +297,7 @@ function BrandRow({
         alignItems: 'center',
         borderWidth: 1,
         borderColor: yours ? color.accent : color.neutral800,
-        backgroundColor: pressed ? color.accentTint10 : color.surface,
+        backgroundColor: yours || pressed ? color.accentTint10 : color.surface,
         borderRadius: radius.md,
         paddingVertical: 13,
         paddingHorizontal: 16,
