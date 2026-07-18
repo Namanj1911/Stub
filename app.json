@@ -1,15 +1,17 @@
 {
   "expo": {
-    "name": "stub-app",
+    "name": "Stub",
     "slug": "stub-app",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "dark",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.stubapp.stub"
     },
     "android": {
+      "package": "com.stubapp.stub",
       "adaptiveIcon": {
         "backgroundColor": "#161826",
         "foregroundImage": "./assets/adaptive-icon.png"
@@ -20,7 +22,16 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-font"
+      "expo-font",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#161826"
+        }
+      ]
     ]
   }
 }
