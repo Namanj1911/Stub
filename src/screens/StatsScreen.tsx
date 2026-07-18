@@ -22,7 +22,7 @@ import { ProfileButton } from '../ProfileButton';
 import { useNav } from '../navigation';
 import { insightCopy, streakCopy } from '../strings';
 import { color, font, radius } from '../theme';
-import { BRANDS } from '../brands';
+import { findBrand } from '../brands';
 
 export function StatsScreen() {
   const { data } = useApp();
@@ -62,7 +62,7 @@ export function StatsScreen() {
         ? 'Last 4 weeks — daily average'
         : 'This week — cigarettes per day';
 
-  const brand = BRANDS.find((b) => b.id === profile.brandId);
+  const brand = findBrand(profile.brandId);
   // nicotine row follows the selected range (day / 7d / 28d, like the charts)
   const rangeDays = range === 'day' ? 1 : range === 'week' ? 7 : 28;
   const nicotineLabel =

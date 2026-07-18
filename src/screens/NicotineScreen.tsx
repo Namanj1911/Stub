@@ -3,13 +3,15 @@
 // Tapping a row switches your brand — and re-prices your money math from
 // this moment (BACKLOG P1): old smokes keep their old price. Brands we don't
 // know can be added by name; they get dataset averages, marked ~estimated.
-// Brand data is placeholder — production needs a vetted dataset.
+// Health numbers carry provenance (src/brands.ts): anything not study/proxy-
+// backed renders with ~ — India publishes no per-brand tar/nicotine (COTPA
+// §7(5) never in force), so ~ is the honest default here.
 
 import React, { useState } from 'react';
 import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import Svg, { Defs, Ellipse, RadialGradient, Stop } from 'react-native-svg';
 import { useApp, useProfile } from '../AppContext';
-import { BRANDS, BRAND_AVERAGES, brandInfo } from '../brands';
+import { BRANDS, BRAND_AVERAGES, brandInfo, isSoft } from '../brands';
 import { dayKey, entriesForDay, totalSixths } from '../domain';
 import { haptic } from '../haptics';
 import { useNav } from '../navigation';
@@ -113,9 +115,11 @@ export function NicotineScreen() {
               {delta == null ? 'first week of data' : delta <= 0 ? `↓ ${Math.abs(delta)}% vs last week` : `↑ ${delta}% vs last week`}
               {tar != null ? ` · plus ~${Math.round(tar)} mg of tar` : ''}
             </Text>
-            {yourBrand?.estimated && (
+            {yourBrand && (yourBrand.estimated || isSoft(yourBrand.nicotineConfidence)) && (
               <Text style={{ fontFamily: font.regular, fontSize: 12, color: color.neutral400, marginTop: 6 }}>
-                ~ dataset averages — no lab data for {yourBrand.label}
+                {yourBrand.estimated
+                  ? `~ dataset averages — no lab data for ${yourBrand.label}`
+                  : `~ estimated — no published per-variant data for ${yourBrand.label}`}
               </Text>
             )}
           </>
@@ -184,8 +188,8 @@ export function NicotineScreen() {
             yours={profile.brandId === b.id}
             name={b.name}
             sub={`${b.variant} · ₹${b.price}/stick MRP`}
-            right={`${b.nicotineMg.toFixed(1)} mg nic`}
-            rightSub={`${b.tarMg} mg tar`}
+            right={`${isSoft(b.src.nicotineMg.confidence) ? '~' : ''}${b.nicotineMg.toFixed(1)} mg nic`}
+            rightSub={`${isSoft(b.src.tarMg.confidence) ? '~' : ''}${b.tarMg} mg tar`}
             onPress={() => {
               if (profile.brandId !== b.id) pick({ brandId: b.id, pricePerStick: b.price });
             }}
@@ -203,7 +207,8 @@ export function NicotineScreen() {
       </View>
 
       <Text style={{ fontFamily: font.regular, fontSize: 11, color: color.neutral500, marginTop: 20 }}>
-        Placeholder figures for reference only — not medical guidance. Prices are pack MRP.
+        ~ = estimate. India doesn't publish per-brand tar/nicotine, so these numbers are
+        indicative, not a health claim — and never a safety ranking. Prices are pack MRP.
       </Text>
     </ScrollView>
   );

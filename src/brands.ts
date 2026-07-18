@@ -5,17 +5,13 @@
 // packs and legally binding); nicotine/tar is tier-2 (COTPA §7(5) was never
 // brought into force, so Indian packs print no tar/nicotine — those fields
 // are study/proxy/estimate, never 'printed').
-//
-// Data below is still the prototype placeholder set — replaced row-by-row in
-// the price and nicotine/tar passes (plan §5.2–5.3). DATASET_VERSION stays
-// at 1 until real data lands so the store's price-record append doesn't fire
-// on placeholder values.
 
 export type Confidence =
-  | 'printed' // read off a physical pack (MRP only — never tar/nicotine)
-  | 'study' // peer-reviewed machine-smoked yield for this variant
-  | 'proxy' // published yield for the same global brand, non-Indian SKU
-  | 'estimate'; // dataset average or editorial judgement
+  | 'printed' // an official/reported MRP from a cited source (MRP only —
+  //             never tar/nicotine; Indian packs don't print those)
+  | 'study' // peer-reviewed machine-smoked yield for this exact variant
+  | 'proxy' // regulator-published yield for the same global brand, non-Indian SKU
+  | 'estimate'; // derived figure or editorial judgement — renders with ~
 
 export type FieldSource = {
   value: number;
@@ -27,7 +23,35 @@ export type FieldSource = {
 // Citation key → where the number came from. Shared source list with the
 // plan doc; every FieldSource.source must resolve here.
 export const SOURCES: Record<string, { title: string; url?: string }> = {
-  placeholder: { title: 'Prototype placeholder — not vetted' },
+  'itc-feb2026': {
+    title:
+      'ITC official price revision after Feb 1 2026 excise + 40% GST (Gold Flake 10s ₹170→₹240, Classic 20s ₹340→₹480)',
+    url: 'https://www.goodreturns.in/news/cigarette-price-hike-alert-itc-raises-gold-flake-classic-rates-up-to-41-after-tax-increase-1490281.html',
+  },
+  'press-feb2026': {
+    title:
+      'Feb 2026 post-excise distributor price lists (Navy Cut 76mm ₹120/10, Classic Connect 97mm ₹350/20)',
+    url: 'https://www.businesstoday.in/personal-finance/news/story/cigarette-price-shock-from-feb-1-navy-cut-now-at-rs-120-gold-flake-and-classic-at-rs-220-225-514281-2026-02-02',
+  },
+  'qcom-2026': {
+    title:
+      'Quick-commerce MRP listings, Jun 2026 (Zepto/Blinkit sell at printed MRP)',
+    url: 'https://www.zepto.com/pn/marlboro-gold-advance-cigarettes/pvid/a6016a0d-f3de-46d2-a1e8-88a64079db56',
+  },
+  'derived-duty-2026': {
+    title:
+      'Derived: pre-hike street MRP + Feb 2026 length-based excise structure — not an observed pack price',
+    url: 'https://www.angelone.in/news/taxation/cigarette-prices-rise-up-to-55-per-pack-after-new-excise-duty',
+  },
+  'hk-govtlab-2025': {
+    title:
+      'Hong Kong Government Laboratory tar & nicotine report 2025 (ISO machine-smoked, non-Indian SKUs)',
+    url: 'https://www.govtlab.gov.hk/en/our_work/publications/tar_and_nicotine_report.html',
+  },
+  'editorial-estimate': {
+    title:
+      'Editorial judgement from format (length/filter/lights/capsule) calibrated to typical ISO yield ranges — no measurement exists for Indian variants',
+  },
 };
 
 export type Maker = 'ITC' | 'Godfrey Phillips' | 'VST';
@@ -65,26 +89,74 @@ const toBrand = ({ packMrp, nicotineMg, tarMg, ...rest }: BrandRow): Brand => ({
 
 // Bump when shipped MRPs are revised; the store appends a dated price record
 // for the user's brand on first launch after an update (BACKLOG P1 design).
-export const DATASET_VERSION = 1;
-export const DATASET_AS_OF = 'Jul 2026 · placeholder, vetting pending';
+export const DATASET_VERSION = 2;
+export const DATASET_AS_OF = 'Jul 2026';
 
-const ph = (value: number): FieldSource => ({
-  value,
-  asOf: '2026-07',
-  source: 'placeholder',
-  confidence: 'estimate',
+// FieldSource shorthands per source tier.
+const mrp = (value: number, source: string, asOf: string): FieldSource => ({
+  value, asOf, source, confidence: 'printed',
+});
+const mrpEst = (value: number, asOf = '2026-02'): FieldSource => ({
+  value, asOf, source: 'derived-duty-2026', confidence: 'estimate',
+});
+const hkProxy = (value: number): FieldSource => ({
+  value, asOf: '2025-12', source: 'hk-govtlab-2025', confidence: 'proxy',
+});
+const est = (value: number): FieldSource => ({
+  value, asOf: '2026-07', source: 'editorial-estimate', confidence: 'estimate',
 });
 
+// 15 core rows frozen 2026-07-18 (plan §4). First five = onboarding set.
 const ROWS: BrandRow[] = [
-  { id: 'goldflake', name: 'Gold Flake', variant: 'Kings', maker: 'ITC', lengthMm: 84, packSize: 20, packMrp: ph(360), nicotineMg: ph(1.1), tarMg: ph(15) },
-  { id: 'classic', name: 'Classic', variant: 'Milds', maker: 'ITC', lengthMm: 84, packSize: 20, packMrp: ph(360), nicotineMg: ph(0.9), tarMg: ph(12) },
-  { id: 'marlboro', name: 'Marlboro', variant: 'Advance', maker: 'Godfrey Phillips', lengthMm: 84, packSize: 20, packMrp: ph(320), nicotineMg: ph(0.8), tarMg: ph(10) },
-  { id: 'wills', name: 'Wills', variant: 'Navy Cut', maker: 'ITC', lengthMm: 76, packSize: 20, packMrp: ph(340), nicotineMg: ph(1.0), tarMg: ph(14) },
-  { id: 'foursquare', name: 'Four Square', variant: 'Regular', maker: 'Godfrey Phillips', lengthMm: 69, packSize: 10, packMrp: ph(130), nicotineMg: ph(1.2), tarMg: ph(17) },
-  { id: 'charminar', name: 'Charminar', variant: 'Regular (non-filter)', maker: 'VST', lengthMm: 69, packSize: 10, packMrp: ph(80), nicotineMg: ph(1.6), tarMg: ph(22) },
+  { id: 'gf-kings', name: 'Gold Flake', variant: 'Kings', maker: 'ITC', lengthMm: 84, packSize: 10,
+    packMrp: mrp(240, 'itc-feb2026', '2026-02'), nicotineMg: est(1.1), tarMg: est(15) },
+  { id: 'classic-milds', name: 'Classic', variant: 'Milds', maker: 'ITC', lengthMm: 84, packSize: 20,
+    packMrp: mrp(480, 'itc-feb2026', '2026-02'), nicotineMg: est(0.8), tarMg: est(11) },
+  { id: 'marlboro-advance', name: 'Marlboro', variant: 'Advance', maker: 'Godfrey Phillips', lengthMm: 84, packSize: 20,
+    packMrp: mrp(480, 'qcom-2026', '2026-06'), nicotineMg: hkProxy(0.6), tarMg: hkProxy(7) },
+  { id: 'navycut', name: 'Wills', variant: 'Navy Cut', maker: 'ITC', lengthMm: 76, packSize: 10,
+    packMrp: mrp(120, 'press-feb2026', '2026-02'), nicotineMg: est(1.0), tarMg: est(14) },
+  { id: 'foursquare-kings', name: 'Four Square', variant: 'Kings', maker: 'Godfrey Phillips', lengthMm: 84, packSize: 10,
+    packMrp: mrpEst(120, '2026-06'), nicotineMg: est(0.9), tarMg: est(13) },
+  { id: 'gf-kings-lights', name: 'Gold Flake', variant: 'Kings Lights', maker: 'ITC', lengthMm: 84, packSize: 10,
+    packMrp: mrpEst(240), nicotineMg: est(0.8), tarMg: est(11) },
+  { id: 'gf-premium', name: 'Gold Flake', variant: 'Premium Filter', maker: 'ITC', lengthMm: 69, packSize: 10,
+    packMrp: mrp(115, 'qcom-2026', '2026-06'), nicotineMg: est(1.0), tarMg: est(15) },
+  { id: 'gf-indie-mint', name: 'Gold Flake', variant: 'Indie Mint', maker: 'ITC', lengthMm: 69, capsule: true, packSize: 10,
+    packMrp: mrpEst(120), nicotineMg: est(0.8), tarMg: est(12) },
+  { id: 'classic-regular', name: 'Classic', variant: 'Regular', maker: 'ITC', lengthMm: 84, packSize: 20,
+    packMrp: mrp(480, 'itc-feb2026', '2026-02'), nicotineMg: est(1.0), tarMg: est(14) },
+  { id: 'classic-connect', name: 'Classic', variant: 'Connect', maker: 'ITC', lengthMm: 97, packSize: 20,
+    packMrp: mrp(350, 'press-feb2026', '2026-02'), nicotineMg: est(0.7), tarMg: est(9) },
+  { id: 'classic-iceburst', name: 'Classic', variant: 'Ice Burst', maker: 'ITC', lengthMm: 84, capsule: true, packSize: 20,
+    packMrp: mrpEst(480), nicotineMg: est(0.8), tarMg: est(11) },
+  { id: 'redwhite', name: 'Red & White', variant: 'Regular', maker: 'Godfrey Phillips', lengthMm: 69, packSize: 10,
+    packMrp: mrpEst(115), nicotineMg: est(1.0), tarMg: est(15) },
+  { id: 'marlboro-double-switch', name: 'Marlboro', variant: 'Double Switch', maker: 'Godfrey Phillips', lengthMm: 84, capsule: true, packSize: 20,
+    packMrp: mrpEst(480, '2026-06'), nicotineMg: hkProxy(0.5), tarMg: hkProxy(6) },
+  { id: 'charminar', name: 'Charminar', variant: 'Special Filter', maker: 'VST', lengthMm: 69, packSize: 10,
+    packMrp: mrpEst(100), nicotineMg: est(1.1), tarMg: est(16) },
+  { id: 'total', name: 'Total', variant: 'Regular', maker: 'VST', lengthMm: 69, packSize: 10,
+    packMrp: mrpEst(90), nicotineMg: est(1.1), tarMg: est(16) },
 ];
 
 export const BRANDS: Brand[] = ROWS.map(toBrand);
+
+// Pre-v2 datasets shipped different ids; profiles persist them. Resolve old →
+// new here so an existing profile keeps its brand across the dataset upgrade.
+const LEGACY_BRAND_IDS: Record<string, string> = {
+  goldflake: 'gf-kings',
+  classic: 'classic-milds',
+  marlboro: 'marlboro-advance',
+  wills: 'navycut',
+  foursquare: 'foursquare-kings',
+};
+
+export function findBrand(brandId?: string): Brand | undefined {
+  if (!brandId) return undefined;
+  const id = LEGACY_BRAND_IDS[brandId] ?? brandId;
+  return BRANDS.find((b) => b.id === id);
+}
 
 // the five shown in onboarding step 2 (2a mockup)
 export const ONBOARDING_BRANDS = BRANDS.slice(0, 5);
@@ -107,13 +179,13 @@ export type BrandInfo = {
   tarMg: number;
   estimated: boolean; // true → dataset averages, render with a ~ prefix
   // Per-field confidence for the plan's softness rule: anything not
-  // study/proxy-backed renders with ~ (UI pass, plan §5.5).
+  // study/proxy-backed renders with ~.
   nicotineConfidence: Confidence;
   tarConfidence: Confidence;
 };
 
 export function brandInfo(brandId?: string, customName?: string): BrandInfo | null {
-  const b = BRANDS.find((x) => x.id === brandId);
+  const b = findBrand(brandId);
   if (b) {
     return {
       label: `${b.name} ${b.variant}`,
@@ -136,3 +208,7 @@ export function brandInfo(brandId?: string, customName?: string): BrandInfo | nu
   }
   return null;
 }
+
+// True when a non-price number should carry the ~ softness prefix (plan §2b):
+// only study/proxy-backed figures render as-is.
+export const isSoft = (c: Confidence) => c !== 'study' && c !== 'proxy';

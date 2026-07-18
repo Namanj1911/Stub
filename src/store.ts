@@ -4,7 +4,7 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { BRANDS, BRAND_AVERAGES, DATASET_VERSION } from './brands';
+import { BRAND_AVERAGES, DATASET_VERSION, findBrand } from './brands';
 import { BaselineRecord, Entry, Pace, PriceRecord, dayKey } from './domain';
 
 export type Profile = {
@@ -56,7 +56,7 @@ function migrate(parsed: Partial<AppData>): AppData {
     ];
   }
   if (!profile.priceHistory?.length) {
-    const brand = BRANDS.find((b) => b.id === profile.brandId);
+    const brand = findBrand(profile.brandId);
     const price =
       (profile.pricePerStick as number | undefined) ?? brand?.price ?? BRAND_AVERAGES.price;
     profile.priceHistory = [
@@ -69,7 +69,7 @@ function migrate(parsed: Partial<AppData>): AppData {
   // brand from now — never retroactively. No-op when the price already
   // matches, so an unpersisted migration can't append twice.
   if ((data.priceDatasetVersion ?? 0) < DATASET_VERSION) {
-    const brand = BRANDS.find((b) => b.id === profile.brandId);
+    const brand = findBrand(profile.brandId);
     if (brand && brand.price !== profile.pricePerStick) {
       profile.priceHistory = [
         ...profile.priceHistory,

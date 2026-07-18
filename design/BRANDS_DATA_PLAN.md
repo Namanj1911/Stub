@@ -235,4 +235,12 @@ the yield story and they're the fast-growing segment worth featuring.
 - COTPA §7(5) status: [Tobacco Control Laws — India packaging/labeling](https://www.tobaccocontrollaws.org/legislation/india/packaging-labeling/other-packaging-and-labeling-requirements) · [Centre opposes mandatory disclosure (Bar & Bench)](https://www.barandbench.com/news/disclosure-of-nicotine-tar-levels-on-cigarette-packs-may-be-counter-productive-centre-to-kerala-hc)
 - Feb 2026 price revisions: [india.com budget-2026 pack prices](https://www.india.com/news/india/union-budget-2026-nirmala-sitharam-finance-minister-narendra-modi-wills-navy-cut-wills-classic-milds-classic-connect-aicpdf-gold-flake-kings-8290378/) · [Angel One — cigarette prices rise](https://www.angelone.in/news/taxation/cigarette-prices-rise-up-to-55-per-pack-after-new-excise-duty)
 - Machine-smoked yields: [Selected international cigarettes tar/nicotine/CO (PMC1747810)](https://pmc.ncbi.nlm.nih.gov/articles/PMC1747810/) · [Nicotine in Indian smoking/chewing tobacco (PubMed 18445921)](https://pubmed.ncbi.nlm.nih.gov/18445921/)
+- **Used in the shipped dataset (found during the 2026-07-18 build):**
+  [ITC official revision — Gold Flake 10s ₹170→₹240, Classic 20s ₹340→₹480 (Goodreturns)](https://www.goodreturns.in/news/cigarette-price-hike-alert-itc-raises-gold-flake-classic-rates-up-to-41-after-tax-increase-1490281.html) ·
+  [BusinessToday Feb-2026 distributor list — Navy Cut ₹120/10, Connect ₹350/20](https://www.businesstoday.in/personal-finance/news/story/cigarette-price-shock-from-feb-1-navy-cut-now-at-rs-120-gold-flake-and-classic-at-rs-220-225-514281-2026-02-02) ·
+  [HK Government Laboratory tar & nicotine report 2025 (ISO) — Marlboro Gold 7mg/0.6mg, Double Burst 6mg/0.5mg proxies](https://www.govtlab.gov.hk/en/our_work/publications/tar_and_nicotine_report.html) ·
+  quick-commerce MRP listings (Zepto/Blinkit, Jun 2026) for GF Premium ₹115/10 and Marlboro (Gold) Advance ₹480/20.
+  PMC1747810 turned out to publish only ranges in the abstract (per-brand
+  tables not accessible), so the Marlboro proxy tier uses the HK regulator
+  report instead — a stronger source (annual, ISO, regulator-published).
 - Not-a-source (uncited editorial, do not cite): indiabrand.org, worldblaze.in
