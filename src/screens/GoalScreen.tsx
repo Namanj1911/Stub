@@ -65,7 +65,7 @@ export function GoalScreen() {
   });
 
   const progress = Math.min(100, Math.max(0, Math.round((1 - budget / baseline) * 100)));
-  const tomorrow = tomorrowBudgetSixths(budget, pace);
+  const tomorrow = tomorrowBudgetSixths(entries, todayKey, profile.installDayKey, profile.baselineHistory);
 
   return (
     <ScrollView
