@@ -269,8 +269,8 @@ export function brandSwitchRoast(
 // Onboarding reaction card (parameterised, so kept as a function)
 export function setupReaction(countPerDay: number): string {
   if (countPerDay <= 5)
-    return `Light smoker. A Chill pace could have you done in about ${Math.ceil(countPerDay / 0.25)} weeks.`;
+    return `Light smoker. A Chill pace could have you done in about ${Math.ceil(countPerDay / 0.5)} weeks.`;
   if (countPerDay <= 12)
-    return `About average for your age group. At a Steady pace, zero in roughly ${Math.ceil(countPerDay / 0.5)} weeks. Very doable.`;
-  return `Heavy going. No panic — we taper, not cold turkey. Steady pace: about ${Math.ceil(countPerDay / 0.5)} weeks to zero.`;
+    return `About average for your age group. At a Steady pace, zero in roughly ${Math.ceil(countPerDay / 1)} weeks. Very doable.`;
+  return `Heavy going. No panic — we taper, not cold turkey. Steady pace: about ${Math.ceil(countPerDay / 1)} weeks to zero.`;
 }

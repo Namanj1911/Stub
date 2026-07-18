@@ -247,6 +247,13 @@ deliberately **not** here — deferred until after beta + PMF, see Later.
 
 ## Later / needs discussion
 
+- Quit-date picker to replace the three pace blocks (decided 2026-07-18):
+  the user picks a target date and the taper rate is derived, instead of
+  choosing an abstract cigs/week pace. E12-adjacent. Needs design for
+  too-soon dates (rate would exceed cold turkey) and for rescheduling
+  mid-taper. Interim retune shipped 2026-07-18: paces are now ½/1/2
+  cigs/week (was ¼/½/1 — chill sat below the half-cig display granularity
+  and stretched a 10/day smoker's quit to 40 weeks).
 - Notifications (SPEC S15–S17) — needs expo-notifications; limited inside
   Expo Go, best done alongside a development build.
 - Milestone roast notifications (decided 2026-07-17): push a playful roast

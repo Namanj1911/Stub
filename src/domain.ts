@@ -80,8 +80,10 @@ export function computeSavings(
   return { saved, savedWeek };
 }
 
-// sixths/day reduced per week
-export const PACE_RATE: Record<Pace, number> = { chill: 1.5, steady: 3, beast: 6 };
+// sixths/day reduced per week. Retuned 2026-07-18 from ¼/½/1 cigs — ¼/wk sat
+// below the half-cig display granularity and stretched a 10/day smoker's
+// quit to 40 weeks; every pace now moves at least one visible step per week.
+export const PACE_RATE: Record<Pace, number> = { chill: 3, steady: 6, beast: 12 };
 
 const FRACTION_GLYPH: Record<number, string> = { 1: '⅙', 2: '⅓', 3: '½', 4: '⅔', 5: '⅚' };
 

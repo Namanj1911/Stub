@@ -14,15 +14,15 @@ import { setupReaction } from '../strings';
 import { color, font, radius } from '../theme';
 
 const PACES: { id: Pace; name: string; rate: string; desc: string }[] = [
-  { id: 'chill', name: 'Chill', rate: '−¼ a week', desc: 'Barely feel it. Slow and certain.' },
-  { id: 'steady', name: 'Steady', rate: '−½ a week', desc: 'The sweet spot for most people.' },
-  { id: 'beast', name: 'Beast', rate: '−1 a week', desc: 'Aggressive. For the impatient.' },
+  { id: 'chill', name: 'Chill', rate: '−½ a week', desc: 'Barely feel it. Slow and certain.' },
+  { id: 'steady', name: 'Steady', rate: '−1 a week', desc: 'The sweet spot for most people.' },
+  { id: 'beast', name: 'Beast', rate: '−2 a week', desc: 'Aggressive. For the impatient.' },
 ];
 
 const PACE_SUMMARY: Record<Pace, string> = {
-  chill: 'Chill · −¼ a week',
-  steady: 'Steady · −½ a week',
-  beast: 'Beast · −1 a week',
+  chill: 'Chill · −½ a week',
+  steady: 'Steady · −1 a week',
+  beast: 'Beast · −2 a week',
 };
 
 const TRIGGERS = [

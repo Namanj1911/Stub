@@ -23,12 +23,12 @@ import { ProfileButton } from '../ProfileButton';
 import { color, font, radius } from '../theme';
 
 const PACES: { id: Pace; name: string; rate: string; desc: string }[] = [
-  { id: 'chill', name: 'Chill', rate: '−¼ a week', desc: 'Barely feel it. Slow and certain.' },
-  { id: 'steady', name: 'Steady', rate: '−½ a week', desc: 'The sweet spot for most people.' },
-  { id: 'beast', name: 'Beast', rate: '−1 a week', desc: 'Aggressive. For the impatient.' },
+  { id: 'chill', name: 'Chill', rate: '−½ a week', desc: 'Barely feel it. Slow and certain.' },
+  { id: 'steady', name: 'Steady', rate: '−1 a week', desc: 'The sweet spot for most people.' },
+  { id: 'beast', name: 'Beast', rate: '−2 a week', desc: 'Aggressive. For the impatient.' },
 ];
 
-const PACE_LABEL: Record<Pace, string> = { chill: '¼', steady: '½', beast: '1' };
+const PACE_LABEL: Record<Pace, string> = { chill: '½', steady: '1', beast: '2' };
 
 export function GoalScreen() {
   const { data, setPace } = useApp();
