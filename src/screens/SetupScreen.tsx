@@ -4,10 +4,10 @@
 // every step has a sane default so Continue always works.
 
 import React, { useState } from 'react';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import Svg, { Defs, Ellipse, RadialGradient, Stop } from 'react-native-svg';
 import { useApp } from '../AppContext';
-import { BRAND_AVERAGES, ONBOARDING_BRANDS } from '../brands';
+import { BRANDS, BRAND_AVERAGES, ONBOARDING_BRANDS } from '../brands';
 import { PACE_RATE, Pace } from '../domain';
 import { haptic } from '../haptics';
 import { setupReaction } from '../strings';
@@ -48,10 +48,28 @@ export function SetupScreen() {
   // null = "something else" — priced at the dataset average, name optional,
   // refinable later from the nicotine list
   const [brandId, setBrandId] = useState<string | null>(ONBOARDING_BRANDS[0].id);
+  const [brandQuery, setBrandQuery] = useState('');
   const [triggers, setTriggers] = useState<Record<string, boolean>>({});
   const [pace, setPace] = useState<Pace>('steady');
 
-  const price = ONBOARDING_BRANDS.find((b) => b.id === brandId)?.price ?? BRAND_AVERAGES.price;
+  // The 2a mockup shows five chips, but the dataset has fifteen — searching
+  // reaches the rest, so a Charminar smoker isn't forced onto averages here
+  // and left to discover the nicotine list later.
+  const trimmedQuery = brandQuery.trim();
+  const picked = BRANDS.find((b) => b.id === brandId);
+  // A pick made from search stays on the list after the box is cleared —
+  // otherwise the selection just disappears from the default five.
+  const defaultBrands =
+    picked && !ONBOARDING_BRANDS.some((b) => b.id === picked.id)
+      ? [...ONBOARDING_BRANDS, picked]
+      : ONBOARDING_BRANDS;
+  const visibleBrands = trimmedQuery
+    ? BRANDS.filter((b) =>
+        `${b.name} ${b.variant}`.toLowerCase().includes(trimmedQuery.toLowerCase()),
+      )
+    : defaultBrands;
+
+  const price = picked?.price ?? BRAND_AVERAGES.price;
   const done = step >= 4;
   const monthly = Math.round(count * price * 30).toLocaleString('en-IN');
   const weeksTo = (p: Pace) => Math.ceil(count / (PACE_RATE[p] / 6));
@@ -62,7 +80,10 @@ export function SetupScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: color.bg }}>
-      <ScrollView contentContainerStyle={{ padding: 22, paddingTop: 16, flexGrow: 1 }}>
+      <ScrollView
+        contentContainerStyle={{ padding: 22, paddingTop: 16, flexGrow: 1 }}
+        keyboardShouldPersistTaps="handled"
+      >
         {/* header + progress */}
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
           <Text style={{ fontFamily: font.medium, fontSize: 22, color: color.text }}>
@@ -116,8 +137,28 @@ export function SetupScreen() {
               We'll use this for nicotine and money math — pack MRP, so you never type a price.
               Change it anytime.
             </Sub>
-            <View style={{ gap: 8, marginTop: 28 }}>
-              {ONBOARDING_BRANDS.map((b) => {
+            <TextInput
+              value={brandQuery}
+              onChangeText={setBrandQuery}
+              placeholder="Search brands…"
+              placeholderTextColor={color.neutral500}
+              accessibilityLabel="Search brands"
+              autoCorrect={false}
+              style={{
+                backgroundColor: color.surface,
+                borderWidth: 1,
+                borderColor: color.neutral800,
+                borderRadius: radius.md,
+                paddingVertical: 12,
+                paddingHorizontal: 14,
+                fontFamily: font.regular,
+                fontSize: 14,
+                color: color.text,
+                marginTop: 24,
+              }}
+            />
+            <View style={{ gap: 8, marginTop: 8 }}>
+              {visibleBrands.map((b) => {
                 const selected = brandId === b.id;
                 return (
                   <Pressable
@@ -151,6 +192,18 @@ export function SetupScreen() {
                   </Pressable>
                 );
               })}
+              {trimmedQuery.length > 0 && visibleBrands.length === 0 && (
+                <Text
+                  style={{
+                    fontFamily: font.regular,
+                    fontSize: 12,
+                    color: color.neutral500,
+                    paddingVertical: 4,
+                  }}
+                >
+                  Nothing matches “{trimmedQuery}” — Something else has you covered.
+                </Text>
+              )}
               <Pressable
                 onPress={() => {
                   haptic.select();
