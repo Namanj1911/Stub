@@ -1,5 +1,12 @@
 # Brands dataset — sourcing & build plan
 
+> **Status: BUILT 2026-07-18.** `src/brands.ts` now ships the vetted 15-row
+> dataset (`DATASET_VERSION` 2) with per-field provenance; the `~` softness
+> treatment, Nicotine disclaimer, and MRP-as-of date are live. Merged to `main`
+> in `feat/brands-dataset`. This doc is kept as the sourcing record — the
+> §5/§8 to-do framing below is historical. Open items: physical-pack `printed`
+> upgrades and the ~13 deferred long-tail variants (§4), both future revs.
+
 Plan for replacing the placeholder `src/brands.ts` with a vetted dataset of
 brands, variants, pack MRP / pack size, and nicotine + tar content. Gates the
 external-TestFlight step in `GO_LIVE.md` §7.1 / §8.7. **Discuss before build**
