@@ -124,8 +124,10 @@ without discussion.
   `stub-app`→`Stub` for the home-screen label; `slug` left alone (EAS
   identity). A `dark:` splash variant was tried and dropped — it conflicts
   with `userInterfaceStyle: dark` and is redundant on a dark-only app.
-  **Not device-verified:** Expo Go renders its own launch screen, so this
-  can only be confirmed on the EAS dev build (GO_LIVE §8).
+  **Verified 2026-07-19 on the iOS simulator** via a local dev build
+  (`npx expo run:ios`) — Expo Go renders its own launch screen and can never
+  show this. The build caught a real bug the config-level checks had passed:
+  the splash logo rendered as a white square (see Issues).
 
 ## P2 — round 2 (owner feedback, 2026-07-17)
 
@@ -328,3 +330,20 @@ deliberately **not** here — deferred until after beta + PMF, see Later.
   hindsight — flagged in user testing same day. Fix tracked in P1.
 - **Baseline-vs-display leak (2026-07-16):** budget math's baseline fallback
   leaked into chart rendering for new users. Fix tracked in P0.
+- **Splash rendered as a white box (2026-07-19):** the splash PNG was
+  rasterized from `splash-icon.svg` with QuickLook (`qlmanage -t`), which
+  flattens onto opaque white. It was then "verified" with
+  `sips -g hasAlpha`, which only reports that an alpha *channel* exists —
+  it said yes while every pixel was `rgba(255,255,255,255)`. The native
+  asset check inherited the same bad file, so every layer of verification
+  passed and the splash still rendered a white square on `#161826`.
+  **Lessons:** (1) rasterize SVG with `rsvg-convert` (`brew install
+  librsvg`), never `qlmanage`; (2) to check transparency, decode actual
+  pixels — `hasAlpha` proves nothing; (3) config-level checks cannot
+  substitute for looking at the screen. Caught only by building to the
+  iOS simulator.
+- **Toolchain for local iOS builds (2026-07-19):** macOS system Ruby is
+  2.6.10 and CocoaPods needs `ffi`, which requires Ruby >= 3.0, so
+  `gem install --user-install cocoapods` fails. Fix is `brew install
+  cocoapods` — it vendors its own Ruby and never touches system Ruby.
+  Xcode's own `prebuild`/`run:ios` flow needs no manual Xcode use.
