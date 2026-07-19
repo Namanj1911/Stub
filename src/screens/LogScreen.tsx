@@ -10,13 +10,14 @@ import {
   fmtSince,
   fmtTime,
   frac,
+  tomorrowBudgetSixths,
   totalSixths,
 } from '../domain';
 import { useApp, useProfile } from '../AppContext';
 import { haptic } from '../haptics';
 import { ProfileButton } from '../ProfileButton';
 import { useNav } from '../navigation';
-import { copy, logToast } from '../strings';
+import { copy, logToast, tomorrowNudge } from '../strings';
 import { color, font, radius } from '../theme';
 
 export function LogScreen() {
@@ -60,6 +61,13 @@ export function LogScreen() {
   const total = totalSixths(today);
   const budget = budgetSixths(entries, todayKey, profile.installDayKey, profile.baselineHistory);
   const left = budget - total;
+  // tomorrow's budget (S11) lives here rather than on Goal — it's an
+  // operational number, and Goal is the narrative screen
+  // (design/HEALTH_TIMELINE.md §13). The caption is always visible; it only
+  // raises its voice once today is ≥80% spent.
+  const tomorrow = tomorrowBudgetSixths(entries, todayKey, profile.installDayKey, profile.baselineHistory);
+  const tomorrowLoud = total >= budget * 0.8;
+  const tomorrowDrop = Math.max(0, budget - tomorrow);
   // max timestamp, not last array element — backfills append out of
   // chronological order. ("undo last" stays last-array-element by design:
   // it undoes the most recent *action*, including a just-added backfill.)
@@ -152,8 +160,68 @@ export function LogScreen() {
           />
         </View>
 
+        {/* tomorrow's budget (S11) — a stat row under the meter (label left,
+            value right, per the Goal card), not a caption: as a 12px grey
+            line it read as a footnote and was missed on device. Deliberately
+            borderless — it sits directly above the log buttons, and anything
+            with a border there reads as a fourth button. Touches no
+            interactive target; dodges the FAB and the scrolling list. */}
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginTop: 14,
+          }}
+          accessible
+          accessibilityLabel={`Tomorrow's budget: ${frac(tomorrow)}${
+            tomorrowDrop > 0 ? `, down ${frac(tomorrowDrop)} from today` : ''
+          }`}
+        >
+          <Text
+            style={{
+              fontFamily: font.medium,
+              fontSize: 11,
+              letterSpacing: 1,
+              textTransform: 'uppercase',
+              color: tomorrowLoud ? color.accent300 : color.neutral500,
+            }}
+          >
+            Tomorrow
+          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 7 }}>
+            {/* the drop is the point of the number — the taper, made visible */}
+            {tomorrowDrop > 0 && (
+              <Text style={{ fontFamily: font.regular, fontSize: 12, color: color.accent300 }}>
+                −{frac(tomorrowDrop)}
+              </Text>
+            )}
+            <Text
+              style={{
+                fontFamily: font.medium,
+                fontSize: 18,
+                color: tomorrowLoud ? color.accent300 : color.text,
+              }}
+            >
+              {frac(tomorrow)}
+            </Text>
+          </View>
+        </View>
+        {tomorrowLoud && (
+          <Text
+            style={{
+              fontFamily: font.regular,
+              fontSize: 12,
+              color: color.neutral500,
+              marginTop: 5,
+            }}
+          >
+            {tomorrowNudge()}
+          </Text>
+        )}
+
         {/* log buttons (S1) */}
-        <View style={{ flexDirection: 'row', gap: 8, marginTop: 20 }}>
+        <View style={{ flexDirection: 'row', gap: 8, marginTop: 18 }}>
           <LogButton label="1" a11yLabel="Log one cigarette" onPress={() => log(6)} />
           <LogButton label="½" a11yLabel="Log half a cigarette" onPress={() => log(3)} />
           <LogButton label="⅓ shared" a11yLabel="Log a third, shared" onPress={() => log(2)} />

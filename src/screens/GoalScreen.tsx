@@ -1,9 +1,13 @@
-// Goal screen — S9 pace picker, S10 quit date + glide path, S11 tomorrow's
-// budget. The plan card sits on the deep-indigo section ground with a radial
-// glow (the only place that ground is used, per the design system).
+// Goal screen — S10 quit date + glide path. This is the *narrative* screen:
+// where the taper is going, and (once the timeline lands) what the body gets
+// for it. Configuration lives on Profile — the S9 pace picker moved there,
+// and S11's tomorrow's-budget moved to Log. See design/HEALTH_TIMELINE.md §5.
+//
+// The plan card sits on the deep-indigo section ground with a radial glow
+// (the only place that ground is used, per the design system).
 
 import React from 'react';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { ScrollView, Text, View } from 'react-native';
 import Svg, { Defs, Ellipse, RadialGradient, Stop } from 'react-native-svg';
 import {
   PACE_RATE,
@@ -11,27 +15,18 @@ import {
   baselineSixthsFor,
   budgetSixths,
   dayKey,
-  frac,
   quitDate,
-  tomorrowBudgetSixths,
   trailing7Totals,
   weeksToQuit,
 } from '../domain';
 import { useApp, useProfile } from '../AppContext';
-import { haptic } from '../haptics';
 import { ProfileButton } from '../ProfileButton';
 import { color, font, radius } from '../theme';
-
-const PACES: { id: Pace; name: string; rate: string; desc: string }[] = [
-  { id: 'chill', name: 'Chill', rate: '−½ a week', desc: 'Barely feel it. Slow and certain.' },
-  { id: 'steady', name: 'Steady', rate: '−1 a week', desc: 'The sweet spot for most people.' },
-  { id: 'beast', name: 'Beast', rate: '−2 a week', desc: 'Aggressive. For the impatient.' },
-];
 
 const PACE_LABEL: Record<Pace, string> = { chill: '½', steady: '1', beast: '2' };
 
 export function GoalScreen() {
-  const { data, setPace } = useApp();
+  const { data } = useApp();
   const profile = useProfile();
   const entries = data.entries;
   const now = Date.now();
@@ -65,7 +60,6 @@ export function GoalScreen() {
   });
 
   const progress = Math.min(100, Math.max(0, Math.round((1 - budget / baseline) * 100)));
-  const tomorrow = tomorrowBudgetSixths(entries, todayKey, profile.installDayKey, profile.baselineHistory);
 
   return (
     <ScrollView
@@ -79,54 +73,8 @@ export function GoalScreen() {
         <ProfileButton />
       </View>
 
-      {/* pace picker (S9) */}
-      <Text style={{ fontFamily: font.medium, fontSize: 17, color: color.text, marginTop: 20 }}>
-        Your pace
-      </Text>
-      <View style={{ gap: 8, marginTop: 12 }}>
-        {PACES.map((p) => {
-          const selected = pace === p.id;
-          return (
-            <Pressable
-              key={p.id}
-              onPress={() => {
-                haptic.select();
-                setPace(p.id);
-              }}
-              accessibilityRole="button"
-              accessibilityLabel={`Set pace to ${p.name}, ${p.rate}`}
-              accessibilityState={{ selected }}
-              style={({ pressed }) => ({
-                flexDirection: 'row',
-                alignItems: 'center',
-                backgroundColor: selected ? color.accentTint10 : color.surface,
-                borderWidth: 1,
-                borderColor: selected ? color.accent : color.neutral800,
-                borderRadius: radius.md,
-                padding: 14,
-                transform: [{ scale: pressed ? 0.98 : 1 }],
-              })}
-            >
-              <View style={{ flex: 1 }}>
-                <Text style={{ fontFamily: font.medium, fontSize: 15, color: color.text }}>
-                  {p.name}{' '}
-                  <Text style={{ color: selected ? color.accent300 : color.neutral500, fontSize: 13 }}>
-                    {p.rate}
-                  </Text>
-                </Text>
-                <Text style={{ fontFamily: font.regular, fontSize: 12, color: color.neutral500, marginTop: 2 }}>
-                  {p.desc}
-                </Text>
-              </View>
-              <Text style={{ fontFamily: font.regular, fontSize: 12, color: color.neutral400 }}>
-                {weeksToQuit(budget, p.id)} wks
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
-
-      {/* plan card (S10) */}
+      {/* plan card (S10) — now also carries progress-to-quit-day, which used
+          to be a full-width card of its own rendering a single number */}
       <View
         style={{
           borderRadius: radius.lg,
@@ -200,46 +148,26 @@ export function GoalScreen() {
             </View>
           ))}
         </View>
-      </View>
-
-      {/* progress to quit day (S10) */}
-      <View
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          backgroundColor: color.surface,
-          borderRadius: radius.md,
-          padding: 16,
-          marginTop: 16,
-        }}
-      >
-        <Text style={{ fontFamily: font.regular, fontSize: 13, color: color.neutral400 }}>
-          Progress to quit day
-        </Text>
-        <Text style={{ fontFamily: font.medium, fontSize: 20, color: color.accent300 }}>
-          {progress}%
-        </Text>
-      </View>
-
-      {/* tomorrow's budget (S11) */}
-      <View
-        style={{
-          backgroundColor: color.surface,
-          borderRadius: radius.md,
-          padding: 16,
-          marginTop: 8,
-        }}
-      >
-        <Text style={{ fontFamily: font.regular, fontSize: 12, color: color.neutral500 }}>
-          Tomorrow's budget
-        </Text>
-        <Text style={{ fontFamily: font.medium, fontSize: 26, color: color.text, marginTop: 4 }}>
-          {frac(tomorrow)}
-        </Text>
-        <Text style={{ fontFamily: font.regular, fontSize: 12, color: color.neutral500, marginTop: 4 }}>
-          we'll nudge you at 80%
-        </Text>
+        {/* progress to quit day (S10) — folded in below the glide path it
+            summarises, on a hairline divider */}
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            borderTopWidth: 1,
+            borderTopColor: 'rgba(233, 233, 237, 0.12)',
+            marginTop: 18,
+            paddingTop: 14,
+          }}
+        >
+          <Text style={{ fontFamily: font.regular, fontSize: 13, color: color.accent200 }}>
+            Progress to quit day
+          </Text>
+          <Text style={{ fontFamily: font.medium, fontSize: 20, color: color.text }}>
+            {progress}%
+          </Text>
+        </View>
       </View>
     </ScrollView>
   );

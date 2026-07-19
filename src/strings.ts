@@ -245,6 +245,26 @@ export function streakCopy(current: number, best: number): string {
   return pool[Math.floor(STREAK_ROLL * pool.length)](best);
 }
 
+// Tomorrow's-budget nudge on Log (design/HEALTH_TIMELINE.md §13). The caption
+// itself is always visible; this line only appears once today's budget is
+// ≥80% spent, which is when tomorrow stops being trivia. Rolled once per
+// launch like the temptation pool.
+//
+// Same declutter rule as the streak card: the caption already prints
+// tomorrow's number, so no line restates it.
+const TOMORROW_NUDGES = [
+  'Tomorrow starts lower. Sleep on it.',
+  "That's tomorrow's ceiling. It doesn't negotiate.",
+  'Tomorrow already has opinions about today.',
+  'The number goes down from here. That was the whole idea.',
+];
+
+const TOMORROW_ROLL = Math.floor(Math.random() * TOMORROW_NUDGES.length);
+
+export function tomorrowNudge(): string {
+  return TOMORROW_NUDGES[TOMORROW_ROLL];
+}
+
 // Brand-switch roast (BACKLOG P1): the app noticed, and has opinions.
 export function brandSwitchRoast(
   prev: { nicotineMg: number; estimated: boolean } | null,
