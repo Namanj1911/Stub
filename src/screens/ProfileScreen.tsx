@@ -8,7 +8,6 @@ import React from 'react';
 import { Alert, Pressable, ScrollView, Share, Text, View } from 'react-native';
 import { useApp, useProfile } from '../AppContext';
 import { brandInfo } from '../brands';
-import DateTimePicker from '@react-native-community/datetimepicker';
 import {
   PACE_RATE,
   Pace,
@@ -17,7 +16,6 @@ import {
   dayKey,
   paceForRate,
   quitDateAtRate,
-  rateForTarget,
   weeksToQuitAtRate,
 } from '../domain';
 import { haptic } from '../haptics';
@@ -32,10 +30,9 @@ const PACE_LABEL: { id: Pace; name: string; rate: string }[] = [
 ];
 
 export function ProfileScreen() {
-  const { data, setCountPerDay, setPace, setPlanRate, resetAll } = useApp();
+  const { data, setCountPerDay, setPace, resetAll } = useApp();
   const profile = useProfile();
   const nav = useNav();
-  const [picking, setPicking] = React.useState(false);
   const brand = brandInfo(profile.brandId, profile.customBrandName);
   const now = Date.now();
   const todayKey = dayKey(now);
@@ -48,19 +45,12 @@ export function ProfileScreen() {
     profile.baselineHistory,
     profile.planHistory,
   );
-  // Rate is canonical; the presets and the date are two doors onto it (§11.2).
+  // Rate is canonical (§11.2). A target-date picker as the second door onto
+  // it was built and pulled before beta — see BACKLOG "Later". The presets
+  // are the only door for now; the date below is derived, not editable.
   const rate = currentPlanRate(profile.planHistory);
   const activePreset = paceForRate(rate);
   const target = quitDateAtRate(budget, rate, now);
-
-  // A date sets the rate that reaches zero by then. Too-soon dates are
-  // allowed and roasted rather than blocked (§11.3) — the floor is the
-  // steepest rate that still leaves a week of taper.
-  const pickDate = (date: Date) => {
-    setPicking(false);
-    haptic.select();
-    setPlanRate(rateForTarget(budget, todayKey, dayKey(date.getTime())));
-  };
 
   const exportData = () => {
     Share.share({
@@ -207,66 +197,27 @@ export function ProfileScreen() {
         })}
       </View>
 
-      {/* target date — the other door onto the same rate. Shows the date the
-          current plan lands on, whether that came from a preset or a pick. */}
-      <Pressable
-        onPress={() => {
-          haptic.select();
-          setPicking(true);
-        }}
-        accessibilityRole="button"
-        accessibilityLabel={`Quit date: ${target.toLocaleDateString('en-IN', {
-          day: 'numeric',
-          month: 'long',
-          year: 'numeric',
-        })}. Change it`}
-        style={({ pressed }) => ({
+      {/* what the chosen pace actually means, in a date. Read-only: the
+          presets are the control, and a date the user can't edit can't
+          become a deadline they feel they're failing. */}
+      <View
+        style={{
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'space-between',
-          backgroundColor: pressed ? color.accentTint10 : color.surface,
+          backgroundColor: color.surface,
           borderRadius: radius.md,
           padding: 16,
           marginTop: 8,
-        })}
+        }}
       >
-        <View style={{ flex: 1 }}>
-          <Text style={{ fontFamily: font.medium, fontSize: 15, color: color.text }}>
-            {target.toLocaleDateString('en-IN', {
-              day: 'numeric',
-              month: 'long',
-              year: 'numeric',
-            })}
-          </Text>
-          <Text
-            style={{
-              fontFamily: font.regular,
-              fontSize: 12,
-              color: color.neutral500,
-              marginTop: 3,
-              lineHeight: 17,
-            }}
-          >
-            {activePreset
-              ? 'Your last cigarette, at this pace. Pick a date instead and the pace follows.'
-              : `Custom pace — about ${weeksToQuitAtRate(budget, rate)} weeks from today.`}
-          </Text>
-        </View>
-        <Text style={{ fontFamily: font.regular, fontSize: 13, color: color.accent300 }}>
-          change →
+        <Text style={{ fontFamily: font.regular, fontSize: 13, color: color.neutral400 }}>
+          Last cigarette, at this pace
         </Text>
-      </Pressable>
-      {picking && (
-        <DateTimePicker
-          value={target}
-          mode="date"
-          display="inline"
-          themeVariant="dark"
-          minimumDate={new Date(now + 7 * 86_400_000)}
-          accentColor={color.accent}
-          onChange={(_event, date) => (date ? pickDate(date) : setPicking(false))}
-        />
-      )}
+        <Text style={{ fontFamily: font.medium, fontSize: 15, color: color.text }}>
+          {target.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+        </Text>
+      </View>
 
       {/* data */}
       <SectionLabel>Your data</SectionLabel>

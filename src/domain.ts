@@ -113,17 +113,12 @@ export function plannedBudgetFor(history: PlanRecord[], key: number): number | n
   return Math.max(0, Math.round((current.startBudget - current.rate * weeks) / 3) * 3);
 }
 
-// Days from `budget` to zero at `rate` sixths/week, and the rate that gets
-// from `budget` to zero by `targetDayKey` — the two directions of the same
-// fact (§11.2: one canonical value, two doors).
-export function rateForTarget(budget: number, todayKey: number, targetDayKey: number): number {
-  const weeks = Math.max(1 / 7, (targetDayKey - todayKey) / 7);
-  return Math.max(1, Math.ceil(budget / weeks));
-}
-
-export function targetKeyForRate(budget: number, todayKey: number, rate: number): number {
-  return todayKey + Math.ceil((budget / rate) * 7);
-}
+// NOTE: the date→rate conversion (rateForTarget/targetKeyForRate) was built
+// and removed on 2026-07-19 with the target-date picker — see BACKLOG
+// "Later". If it comes back, the rate must be fractional and the date derived
+// in days, not whole weeks: whole-number rounding on both sides made most
+// picked dates snap to a different one. The plan record and the
+// min(adaptive, planned) math it feeds are unaffected and stay.
 
 // sixths/day reduced per week. Retuned 2026-07-18 from ¼/½/1 cigs — ¼/wk sat
 // below the half-cig display granularity and stretched a 10/day smoker's

@@ -263,7 +263,12 @@ deliberately **not** here — deferred until after beta + PMF, see Later.
   Build order in §16 — five steps, each device-testable:
   - [x] 1. Goal/Profile restructure — **built 2026-07-19**
     (`feat/goal-profile-restructure`), awaiting device check.
-  - [ ] 2. Plan control (canonical rate, date picker, `min(adaptive, planned)`)
+  - [x] 2. Plan control — **built 2026-07-19** (`feat/plan-control`):
+        canonical rate, `min(adaptive, planned)`, plan exempt from the
+        `max(3)` floor. Fixes a latent bug: the adaptive floor meant the
+        budget could never drop below ½/day, so the quit date Goal promises
+        was unreachable and post-zero could never trigger. The date picker
+        from this step was removed before shipping — see Later.
   - [ ] 3. Timeline phase 1 (dataset, `src/health.ts`, Health screen,
         milestone card, in-app achievements)
   - [ ] 4. Post-zero mode (unlock, 7-consecutive-zero-day flip, relapse)
@@ -279,13 +284,35 @@ deliberately **not** here — deferred until after beta + PMF, see Later.
 
 ## Later / needs discussion
 
-- Quit-date picker to replace the three pace blocks (decided 2026-07-18):
-  the user picks a target date and the taper rate is derived, instead of
-  choosing an abstract cigs/week pace. E12-adjacent. Needs design for
-  too-soon dates (rate would exceed cold turkey) and for rescheduling
-  mid-taper. Interim retune shipped 2026-07-18: paces are now ½/1/2
-  cigs/week (was ¼/½/1 — chill sat below the half-cig display granularity
-  and stretched a 10/day smoker's quit to 40 weeks).
+- **Quit-date picker — built 2026-07-19, pulled the same day, deferred to
+  after the friends-and-family beta.** Originally decided 2026-07-18 to
+  *replace* the pace blocks; revised 2026-07-19 to sit alongside them, then
+  removed before shipping. Owner's call, and the reasoning is the keeper:
+  the presets **give the user a way out**. A preset asks "how hard do you
+  want to push", which someone can answer on day one; a date asks for a
+  commitment they have no basis to make yet and then quietly becomes a
+  thing to fail at. Same "reduce onus on the user" principle that killed
+  the loose-vs-pack question and user-entered prices. Revisit after beta,
+  when we know whether people actually want to name a date.
+  - **What stayed** (deliberately, and this is the point): `planHistory`,
+    `plannedBudgetFor()`, the `min(adaptive, planned)` budget and the floor
+    exemption all remain. They are what makes a *pace* bite; none of it was
+    about dates. Re-adding the picker later is then pure UI against a
+    schema beta users have already migrated — no second migration against
+    real data, which is the expensive and risky part.
+  - **The lesson, so we don't rediscover it:** the first implementation
+    rounded the rate up to a whole sixth/week *and* the date up to whole
+    weeks. With a 4/day budget, 9 of 15 pickable dates snapped to a
+    different date; at 2/day only 6 targets were reachable at all. It read
+    as "the picker ignores me". A fractional rate with the date derived in
+    **days** round-trips exactly for every date and budget — verified
+    numerically before removal. Do it that way next time.
+  - Still open from the original item: too-soon dates (rate would exceed
+    cold turkey) and rescheduling mid-taper. §11.3/§15 of
+    `design/HEALTH_TIMELINE.md` already have decisions for both.
+  - Interim retune shipped 2026-07-18 and still stands: paces are ½/1/2
+    cigs/week (was ¼/½/1 — chill sat below the half-cig display granularity
+    and stretched a 10/day smoker's quit to 40 weeks).
 - Notifications (SPEC S15–S17) — needs expo-notifications; limited inside
   Expo Go, best done alongside a development build.
 - Milestone roast notifications (decided 2026-07-17): push a playful roast
