@@ -61,7 +61,7 @@ export function LogScreen() {
   const today = entriesForDay(entries, todayKey).sort((a, b) => a.timestamp - b.timestamp);
   const total = totalSixths(today);
   const budget = budgetSixths(entries, todayKey, profile.installDayKey, profile.baselineHistory, profile.planHistory);
-  const sf = smokeFree(entries, todayKey, profile.installDayKey);
+  const sf = smokeFree(entries, todayKey, profile.installDayKey, data.postZeroConfirmedFrom);
   const left = budget - total;
   // tomorrow's budget (S11) lives here rather than on Goal — it's an
   // operational number, and Goal is the narrative screen

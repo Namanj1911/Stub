@@ -63,6 +63,13 @@ export type AppData = {
   // since "unset" and "both on" are the same thing here.
   notifPrefs?: NotifPrefs;
   announcedMilestones?: AnnouncedMilestone[];
+  // The day-key of the clean run the user confirmed as "I have quit"
+  // (src/postzero.ts). Consent, not truth: the app cannot tell "didn't smoke"
+  // from "didn't open the app", so post-zero mode is offered and accepted
+  // rather than assumed. Storing the run's start day instead of a boolean is
+  // what keeps a relapse honest — the value stops matching the live run by
+  // itself. Absent on every install that has never been asked.
+  postZeroConfirmedFrom?: number;
 };
 
 const KEY = 'stub/v1';
@@ -355,6 +362,22 @@ export function useAppData() {
     [update],
   );
 
+  // The user accepting the post-zero offer for a specific clean run. Unlike
+  // `ackMilestone` this is not monotonic: a relapse invalidates it by making
+  // the stored day stop matching the live run, and a later run gets asked
+  // again. There is deliberately no "decline" — the offer just keeps standing,
+  // so a "no" is a state we never have to store or later un-store.
+  const confirmPostZero = useCallback(
+    (runStartDayKey: number) => {
+      update((d) =>
+        d.postZeroConfirmedFrom === runStartDayKey
+          ? d
+          : { ...d, postZeroConfirmedFrom: runStartDayKey },
+      );
+    },
+    [update],
+  );
+
   // Notification category toggles. Turning one off doesn't cancel anything
   // here — the next reconcile re-plans from these prefs and cancels what no
   // longer belongs, which keeps one code path responsible for the schedule.
@@ -395,6 +418,7 @@ export function useAppData() {
     setPace,
     setPlanRate,
     ackMilestone,
+    confirmPostZero,
     setNotifPref,
     setAnnouncedMilestones,
     resetAll,

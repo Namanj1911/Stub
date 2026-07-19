@@ -413,6 +413,26 @@ const SMOKE_FREE_LINES: Record<'fresh' | 'building' | 'record', string[]> = {
   ],
 };
 
+// The offer (src/postzero.ts): seven clean days are on the board and the app
+// is asking the user to confirm the mode rather than declaring it. Two rules,
+// both from why the offer exists at all. No line may congratulate — the days
+// are not in evidence until the user says they are, and celebrating first
+// would be the same assumption in a friendlier voice. And no line may
+// pressure: not confirming is a legitimate answer, including "I smoked and
+// didn't log it", which is exactly the honesty this question is fishing for.
+const OFFER_LINES = [
+  'Seven days with nothing logged. Only you know if that is the whole story — if it is, say so.',
+  'The log has been empty for a week. Your call whether that means what it looks like.',
+  'Seven clean days on paper. We are not going to assume it for you.',
+  'A week without a cigarette, if the log is telling the truth. Is it?',
+];
+
+const OFFER_ROLL = Math.floor(Math.random() * OFFER_LINES.length);
+
+export function postZeroOfferCopy(): string {
+  return OFFER_LINES[OFFER_ROLL];
+}
+
 const SMOKE_FREE_ROLL = Math.random();
 
 export function smokeFreeCopy(streakDays: number, bestDays: number): string {

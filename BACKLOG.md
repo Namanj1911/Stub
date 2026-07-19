@@ -362,18 +362,56 @@ deliberately **not** here — deferred until after beta + PMF, see Later.
         With a budget of zero every log lands in the `torched` pool —
         "budget torched, we're just doing archaeology" — a lecture about a
         budget that no longer exists, at the user's lowest moment.
-        ⚠ **Open, needs an owner decision before real users:** a post-install
-        day with no entries counts as a zero day (the app's existing
-        convention — `domain.trailing7Totals`, "a clean day is a clean day").
-        For an engaged user that's right, but the app cannot distinguish
-        "didn't smoke" from "didn't open the app", so someone who installs,
-        logs once and goes quiet for a week gets flipped into post-zero and
-        told they're smoke-free — a claim we have no evidence for, and the
-        most trust-damaging thing this screen could get wrong. Deliberately
-        left unguarded because every fix is a design call, not a code one:
-        (a) confirmation tap on the flip, (b) require any app activity in the
-        window, (c) decay the streak after N silent days, (d) accept it and
-        say so in copy. Noted in `postzero.ts`.
+        **Silent-day guard — decided and built 2026-07-19**
+        (`feat/postzero-confirm`), closing the ⚠ that this step left open. The
+        problem: a post-install day with no entries counts as a zero day (the
+        app's existing convention — `domain.trailing7Totals`, "a clean day is
+        a clean day"), but the app cannot distinguish "didn't smoke" from
+        "didn't open the app", so someone who installs, logs once and goes
+        quiet for a week was flipped into post-zero and told they're
+        smoke-free — a claim we have no evidence for.
+        Chosen: **(a) confirmation tap.** At seven clean days Goal now shows an
+        *offer* (`GoalMode` gains a fourth tense, `offer`) and the user
+        confirms; the app stops asserting and asks, so the claim belongs to
+        the only party holding the evidence. Options (b) require app activity
+        and (c) decay the streak were rejected for the same reason: both
+        punish the user who genuinely stopped smoking and therefore stopped
+        opening the app, which is the success case. (d) accept-and-say-so
+        can't hedge a mode change that rewrites three screens' tense.
+        The stored value is `postZeroConfirmedFrom`, **the day-key the
+        confirmed run began, not a boolean** — that's what preserves this
+        step's derived-from-`entries` honesty. A relapse starts a new run, the
+        stored day stops matching, and the mode falls away on its own: no flag
+        to clear, no stale "you are quit now", and a later run gets asked
+        again. A stale value can never spuriously re-match, since any run
+        containing the old start day would have to span the relapse that broke
+        it (verified by sweeping every relapse/recovery pair). Absent field
+        means never-asked, so there is no migration.
+        Two things that fell out: eligibility deliberately does **not** require
+        a zero budget, so a user still mid-taper who simply hasn't smoked in a
+        week gets asked too — a better moment than either the taper card or
+        the old silent auto-flip. And there is **no decline control**: not
+        tapping is the "no", so a refusal is never a state we have to store
+        and later un-store. Offer copy may neither congratulate (the days
+        aren't in evidence until the user says so) nor pressure (declining
+        includes "I smoked and didn't log it", which is the honesty the
+        question is fishing for).
+        ⚠ **Merged to main un-device-checked** (owner's call, 2026-07-19) —
+        the one deliberate exception so far to the AGENTS.md rule that nothing
+        merges before the owner has seen it running in Expo Go. Logic was
+        verified by exercising the compiled module directly (20 cases: the
+        silent-week offer, consent surviving further clean days, a relapse
+        dropping the mode and re-asking, re-confirmation, and a sweep proving
+        no relapse/recovery pair can revive a stale consent) — but **no part
+        of the offer card has been seen rendered**, and per the splash
+        post-mortem a typecheck is not verification. Still unchecked: the
+        card's layout, the copy in situ, and the gold confirm button — gold
+        had only ever been used on milestone marks and cards, and the P3 note
+        that sanctioned it said "never on a control". This is its first use on
+        one; if it reads as general emphasis rather than "you earned this",
+        that note wins and the button changes. Reaching the state needs seeded
+        history, so mind the AsyncStorage clobbering trap in Issues. Owner to
+        check on device and open a follow-up branch for anything found.
   - [ ] 5. Timeline phase 2 (milestone pushes — needs the dev build)
 - [ ] **Post-zero mode** — the product story currently ends at the quit
   date; for Smoke Free/Kwit, what comes after *is* the product. At zero,
