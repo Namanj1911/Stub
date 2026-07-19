@@ -371,11 +371,15 @@ export function milestoneCelebration(): string {
 
 // The in-between state: the plan has reached zero but the seven days that
 // earn the mode haven't been lived yet (§12).
+// Same declutter rule as STREAK_LINES and the tomorrow nudge: the card
+// already prints the number and the 5/7 progress, so no line may restate
+// either. "Budget: zero. …" under a card headed BUDGET / Zero read as an
+// echo (owner's screen, on device).
 const ARRIVED_LINES = [
-  'Budget: zero. The plan did its part — now it is just you and the days.',
+  'The plan did its part. The rest is just days.',
   'The taper has landed. Nothing left to ration.',
-  'Zero on paper. Seven clean days makes it zero in practice.',
-  'The number finally ran out of room. Go be boring for a week.',
+  'On paper you are done. Living it is the other half.',
+  'The number finally ran out of room. Go be boring for a while.',
 ];
 
 const ARRIVED_ROLL = Math.floor(Math.random() * ARRIVED_LINES.length);
