@@ -385,6 +385,17 @@ deliberately **not** here — deferred until after beta + PMF, see Later.
   pixels — `hasAlpha` proves nothing; (3) config-level checks cannot
   substitute for looking at the screen. Caught only by building to the
   iOS simulator.
+- **`simctl launch` does not reload a running app (2026-07-19):** a change
+  looked completely absent from the simulator — the new element simply
+  wasn't on screen — while every indirect check said it had shipped: Metro
+  logged fresh bundles, and the served bundle contained the new string.
+  Cause: `xcrun simctl launch` on an already-running app just foregrounds
+  it, so the simulator kept rendering a bundle from an earlier session.
+  Fix: `xcrun simctl terminate <bundle-id>` first, then launch. Fast
+  Refresh also *preserves navigation state*, so a pushed screen stays
+  pushed across edits — a cold restart is needed to re-test an initial
+  route. Same lesson as the splash bug: the screen is the only witness,
+  and "Metro bundled it" is not the same as "the app is running it".
 - **Homebrew not on the agent's PATH (2026-07-19):** a later `npx expo
   run:ios` failed with "CocoaPods CLI not found… spawn brew ENOENT" even
   though `brew install cocoapods` had already been done. Both
