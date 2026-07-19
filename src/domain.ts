@@ -53,16 +53,23 @@ export function priceAt(history: PriceRecord[], timestamp: number): number {
   return current.pricePerStick;
 }
 
-// Price in effect at the end of a day: the last record that took effect on or
-// before that day. Avoided smokes have no timestamp, so a day's worth of
-// not-smoking is valued at what a stick cost by that evening.
-function priceAtEndOfDay(history: PriceRecord[], key: number): number {
+// The record in effect at the end of a day: the last one that took effect on
+// or before that day. Avoided smokes have no timestamp of their own, so a
+// day's worth of not-smoking is valued at whatever the user was smoking by
+// that evening — the price for Money, and the brand's per-stick nicotine/tar
+// for the health timeline (health.cumulativeAvoided). Both need the same
+// effective-dating rule, so it lives here once.
+export function priceRecordAtEndOfDay(history: PriceRecord[], key: number): PriceRecord {
   let current = history[0];
   for (const r of history) {
     if (dayKey(r.fromTimestamp) <= key) current = r;
     else break;
   }
-  return current.pricePerStick;
+  return current;
+}
+
+function priceAtEndOfDay(history: PriceRecord[], key: number): number {
+  return priceRecordAtEndOfDay(history, key).pricePerStick;
 }
 
 // Money saved (S21): per day, (that day's baseline − actual) valued in ₹.

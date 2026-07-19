@@ -269,8 +269,66 @@ deliberately **not** here — deferred until after beta + PMF, see Later.
         budget could never drop below ½/day, so the quit date Goal promises
         was unreachable and post-zero could never trigger. The date picker
         from this step was removed before shipping — see Later.
-  - [ ] 3. Timeline phase 1 (dataset, `src/health.ts`, Health screen,
-        milestone card, in-app achievements)
+  - [x] 3. Timeline phase 1 — **built 2026-07-19** (`feat/health-timeline`),
+        awaiting device check. Milestone dataset is one document-level
+        constant (Surgeon General 2020, CDC phrasing) — explicitly *not* the
+        `FieldSource`/`SOURCES` machinery from `brands.ts`, which exists
+        there only because MRP and nicotine estimates differ in confidence;
+        milestones don't. `src/health.ts` carries all-time longest gap
+        (widening the today-only calc in the Stats tiles), cumulative
+        exposure avoided, and milestone resolution. Three decisions the
+        design left open, settled in the build:
+        **(a) both surfaces carry the celebration** — the Goal card is the
+        invitation (it keeps nudging while an earned milestone is
+        unacknowledged), the Health screen is the payoff and is what acks it.
+        Visiting is the acknowledgement, so there's no dismiss control and
+        nothing can be missed.
+        **(b) locked rows carry a real date**, derived from the plan's quit
+        date, so the day-one long-horizon section reads as a destination
+        rather than a wall of grey.
+        **(c) cumulative counts from install day only**, consistent with
+        Money and the P0 display rule — we only do arithmetic on days we
+        actually watched.
+        Also: exposure avoided is **not clamped per day**. A day above
+        baseline subtracts, exactly as it does in Money; clamping would hide
+        over-baseline days behind a number that only ever rises, which is the
+        same lie in the other direction. The screen states the net-negative
+        case in words (`healthBehind`, mirroring `moneyBehind`).
+        One small refactor fell out: `priceRecordAtEndOfDay` is now exported
+        from `domain.ts` (was a private price-only helper) because the
+        avoided-exposure math needs the same effective-dating rule to find
+        the *brand* in effect, not just the price.
+        **Owner feedback round, same day — gold milestones.** Two notes on
+        device, one of which was a real bug:
+        *(i) the reset was invisible.* Logging a cigarette does drop every
+        `reached` milestone to `earned` (verified), but the two states
+        differed only by a small word and a border shade, so nothing
+        perceptible happened and it read as "achievements never come back
+        off". Fixed by making the three states unmistakable rather than by
+        relocking: relocking would break §9.1 and re-create exactly the
+        Model A misery loop §3 rejects — a 10/day smoker resets every ~90
+        minutes, so permanent records are the only thing that lets this
+        screen ever show progress. Live milestones are now bright gold,
+        filled and haloed with a `RIGHT NOW` badge; banked ones are flat,
+        dimmer metal marked `BANKED`; locked are hollow grey rings. You keep
+        the medal, you visibly stop wearing it. Badges carry the state in
+        words as well as hue, so the distinction doesn't depend on colour
+        vision.
+        *(ii) accent purple didn't feel earned.* Gold is now a **third
+        sanctioned theme exception** (`theme.ts` previously said "two are
+        sanctioned; add no others" — extended deliberately, owner's call).
+        The reasoning that keeps it honest: accent purple is the app's
+        ambient colour and says "this is Stub", not "you won something";
+        gold is the one colour the UI never otherwise uses, so it can only
+        mean earned. Milestone marks and their cards only — never general
+        emphasis, never on a control. Contrast checked: gold 9.6:1 on bg,
+        goldDim 5.3:1 on surface, both past AA.
+        The medal (gold ring + filled centre, reusing the Money tab icon's
+        circle-and-dot idiom) lives in `src/Medal.tsx` since Goal and Health
+        both draw it — same top-level-component pattern as `ProfileButton`.
+        Also fixed: a `HEALTH_CLOCK_LINES.building` line said "Still going",
+        which is nonsense at 0m immediately after a log. No line in that pool
+        may presume elapsed time; the reset stays quiet either way.
   - [ ] 4. Post-zero mode (unlock, 7-consecutive-zero-day flip, relapse)
   - [ ] 5. Timeline phase 2 (milestone pushes — needs the dev build)
 - [ ] **Post-zero mode** — the product story currently ends at the quit

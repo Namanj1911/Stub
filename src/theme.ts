@@ -49,6 +49,26 @@ export const color = {
   dangerBorder: 'rgba(176, 58, 48, 0.55)',
   dangerText: '#cf7a71',
   dangerTint8: 'rgba(176, 58, 48, 0.08)',
+  // 3. Health milestones (owner call, 2026-07-19). Accent purple is the app's
+  //    ambient color — it says "this is Stub", not "you won something", and a
+  //    milestone rendered in it read as just another card. Gold is the one
+  //    color the interface never otherwise uses, so it can only mean "earned".
+  //    Milestone marks and their cards only — never for general emphasis, and
+  //    never on a control (an award is not a button).
+  //
+  //    Contrast on bg #161826: gold 9.6:1, goldDim 5.0:1; on surface #232532:
+  //    gold 8.2:1, goldDim 5.3:1. All pass AA for body text.
+  gold: '#e8b64c', // live / just-earned marks and badges
+  goldDim: '#bb924a', // banked, not currently active
+  goldBright: '#f7dc9a', // hero text on a gold ground
+  goldBorder: 'rgba(232, 182, 76, 0.55)',
+  goldBorderDim: 'rgba(232, 182, 76, 0.24)',
+  goldTint8: 'rgba(232, 182, 76, 0.08)',
+  goldTint14: 'rgba(232, 182, 76, 0.14)',
+  // deep warm ground + glow stop for the celebration card, the gold analogue
+  // of section/sectionGlow
+  goldGround: '#2b2110',
+  goldGlow: '#5f4718',
 } as const;
 
 export const space = {

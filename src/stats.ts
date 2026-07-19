@@ -115,7 +115,7 @@ export function monthBars(
 // days are graded, each against its own day's budget, not today's (the budget
 // tapers, so grading last week against today's tighter number would rewrite
 // the past). `days` is how many real days the window holds.
-function underBudgetCount(
+export function underBudgetCount(
   entries: Entry[],
   todayKey: number,
   installDayKey: number,

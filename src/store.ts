@@ -42,6 +42,14 @@ export type AppData = {
   entries: Entry[];
   cravings: Craving[];
   priceDatasetVersion?: number;
+  // Furthest health milestone the user has actually been shown celebrating
+  // (design/HEALTH_TIMELINE.md §9). Everything else about milestones is
+  // derived from `entries` — the earned set is just "did the longest gap ever
+  // clear this?" — but *whether we've congratulated them yet* is genuinely
+  // new state, and it has to survive a relaunch or phase 1 has no celebration
+  // beat at all (§9.3: push doesn't exist until the dev build, so an
+  // achievement must feel earned when you open the app and find it waiting).
+  ackedMilestoneId?: string;
 };
 
 const KEY = 'stub/v1';
@@ -323,6 +331,17 @@ export function useAppData() {
     [update, setPlanRate],
   );
 
+  // Records that the user has seen the celebration for a milestone, so it
+  // fires once and then settles into earned state. Only ever moves forward:
+  // the earned set is derived from longest-gap-ever, which never shrinks
+  // (§9.1), so there is nothing to un-acknowledge.
+  const ackMilestone = useCallback(
+    (id: string) => {
+      update((d) => (d.ackedMilestoneId === id ? d : { ...d, ackedMilestoneId: id }));
+    },
+    [update],
+  );
+
   // The one thing we can't undo — wipes storage and returns to onboarding.
   const resetAll = useCallback(() => {
     AsyncStorage.removeItem(KEY).catch(() => {});
@@ -342,6 +361,7 @@ export function useAppData() {
     switchBrand,
     setPace,
     setPlanRate,
+    ackMilestone,
     resetAll,
   };
 }

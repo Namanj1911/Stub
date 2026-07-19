@@ -1,5 +1,5 @@
 // Navigation route types. Tabs live inside the root stack; Backfill,
-// Nicotine and SOS slide over the tabs as full-screen pushes.
+// Nicotine, SOS, Profile and Health slide over the tabs as full-screen pushes.
 
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
@@ -10,6 +10,7 @@ export type RootStackParamList = {
   Nicotine: undefined;
   Sos: undefined;
   Profile: undefined;
+  Health: undefined;
 };
 
 export type TabParamList = {
