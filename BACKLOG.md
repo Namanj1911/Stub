@@ -415,12 +415,42 @@ deliberately **not** here — deferred until after beta + PMF, see Later.
   - Interim retune shipped 2026-07-18 and still stands: paces are ½/1/2
     cigs/week (was ¼/½/1 — chill sat below the half-cig display granularity
     and stretched a 10/day smoker's quit to 40 weeks).
-- Notifications (SPEC S15–S17) — needs expo-notifications; limited inside
-  Expo Go, best done alongside a development build.
-- Milestone roast notifications (decided 2026-07-17): push a playful roast
-  when the data hits a milestone that proves the app understands the user.
-  Scope deliberately trimmed to a few important ones — personal, not badge
-  spam. Rides on the same notifications/dev-build infra as S15–S17.
+- Notifications S15 + S17 + milestone roasts — **built 2026-07-19**
+  (`feat/notifications`), **awaiting device verification before merge.**
+  Local scheduled notifications only, so they run in Expo Go today and need
+  the dev build only to ship (GO_LIVE §7.3). `src/notificationPlan.ts` is the
+  pure planner (no expo, no IO — the timing decisions are testable without a
+  device); `src/notifications.ts` owns permission, the Android channel and an
+  idempotent `reconcile()` that cancels and rebuilds the whole schedule on
+  every store change. That eager cancel is the only mechanism available for
+  un-saying something that stopped being true, because the OS fires these
+  while our JS is dead and nothing can be re-checked at delivery.
+  - S15 fires 45 min after the log that crossed 80%, anchored to that
+    entry's timestamp (anchoring on `now` walks it later on every reconcile
+    and it never arrives). Dropped once the budget is fully spent.
+  - S17 schedules tomorrow-9am from an evening (≥8pm) reconcile, so it still
+    lands for someone who never reopens the app. The evening gate doubles as
+    the mitigation for post-zero's known limitation — the app can't tell
+    "didn't smoke" from "didn't open the app", and pushing "a smoke-free
+    day!" on that ambiguity is the most trust-damaging thing here.
+  - Milestones trimmed to first-under-budget, first-clean-day, quit-day and
+    streaks at 3/7/14/30. SPEC's unbounded "each week on plan" is the badge
+    spam this backlog rules out.
+  - Permission is requested only when something is actually pending — a
+    first-launch prompt is the fastest route to a permanent iOS denial.
+  - Toggles per category live on Profile, plus a `__DEV__`-only "send a
+    sample" button: the real triggers (45 min, 9am tomorrow) cannot be
+    observed inside a testing session, and the splash post-mortem below is
+    the standing argument against calling config-level checks verification.
+  - Still open, deliberately: **S16 craving-window alerts** (the histogram,
+    the minimum-data gate and the 2/day cap are more work than S15 and S17
+    combined, and it's the one most likely to feel creepy — ship these two,
+    live with them, then decide). Health-timeline milestones are **not**
+    pushed; they already celebrate in-app and pushing them would
+    double-celebrate one moment. No Android notification icon asset yet
+    (plugin `icon` unset — white-on-transparent PNG needed before Android
+    ships). First-under-budget and first-clean-day can land the same
+    morning on a strong day 1; judged acceptable since it happens once ever.
 - Product analytics for the maintainer (DAU/MAU, retention, feature usage) —
   the first feature that sends data off-device, so it drags in user consent,
   a privacy policy (DPDP), and a telemetry backend choice. Own design pass.
