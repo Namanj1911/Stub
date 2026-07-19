@@ -490,10 +490,46 @@ deliberately **not** here — deferred until after beta + PMF, see Later.
     combined, and it's the one most likely to feel creepy — ship these two,
     live with them, then decide). Health-timeline milestones are **not**
     pushed; they already celebrate in-app and pushing them would
-    double-celebrate one moment. No Android notification icon asset yet
-    (plugin `icon` unset — white-on-transparent PNG needed before Android
-    ships). First-under-budget and first-clean-day can land the same
-    morning on a strong day 1; judged acceptable since it happens once ever.
+    double-celebrate one moment. First-under-budget and first-clean-day can
+    land the same morning on a strong day 1; judged acceptable since it
+    happens once ever.
+  - [x] **Android notification icon** — **done 2026-07-20**
+    (`feat/android-notification-icon`): `assets/notification-icon.svg` →
+    96×96 white-on-transparent PNG, plugin `icon` now set. Android masks the
+    image to its alpha channel and tints it, so this is a *silhouette*
+    problem, not a scaled-down logo: everything in the mark that carried
+    meaning through colour had to go. A first in-repo attempt (two bars, one
+    gap, rotated -30°) was rejected by the owner as not good enough; the
+    shipped icon is **option D from a fresh Claude design pass**
+    (`design_handoff_stub_app 3/assets`, see its ICONS.md) briefed with the
+    findings from that attempt. What the findings established, so nobody
+    rediscovers them: the ember's radial glow flattens to a solid disc, and
+    the ember *dot* merges invisibly into the tip while they touch — the
+    handoff's answer is to **detach the ember** and float it beyond the
+    broken half, which keeps "still lit" legible as a clean ~4px dot at
+    status-bar size; the smoke wisp is ~1px at that size and read as fuzz
+    (a smoke variant F exists in the handoff, not chosen); the filter band
+    kept as a notch read exactly as wide as the break, making three loose
+    chunks of one snapped cigarette — the shipped icon has no notch, the
+    break plus the ember gap carry the whole concept.
+    Variants were compared as rendered pixels at true 24px, not at 96px:
+    every decision above only becomes visible at the size it ships at.
+  - **Fixed while here: the `color` tint was `#161826`**, the theme
+    *background* — almost certainly copied from the splash plugin's
+    `backgroundColor` two entries below it, where that value is correct. In
+    expo-notifications `color` is not a background; it is the accent the
+    white icon is tinted with in the tray, so the app was set to stamp
+    near-black on Android's light notification shade. Now `#9184d9` (theme
+    accent) — the P3 gold note's own reasoning applies: accent purple is the
+    app's ambient colour and says "this is Stub". 3.2:1 on a white shade,
+    past the 1.4.11 non-text minimum.
+  - ⚠ **Not device-verified**: notification icons are an Android-only surface
+    and there is no Android device or dev build yet, so nothing here has been
+    seen in a real tray. The asset was verified by decoding actual pixels
+    (96×96 RGBA, 73% genuinely transparent, every visible pixel pure white) —
+    which is the check the splash post-mortem asks for and which `hasAlpha`
+    failed to provide — but per that same post-mortem, that is not the same
+    as looking at the screen. First Android build should confirm it.
 - Product analytics for the maintainer (DAU/MAU, retention, feature usage) —
   the first feature that sends data off-device, so it drags in user consent,
   a privacy policy (DPDP), and a telemetry backend choice. Own design pass.
