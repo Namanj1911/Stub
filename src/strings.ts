@@ -1,6 +1,8 @@
 // All user-facing feedback copy lives in this one table (NFR7). The app
 // speaks in one voice — roast — by product decision (gentle mode removed).
 
+import { frac } from './domain';
+
 const TABLE = {
   undone: 'Undone. It never happened.',
   edited: 'Fixed. Revisionist history, but fine.',
@@ -16,6 +18,8 @@ const TABLE = {
     "Every log, craving and rupee saved — gone. This is the one thing here we can't undo.",
   resetConfirm: 'Reset everything',
   exportNote: 'Your data lives only on this phone. Export it somewhere safe once in a while.',
+  notifNote:
+    "Scheduled on your phone, like an alarm — nothing leaves the device. We'll ask iOS for permission the first time there's actually something to say.",
 } as const satisfies Record<string, string>;
 
 export type StringKey = keyof typeof TABLE;
@@ -467,4 +471,123 @@ export function setupReaction(countPerDay: number): string {
   if (countPerDay <= 12)
     return `About average for your age group. At a Steady pace, zero in roughly ${Math.ceil(countPerDay / 1)} weeks. Very doable.`;
   return `Heavy going. No panic — we taper, not cold turkey. Steady pace: about ${Math.ceil(countPerDay / 1)} weeks to zero.`;
+}
+
+// ---------------------------------------------------------------------------
+// Notifications (SPEC S15/S17) — TONE RULE, read before adding a line.
+//
+// Push copy has constraints nothing else in this table has:
+//
+// 1. It lands out of context. No line may refer to what's on screen ("the
+//    card above", "that number") — there is no screen.
+// 2. It lands *later* than the moment that earned it (the nudge fires 45
+//    minutes after the crossing log; milestones fire the next morning). So
+//    nothing may claim to be live: no "right now", no "just then".
+// 3. Someone else may read it over a shoulder, on a lock screen, in public.
+//    That rules out the blunter end of the roast register — "your lungs saw
+//    that" is fine in-app and would be genuinely embarrassing on a lock
+//    screen next to the user's name. Roast the budget, not the smoker.
+// 4. Two lines, max. iOS truncates a collapsed banner hard.
+//
+// Rolled per call rather than per launch: unlike the in-app pools, two
+// notifications of the same kind are days apart, so a repeat is invisible.
+
+const NUDGE_LINES: ((left: string, when: string) => string)[] = [
+  (left, when) => `${left} left, and it's only ${when}.`,
+  (left, when) => `It's ${when}. You've got ${left} to last the evening.`,
+  (left) => `${left} left in the budget. The day is not over.`,
+  (left, when) => `${when}, ${left} to go. Pace yourself or don't — we'll log it either way.`,
+];
+
+const roll = <T,>(pool: T[]): T => pool[Math.floor(Math.random() * pool.length)];
+
+// "3pm" / "11am" — the hour is the point ("it's only 3pm"), minutes are noise.
+function fmtHour(timestamp: number): string {
+  const h = new Date(timestamp).getHours();
+  const suffix = h < 12 ? 'am' : 'pm';
+  const display = h % 12 === 0 ? 12 : h % 12;
+  return `${display}${suffix}`;
+}
+
+// S15 budget nudge. `remainingSixths` is what's left when the push is
+// *scheduled*; it can only have shrunk by the time it lands, so the copy says
+// "left" rather than promising an exact remaining count on arrival.
+export function budgetNudgeCopy(
+  remainingSixths: number,
+  fireAt: number,
+): { title: string; body: string } {
+  // frac() renders sixths as ⅓/½/1½ etc. A bare fraction reads wrong with a
+  // plural noun ("½ cigarettes"), so anything under a whole one gets "a".
+  const left =
+    remainingSixths === 6
+      ? '1 cigarette'
+      : remainingSixths < 6
+        ? `${frac(remainingSixths)} of a cigarette`
+        : `${frac(remainingSixths)} cigarettes`;
+  return { title: 'Budget check', body: roll(NUDGE_LINES)(left, fmtHour(fireAt)) };
+}
+
+// S17 milestones + the milestone roasts (BACKLOG "Later", decided 2026-07-17).
+// Deliberately a short list — the backlog's word is "personal, not badge
+// spam". Each of these fires at most once, ever.
+//
+// The praise is real; the roast is the chaser. Getting that order wrong
+// (roast first) reads as sarcasm about the achievement itself, which is the
+// one thing a milestone push must not do.
+const MILESTONE_PUSH: Record<string, { title: string; lines: string[] }> = {
+  'first-under-budget': {
+    title: 'First day under budget',
+    lines: [
+      'You finished a day inside the number. Once is an accident — do it again.',
+      "That's one day the budget didn't lose. Only one, mind you.",
+      'Under budget, first time. The bar is on the floor and you cleared it — good.',
+    ],
+  },
+  'first-clean-day': {
+    title: 'A smoke-free day',
+    lines: [
+      'A whole day, nothing logged. Your lungs would like this in writing.',
+      "Zero. Not 'nearly zero' — zero. That one goes on the record.",
+      'Nothing logged all day. Suspicious. Excellent, but suspicious.',
+    ],
+  },
+  'quit-day': {
+    title: 'The budget hit zero',
+    lines: [
+      'Your plan has run out of cigarettes to give you. That was the whole point.',
+      "Budget: zero. The taper is done — now it's just you and the habit.",
+      'Zero budget from here. Everything after this is yours to keep.',
+    ],
+  },
+};
+
+const STREAK_PUSH: Record<number, string[]> = {
+  3: [
+    'Three days under budget. Long enough to stop being luck.',
+    "Three straight. That's a pattern forming, whether you meant it or not.",
+  ],
+  7: [
+    'A full week under budget. The budget has stopped arguing.',
+    'Seven days straight. Statistically, you are now a different smoker.',
+  ],
+  14: [
+    'Two weeks under budget. This is just how you smoke now, apparently.',
+    'Fourteen days. The streak is starting to look like a personality trait.',
+  ],
+  30: [
+    'Thirty days under budget. At some point we have to admit this is deliberate.',
+    'A month straight. The app is running out of ways to be surprised.',
+  ],
+};
+
+export function milestonePushCopy(id: string): { title: string; body: string } | null {
+  const streak = id.match(/^streak-(\d+)$/);
+  if (streak) {
+    const n = Number(streak[1]);
+    const pool = STREAK_PUSH[n];
+    if (!pool) return null;
+    return { title: `${n} days under budget`, body: roll(pool) };
+  }
+  const m = MILESTONE_PUSH[id];
+  return m ? { title: m.title, body: roll(m.lines) } : null;
 }

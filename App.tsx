@@ -4,7 +4,11 @@ import {
   Inter_700Bold,
   useFonts,
 } from '@expo-google-fonts/inter';
-import { DarkTheme, NavigationContainer } from '@react-navigation/native';
+import {
+  DarkTheme,
+  NavigationContainer,
+  createNavigationContainerRef,
+} from '@react-navigation/native';
 import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { StatusBar } from 'expo-status-bar';
@@ -13,6 +17,7 @@ import { View } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { AppProvider } from './src/AppContext';
 import { RootStackParamList, TabParamList } from './src/navigation';
+import { useNotificationSync, useNotificationTaps } from './src/notifications';
 import { BackfillScreen } from './src/screens/BackfillScreen';
 import { GoalScreen } from './src/screens/GoalScreen';
 import { HealthScreen } from './src/screens/HealthScreen';
@@ -28,6 +33,10 @@ import { color, font } from './src/theme';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createMaterialTopTabNavigator<TabParamList>();
+
+// Notification taps navigate from outside the tree, so they need a ref rather
+// than the useNav() hook every screen uses.
+const navigationRef = createNavigationContainerRef<RootStackParamList>();
 
 const navTheme = {
   ...DarkTheme,
@@ -111,6 +120,20 @@ export default function App() {
   const [fontsLoaded] = useFonts({ Inter_400Regular, Inter_500Medium, Inter_700Bold });
   const store = useAppData();
 
+  // S15/S17. The schedule is re-derived from the store on every change, so
+  // this one call covers every path that can invalidate a pending push.
+  useNotificationSync(store.data, store.setAnnouncedMilestones);
+
+  // A tap that arrives during a cold launch beats the navigator into
+  // existence; hold the destination until onReady rather than dropping it.
+  const pendingTap = React.useRef<keyof TabParamList | null>(null);
+  const goToTab = React.useCallback((screen: string) => {
+    if (screen !== 'Log' && screen !== 'Stats' && screen !== 'Goal' && screen !== 'Money') return;
+    if (navigationRef.isReady()) navigationRef.navigate('Tabs', { screen });
+    else pendingTap.current = screen;
+  }, []);
+  useNotificationTaps(goToTab);
+
   if (!fontsLoaded || !store.loaded) {
     return <View style={{ flex: 1, backgroundColor: color.bg }} />;
   }
@@ -125,7 +148,15 @@ export default function App() {
           </SafeAreaView>
         ) : (
           <SafeAreaView edges={['top', 'bottom']} style={{ flex: 1, backgroundColor: color.bg }}>
-            <NavigationContainer theme={navTheme}>
+            <NavigationContainer
+              theme={navTheme}
+              ref={navigationRef}
+              onReady={() => {
+                const screen = pendingTap.current;
+                pendingTap.current = null;
+                if (screen) navigationRef.navigate('Tabs', { screen });
+              }}
+            >
               <Stack.Navigator screenOptions={{ headerShown: false }}>
                 <Stack.Screen name="Tabs" component={Tabs} />
                 <Stack.Screen name="Backfill" component={BackfillScreen} />

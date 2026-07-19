@@ -15,6 +15,13 @@ import {
   budgetSixths,
   dayKey,
 } from './domain';
+// From the pure planning module, not notifications.ts — the store must not
+// drag the native notifications module into its import graph.
+import {
+  DEFAULT_NOTIF_PREFS,
+  type AnnouncedMilestone,
+  type NotifPrefs,
+} from './notificationPlan';
 
 export type Profile = {
   // countPerDay / pricePerStick mirror the last history record (kept in sync
@@ -50,6 +57,12 @@ export type AppData = {
   // beat at all (§9.3: push doesn't exist until the dev build, so an
   // achievement must feel earned when you open the app and find it waiting).
   ackedMilestoneId?: string;
+  // Notification category toggles (SPEC S15–S17 AC) and the record of which
+  // milestone pushes have been scheduled/delivered. Both absent on older
+  // installs; `notifications.ts` supplies defaults rather than a migration,
+  // since "unset" and "both on" are the same thing here.
+  notifPrefs?: NotifPrefs;
+  announcedMilestones?: AnnouncedMilestone[];
 };
 
 const KEY = 'stub/v1';
@@ -342,6 +355,26 @@ export function useAppData() {
     [update],
   );
 
+  // Notification category toggles. Turning one off doesn't cancel anything
+  // here — the next reconcile re-plans from these prefs and cancels what no
+  // longer belongs, which keeps one code path responsible for the schedule.
+  const setNotifPref = useCallback(
+    (key: keyof NotifPrefs, on: boolean) => {
+      update((d) => ({
+        ...d,
+        notifPrefs: { ...(d.notifPrefs ?? DEFAULT_NOTIF_PREFS), [key]: on },
+      }));
+    },
+    [update],
+  );
+
+  const setAnnouncedMilestones = useCallback(
+    (announcedMilestones: AnnouncedMilestone[]) => {
+      update((d) => ({ ...d, announcedMilestones }));
+    },
+    [update],
+  );
+
   // The one thing we can't undo — wipes storage and returns to onboarding.
   const resetAll = useCallback(() => {
     AsyncStorage.removeItem(KEY).catch(() => {});
@@ -362,6 +395,8 @@ export function useAppData() {
     setPace,
     setPlanRate,
     ackMilestone,
+    setNotifPref,
+    setAnnouncedMilestones,
     resetAll,
   };
 }
