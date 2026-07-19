@@ -415,8 +415,13 @@ deliberately **not** here — deferred until after beta + PMF, see Later.
   - Interim retune shipped 2026-07-18 and still stands: paces are ½/1/2
     cigs/week (was ¼/½/1 — chill sat below the half-cig display granularity
     and stretched a 10/day smoker's quit to 40 weeks).
-- Notifications S15 + S17 + milestone roasts — **built 2026-07-19**
-  (`feat/notifications`), **awaiting device verification before merge.**
+- [x] Notifications S15 + S17 + milestone roasts — **done 2026-07-19**
+  (`feat/notifications`), device-tested in Expo Go via the `__DEV__` sample
+  button (permission prompt, delivery, banners, tap-through). The *timing*
+  rules — 80% threshold, the 8pm gate, quiet hours, once-ever bookkeeping —
+  are covered by planner fixtures rather than the device, since none of them
+  can be observed inside a testing session; first real proof comes from a few
+  days of ordinary use.
   Local scheduled notifications only, so they run in Expo Go today and need
   the dev build only to ship (GO_LIVE §7.3). `src/notificationPlan.ts` is the
   pure planner (no expo, no IO — the timing decisions are testable without a
