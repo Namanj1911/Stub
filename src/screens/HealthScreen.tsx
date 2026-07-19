@@ -39,6 +39,7 @@ import {
   resolveMilestones,
 } from '../health';
 import { haptic } from '../haptics';
+import { Medal } from '../Medal';
 import { useNav } from '../navigation';
 import { underBudgetCount } from '../stats';
 import { avoidedCopy, healthBehind, healthClockCopy, milestoneCelebration } from '../strings';
@@ -147,34 +148,76 @@ export function HealthScreen() {
               { translateY: celebrateAnim.interpolate({ inputRange: [0, 1], outputRange: [10, 0] }) },
             ],
             borderRadius: radius.lg,
-            backgroundColor: color.accentTint12,
+            backgroundColor: color.goldGround,
             borderWidth: 1,
-            borderColor: color.accent600,
-            padding: 16,
+            borderColor: color.goldBorder,
+            padding: 18,
             marginTop: 18,
+            overflow: 'hidden',
+            // the card itself throws light — this is the one moment in the app
+            // that gets to look like a trophy
+            shadowColor: color.gold,
+            shadowOpacity: 0.35,
+            shadowRadius: 18,
+            shadowOffset: { width: 0, height: 0 },
           }}
         >
+          <Svg
+            style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+            width="100%"
+            height="100%"
+          >
+            <Defs>
+              <RadialGradient id="celebrateGlow" cx="50%" cy="0%" rx="85%" ry="95%">
+                <Stop offset="0%" stopColor={color.goldGlow} stopOpacity={0.95} />
+                <Stop offset="100%" stopColor={color.goldGround} stopOpacity={0} />
+              </RadialGradient>
+            </Defs>
+            <Ellipse cx="50%" cy="0%" rx="85%" ry="95%" fill="url(#celebrateGlow)" />
+          </Svg>
+
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+            <Medal state="reached" />
+            <Text
+              style={{
+                fontFamily: font.medium,
+                fontSize: 10,
+                letterSpacing: 1.4,
+                textTransform: 'uppercase',
+                color: color.gold,
+              }}
+            >
+              Milestone earned
+            </Text>
+          </View>
           <Text
             style={{
               fontFamily: font.medium,
-              fontSize: 10,
-              letterSpacing: 1.4,
-              textTransform: 'uppercase',
-              color: color.accent300,
+              fontSize: 20,
+              color: color.goldBright,
+              marginTop: 10,
             }}
           >
-            Milestone earned
+            {earned.label}
           </Text>
-          <Text style={{ fontFamily: font.medium, fontSize: 18, color: color.text, marginTop: 6 }}>
-            {earned.label} — {earned.body}
+          <Text
+            style={{
+              fontFamily: font.regular,
+              fontSize: 14,
+              color: color.neutral200,
+              lineHeight: 20,
+              marginTop: 4,
+            }}
+          >
+            {earned.body}
           </Text>
           <Text
             style={{
               fontFamily: font.regular,
               fontSize: 13,
-              color: color.neutral300,
+              color: color.goldDim,
               lineHeight: 19,
-              marginTop: 8,
+              marginTop: 10,
             }}
           >
             {milestoneCelebration()}
@@ -452,9 +495,16 @@ function StatRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-// One row, three states. 'reached' is live right now; 'earned' cleared the
-// record once and stays lit, dimmer — that distinction is the whole §4.1
-// design, so it has to be legible at a glance and not just by color.
+// One row, three states that must be distinguishable at a glance — this is the
+// §4.1 design load-bearing: `reached` is true on the live clock right now,
+// `earned` is banked in the record and stays banked forever (§9.1).
+//
+// The states used to differ only by a small word and a border shade, so
+// logging a cigarette — which drops every `reached` row to `earned` — changed
+// almost nothing on screen and the reset couldn't be felt (owner, on device).
+// Now the difference is glow + fill + a badge: a live milestone is lit gold
+// and haloed, a banked one is flat, dimmer metal on a darker card. You keep
+// the medal, you visibly stop wearing it.
 function MilestoneRow({
   milestone,
   subtitle,
@@ -470,52 +520,86 @@ function MilestoneRow({
         flexDirection: 'row',
         alignItems: 'flex-start',
         gap: 12,
-        backgroundColor: locked ? 'transparent' : color.surface,
+        overflow: 'hidden',
+        backgroundColor: locked
+          ? 'transparent'
+          : live
+            ? color.goldTint14
+            : color.goldTint8,
         borderWidth: 1,
-        borderColor: live ? color.accent600 : locked ? color.neutral900 : color.neutral800,
+        borderColor: live
+          ? color.goldBorder
+          : locked
+            ? color.neutral900
+            : color.goldBorderDim,
         borderRadius: radius.md,
         paddingVertical: 13,
         paddingHorizontal: 16,
       }}
     >
-      <View
-        style={{
-          width: 8,
-          height: 8,
-          borderRadius: 4,
-          marginTop: 5,
-          backgroundColor: live ? color.accent : locked ? 'transparent' : color.accent700,
-          borderWidth: locked ? 1 : 0,
-          borderColor: color.neutral700,
-        }}
-      />
-      <View style={{ flex: 1 }}>
-        <Text
-          style={{
-            fontFamily: font.medium,
-            fontSize: 14,
-            color: locked ? color.neutral500 : color.text,
-          }}
+      {/* warm wash behind a live row, anchored at the medal */}
+      {live && (
+        <Svg
+          style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+          width="100%"
+          height="100%"
         >
-          {milestone.label}
-          {milestone.state === 'earned' && (
-            <Text style={{ fontFamily: font.regular, fontSize: 12, color: color.accent300 }}>
-              {'  '}earned
-            </Text>
+          <Defs>
+            <RadialGradient id={`rowGlow-${milestone.id}`} cx="8%" cy="50%" rx="70%" ry="150%">
+              <Stop offset="0%" stopColor={color.goldGlow} stopOpacity={0.55} />
+              <Stop offset="100%" stopColor={color.goldGlow} stopOpacity={0} />
+            </RadialGradient>
+          </Defs>
+          <Ellipse cx="8%" cy="50%" rx="70%" ry="150%" fill={`url(#rowGlow-${milestone.id})`} />
+        </Svg>
+      )}
+
+      <Medal state={milestone.state} />
+
+      <View style={{ flex: 1 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <Text
+            style={{
+              fontFamily: font.medium,
+              fontSize: 14,
+              color: locked ? color.neutral500 : color.text,
+            }}
+          >
+            {milestone.label}
+          </Text>
+          {/* the badge carries the state in words as well as colour, so the
+              distinction survives for anyone who can't rely on hue */}
+          {!locked && (
+            <View
+              style={{
+                borderRadius: radius.pill,
+                borderWidth: 1,
+                borderColor: live ? color.goldBorder : color.goldBorderDim,
+                backgroundColor: live ? color.goldTint14 : 'transparent',
+                paddingHorizontal: 7,
+                paddingVertical: 1,
+              }}
+            >
+              <Text
+                style={{
+                  fontFamily: font.medium,
+                  fontSize: 10,
+                  letterSpacing: 0.6,
+                  color: live ? color.gold : color.goldDim,
+                }}
+              >
+                {live ? 'RIGHT NOW' : 'BANKED'}
+              </Text>
+            </View>
           )}
-          {live && (
-            <Text style={{ fontFamily: font.regular, fontSize: 12, color: color.accent }}>
-              {'  '}now
-            </Text>
-          )}
-        </Text>
+        </View>
         <Text
           style={{
             fontFamily: font.regular,
             fontSize: 12,
             color: locked ? color.neutral500 : color.neutral400,
             lineHeight: 18,
-            marginTop: 2,
+            marginTop: 3,
           }}
         >
           {milestone.body}

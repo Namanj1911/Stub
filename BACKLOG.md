@@ -298,6 +298,37 @@ deliberately **not** here — deferred until after beta + PMF, see Later.
         from `domain.ts` (was a private price-only helper) because the
         avoided-exposure math needs the same effective-dating rule to find
         the *brand* in effect, not just the price.
+        **Owner feedback round, same day — gold milestones.** Two notes on
+        device, one of which was a real bug:
+        *(i) the reset was invisible.* Logging a cigarette does drop every
+        `reached` milestone to `earned` (verified), but the two states
+        differed only by a small word and a border shade, so nothing
+        perceptible happened and it read as "achievements never come back
+        off". Fixed by making the three states unmistakable rather than by
+        relocking: relocking would break §9.1 and re-create exactly the
+        Model A misery loop §3 rejects — a 10/day smoker resets every ~90
+        minutes, so permanent records are the only thing that lets this
+        screen ever show progress. Live milestones are now bright gold,
+        filled and haloed with a `RIGHT NOW` badge; banked ones are flat,
+        dimmer metal marked `BANKED`; locked are hollow grey rings. You keep
+        the medal, you visibly stop wearing it. Badges carry the state in
+        words as well as hue, so the distinction doesn't depend on colour
+        vision.
+        *(ii) accent purple didn't feel earned.* Gold is now a **third
+        sanctioned theme exception** (`theme.ts` previously said "two are
+        sanctioned; add no others" — extended deliberately, owner's call).
+        The reasoning that keeps it honest: accent purple is the app's
+        ambient colour and says "this is Stub", not "you won something";
+        gold is the one colour the UI never otherwise uses, so it can only
+        mean earned. Milestone marks and their cards only — never general
+        emphasis, never on a control. Contrast checked: gold 9.6:1 on bg,
+        goldDim 5.3:1 on surface, both past AA.
+        The medal (gold ring + filled centre, reusing the Money tab icon's
+        circle-and-dot idiom) lives in `src/Medal.tsx` since Goal and Health
+        both draw it — same top-level-component pattern as `ProfileButton`.
+        Also fixed: a `HEALTH_CLOCK_LINES.building` line said "Still going",
+        which is nonsense at 0m immediately after a log. No line in that pool
+        may presume elapsed time; the reset stays quiet either way.
   - [ ] 4. Post-zero mode (unlock, 7-consecutive-zero-day flip, relapse)
   - [ ] 5. Timeline phase 2 (milestone pushes — needs the dev build)
 - [ ] **Post-zero mode** — the product story currently ends at the quit

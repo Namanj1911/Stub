@@ -293,9 +293,14 @@ const HEALTH_CLOCK_LINES: Record<'none' | 'building' | 'record', string[]> = {
   // clock running, short of the personal best
   building: [
     'The clock is running. It has done better — go remind it.',
+    'Nothing required here. That is the entire trick.',
     'Every minute here is a minute your blood pressure gets to itself.',
     'This is the part that counts. Nothing to do, which is the good news.',
-    'Still going. Boring is exactly what this number wants from you.',
+    // no line in this pool may presume elapsed time: it also shows at 0m,
+    // immediately after a log, where "still going" read as nonsense (owner, on
+    // device). The reset stays quiet (decision 2) — the copy simply must not
+    // trip over it.
+    'Boring is exactly what this number wants from you.',
   ],
   // the live gap IS the record
   record: [

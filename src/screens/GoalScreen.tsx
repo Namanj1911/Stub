@@ -21,6 +21,7 @@ import {
 } from '../domain';
 import { useApp, useProfile } from '../AppContext';
 import { furthestEarned, gaps, liveMilestones, resolveMilestones } from '../health';
+import { Medal } from '../Medal';
 import { ProfileButton } from '../ProfileButton';
 import { useNav } from '../navigation';
 import { color, font, radius } from '../theme';
@@ -216,27 +217,45 @@ export function GoalScreen() {
         }
         style={({ pressed }) => ({
           borderRadius: radius.lg,
-          backgroundColor: color.surface,
+          backgroundColor: unseen ? color.goldTint8 : color.surface,
           borderWidth: 1,
-          borderColor: unseen ? color.accent600 : color.neutral800,
+          borderColor: unseen ? color.goldBorder : color.neutral800,
           padding: 18,
           marginTop: 14,
           opacity: pressed ? 0.75 : 1,
+          // an unclaimed milestone glows on the tab the user actually lands on
+          ...(unseen
+            ? {
+                shadowColor: color.gold,
+                shadowOpacity: 0.3,
+                shadowRadius: 14,
+                shadowOffset: { width: 0, height: 0 },
+              }
+            : null),
         })}
       >
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            {unseen && <Medal state="reached" size={15} />}
+            <Text
+              style={{
+                fontFamily: font.medium,
+                fontSize: 10,
+                letterSpacing: 1.4,
+                textTransform: 'uppercase',
+                color: unseen ? color.gold : color.neutral500,
+              }}
+            >
+              {unseen ? 'Milestone earned' : 'Your body'}
+            </Text>
+          </View>
           <Text
             style={{
-              fontFamily: font.medium,
-              fontSize: 10,
-              letterSpacing: 1.4,
-              textTransform: 'uppercase',
-              color: unseen ? color.accent300 : color.neutral500,
+              fontFamily: font.regular,
+              fontSize: 12,
+              color: unseen ? color.goldDim : color.accent300,
             }}
           >
-            {unseen ? 'Milestone earned' : 'Your body'}
-          </Text>
-          <Text style={{ fontFamily: font.regular, fontSize: 12, color: color.accent300 }}>
             timeline →
           </Text>
         </View>
@@ -245,7 +264,7 @@ export function GoalScreen() {
           style={{
             fontFamily: font.medium,
             fontSize: 16,
-            color: color.text,
+            color: unseen ? color.goldBright : color.text,
             lineHeight: 23,
             marginTop: 8,
           }}
