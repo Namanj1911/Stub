@@ -395,7 +395,23 @@ deliberately **not** here — deferred until after beta + PMF, see Later.
         and later un-store. Offer copy may neither congratulate (the days
         aren't in evidence until the user says so) nor pressure (declining
         includes "I smoked and didn't log it", which is the honesty the
-        question is fishing for). Awaiting device check.
+        question is fishing for).
+        ⚠ **Merged to main un-device-checked** (owner's call, 2026-07-19) —
+        the one deliberate exception so far to the AGENTS.md rule that nothing
+        merges before the owner has seen it running in Expo Go. Logic was
+        verified by exercising the compiled module directly (20 cases: the
+        silent-week offer, consent surviving further clean days, a relapse
+        dropping the mode and re-asking, re-confirmation, and a sweep proving
+        no relapse/recovery pair can revive a stale consent) — but **no part
+        of the offer card has been seen rendered**, and per the splash
+        post-mortem a typecheck is not verification. Still unchecked: the
+        card's layout, the copy in situ, and the gold confirm button — gold
+        had only ever been used on milestone marks and cards, and the P3 note
+        that sanctioned it said "never on a control". This is its first use on
+        one; if it reads as general emphasis rather than "you earned this",
+        that note wins and the button changes. Reaching the state needs seeded
+        history, so mind the AsyncStorage clobbering trap in Issues. Owner to
+        check on device and open a follow-up branch for anything found.
   - [ ] 5. Timeline phase 2 (milestone pushes — needs the dev build)
 - [ ] **Post-zero mode** — the product story currently ends at the quit
   date; for Smoke Free/Kwit, what comes after *is* the product. At zero,
