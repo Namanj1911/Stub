@@ -269,8 +269,35 @@ deliberately **not** here — deferred until after beta + PMF, see Later.
         budget could never drop below ½/day, so the quit date Goal promises
         was unreachable and post-zero could never trigger. The date picker
         from this step was removed before shipping — see Later.
-  - [ ] 3. Timeline phase 1 (dataset, `src/health.ts`, Health screen,
-        milestone card, in-app achievements)
+  - [x] 3. Timeline phase 1 — **built 2026-07-19** (`feat/health-timeline`),
+        awaiting device check. Milestone dataset is one document-level
+        constant (Surgeon General 2020, CDC phrasing) — explicitly *not* the
+        `FieldSource`/`SOURCES` machinery from `brands.ts`, which exists
+        there only because MRP and nicotine estimates differ in confidence;
+        milestones don't. `src/health.ts` carries all-time longest gap
+        (widening the today-only calc in the Stats tiles), cumulative
+        exposure avoided, and milestone resolution. Three decisions the
+        design left open, settled in the build:
+        **(a) both surfaces carry the celebration** — the Goal card is the
+        invitation (it keeps nudging while an earned milestone is
+        unacknowledged), the Health screen is the payoff and is what acks it.
+        Visiting is the acknowledgement, so there's no dismiss control and
+        nothing can be missed.
+        **(b) locked rows carry a real date**, derived from the plan's quit
+        date, so the day-one long-horizon section reads as a destination
+        rather than a wall of grey.
+        **(c) cumulative counts from install day only**, consistent with
+        Money and the P0 display rule — we only do arithmetic on days we
+        actually watched.
+        Also: exposure avoided is **not clamped per day**. A day above
+        baseline subtracts, exactly as it does in Money; clamping would hide
+        over-baseline days behind a number that only ever rises, which is the
+        same lie in the other direction. The screen states the net-negative
+        case in words (`healthBehind`, mirroring `moneyBehind`).
+        One small refactor fell out: `priceRecordAtEndOfDay` is now exported
+        from `domain.ts` (was a private price-only helper) because the
+        avoided-exposure math needs the same effective-dating rule to find
+        the *brand* in effect, not just the price.
   - [ ] 4. Post-zero mode (unlock, 7-consecutive-zero-day flip, relapse)
   - [ ] 5. Timeline phase 2 (milestone pushes — needs the dev build)
 - [ ] **Post-zero mode** — the product story currently ends at the quit

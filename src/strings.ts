@@ -265,6 +265,90 @@ export function tomorrowNudge(): string {
   return TOMORROW_NUDGES[TOMORROW_ROLL];
 }
 
+// ---------------------------------------------------------------------------
+// Health timeline (design/HEALTH_TIMELINE.md §8) — TONE RULE, read before
+// adding a line below:
+//
+//   Roast the behaviour, never the disease. No cancer punchlines, no
+//   tombstones, no "your lungs look like a barbecue". The joke is always
+//   about the user's choices, never about what those choices might do to
+//   them. Fear is what every other quit app sells; we don't.
+//
+// Second rule, from §4.1: congratulate the distance covered, never mourn the
+// reset. No line here may imply the user wrecked anything by logging — that
+// would invert the app's own "never blocks logging" principle, and SOS
+// already owns the "you were doing so well" beat. The reset is quiet
+// (decision 2); nothing fires when the clock goes back to zero.
+//
+// All pools roll once per launch at module load, like TEMPTATIONS and
+// STREAK_LINES: the line holds still while the user reads the screen, and
+// changes next time the app opens.
+
+const HEALTH_CLOCK_LINES: Record<'none' | 'building' | 'record', string[]> = {
+  // nothing logged yet — the clock has no anchor
+  none: [
+    'Log a smoke and the clock starts. That is the only way this screen gets interesting.',
+    'No logs yet, so no clock yet. The body is waiting on you either way.',
+  ],
+  // clock running, short of the personal best
+  building: [
+    'The clock is running. It has done better — go remind it.',
+    'Every minute here is a minute your blood pressure gets to itself.',
+    'This is the part that counts. Nothing to do, which is the good news.',
+    'Still going. Boring is exactly what this number wants from you.',
+  ],
+  // the live gap IS the record
+  record: [
+    'This is the longest you have gone. Right now. Keep sitting there.',
+    'New territory. Past you never made it this far.',
+    'Record in progress. No pressure, but the scoreboard is awake.',
+  ],
+};
+
+const HEALTH_CLOCK_ROLL = Math.random();
+
+export function healthClockCopy(state: 'none' | 'building' | 'record'): string {
+  const pool = HEALTH_CLOCK_LINES[state];
+  return pool[Math.floor(HEALTH_CLOCK_ROLL * pool.length)];
+}
+
+// The cumulative section (§4.2) — the one number that only goes up. It makes
+// no medical claim at all, so the copy shouldn't either: it's arithmetic on
+// the user's own logs, and that's the joke.
+const AVOIDED_LINES = [
+  'Nothing here is a medical claim — it is just the arithmetic on what you did not smoke.',
+  'This number never resets. It happened, and the app is not going to pretend otherwise.',
+  'Not healing, just absence. Absence is still the whole point.',
+  'Every one of these is a cigarette you thought about and skipped. They add up quietly.',
+];
+
+const AVOIDED_ROLL = Math.floor(Math.random() * AVOIDED_LINES.length);
+
+export function avoidedCopy(): string {
+  return AVOIDED_LINES[AVOIDED_ROLL];
+}
+
+// Mirrors `moneyBehind`: above baseline means the counterfactual runs the
+// other way, and we say so plainly instead of clamping the number to zero.
+export const healthBehind =
+  "You're smoking above your baseline right now, so there's nothing banked yet. It starts counting the moment you're under.";
+
+// Milestone celebration (§9). In-app only this phase — no push until the dev
+// build — so it has to feel earned when the user opens the app and finds it
+// waiting. Rolled per launch like everything else here.
+const MILESTONE_CELEBRATIONS = [
+  'Earned. Your body did the work; you just stayed out of its way.',
+  'That one is yours now. It does not un-happen.',
+  'Milestone cleared. Quietly impressive, which is the best kind.',
+  'Logged in the good column for once.',
+];
+
+const CELEBRATION_ROLL = Math.floor(Math.random() * MILESTONE_CELEBRATIONS.length);
+
+export function milestoneCelebration(): string {
+  return MILESTONE_CELEBRATIONS[CELEBRATION_ROLL];
+}
+
 // Brand-switch roast (BACKLOG P1): the app noticed, and has opinions.
 export function brandSwitchRoast(
   prev: { nicotineMg: number; estimated: boolean } | null,

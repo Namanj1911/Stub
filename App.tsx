@@ -15,6 +15,7 @@ import { AppProvider } from './src/AppContext';
 import { RootStackParamList, TabParamList } from './src/navigation';
 import { BackfillScreen } from './src/screens/BackfillScreen';
 import { GoalScreen } from './src/screens/GoalScreen';
+import { HealthScreen } from './src/screens/HealthScreen';
 import { LogScreen } from './src/screens/LogScreen';
 import { MoneyScreen } from './src/screens/MoneyScreen';
 import { NicotineScreen } from './src/screens/NicotineScreen';
@@ -131,6 +132,7 @@ export default function App() {
                 <Stack.Screen name="Nicotine" component={NicotineScreen} />
                 <Stack.Screen name="Sos" component={SosScreen} />
                 <Stack.Screen name="Profile" component={ProfileScreen} />
+                <Stack.Screen name="Health" component={HealthScreen} />
               </Stack.Navigator>
             </NavigationContainer>
           </SafeAreaView>

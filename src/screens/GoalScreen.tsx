@@ -20,6 +20,7 @@ import {
   weeksToQuitAtRate,
 } from '../domain';
 import { useApp, useProfile } from '../AppContext';
+import { furthestEarned, gaps, liveMilestones, resolveMilestones } from '../health';
 import { ProfileButton } from '../ProfileButton';
 import { useNav } from '../navigation';
 import { color, font, radius } from '../theme';
@@ -61,6 +62,23 @@ export function GoalScreen() {
   });
 
   const progress = Math.min(100, Math.max(0, Math.round((1 - budget / baseline) * 100)));
+
+  // Milestone card (design/HEALTH_TIMELINE.md §5.5) — the live "right now"
+  // milestone plus the next one, drilling into the full timeline.
+  //
+  // Deliberately renders no ticking duration. Goal lives in a top-tab
+  // navigator and stays mounted, so a live clock here would mean a timer
+  // running for the whole session to keep a number honest that the Health
+  // screen already owns. Milestones only change when a smoke is logged or a
+  // threshold passes, and the card re-renders on the former; the latter can
+  // wait for the drill-in.
+  const g = gaps(entries, now);
+  const resolvedMilestones = resolveMilestones(g);
+  const { current: liveMilestone, next: nextMilestone } = liveMilestones(resolvedMilestones);
+  const earnedMilestone = furthestEarned(resolvedMilestones);
+  // §9.3: no push until the dev build, so the card is where an unseen
+  // achievement announces itself — it nudges until the Health screen acks it.
+  const unseen = earnedMilestone != null && earnedMilestone.id !== data.ackedMilestoneId;
 
   return (
     <ScrollView
@@ -184,6 +202,77 @@ export function GoalScreen() {
           </Text>
         </View>
       </View>
+
+      {/* milestone card (§5.5) — the body's version of the same argument the
+          plan card makes in cigarettes: here's when you stop, here's what you
+          get for it */}
+      <Pressable
+        onPress={() => nav.navigate('Health')}
+        accessibilityRole="button"
+        accessibilityLabel={
+          liveMilestone
+            ? `${liveMilestone.label} since your last cigarette. See your full health timeline`
+            : 'See your full health timeline'
+        }
+        style={({ pressed }) => ({
+          borderRadius: radius.lg,
+          backgroundColor: color.surface,
+          borderWidth: 1,
+          borderColor: unseen ? color.accent600 : color.neutral800,
+          padding: 18,
+          marginTop: 14,
+          opacity: pressed ? 0.75 : 1,
+        })}
+      >
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Text
+            style={{
+              fontFamily: font.medium,
+              fontSize: 10,
+              letterSpacing: 1.4,
+              textTransform: 'uppercase',
+              color: unseen ? color.accent300 : color.neutral500,
+            }}
+          >
+            {unseen ? 'Milestone earned' : 'Your body'}
+          </Text>
+          <Text style={{ fontFamily: font.regular, fontSize: 12, color: color.accent300 }}>
+            timeline →
+          </Text>
+        </View>
+
+        <Text
+          style={{
+            fontFamily: font.medium,
+            fontSize: 16,
+            color: color.text,
+            lineHeight: 23,
+            marginTop: 8,
+          }}
+        >
+          {unseen && earnedMilestone
+            ? `${earnedMilestone.label}: ${earnedMilestone.body}`
+            : liveMilestone
+              ? `${liveMilestone.label} in: ${liveMilestone.body}`
+              : 'Twenty minutes without one and your heart rate starts dropping.'}
+        </Text>
+
+        {/* The two states read off different clocks and must not be mixed: the
+            earned milestone comes from the all-time record, `next` from the
+            live clock. Showing both at once produced "24 hours earned / next
+            at 12 hours", which reads as a contradiction. */}
+        <Text
+          style={{ fontFamily: font.regular, fontSize: 12, color: color.neutral500, marginTop: 8 }}
+        >
+          {unseen
+            ? 'Your longest gap ever got you here — and it stays earned. Tap for the full timeline.'
+            : nextMilestone == null
+              ? 'Every milestone on the board. Tap to see them.'
+              : nextMilestone.horizon === 'long'
+                ? 'Past 24 hours — the rest of the timeline counts from your last cigarette.'
+                : `Next at ${nextMilestone.label}: ${nextMilestone.body.toLowerCase()}`}
+        </Text>
+      </Pressable>
     </ScrollView>
   );
 }
