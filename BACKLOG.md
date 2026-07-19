@@ -487,6 +487,25 @@ deliberately **not** here — deferred until after beta + PMF, see Later.
   pixels — `hasAlpha` proves nothing; (3) config-level checks cannot
   substitute for looking at the screen. Caught only by building to the
   iOS simulator.
+- **Seeding AsyncStorage under a running app gets clobbered (2026-07-19):**
+  driving the health/post-zero screens needed months of fake history, so the
+  store was seeded by writing AsyncStorage directly. Edits kept silently
+  vanishing — the app rendered the *old* state and the file on disk came back
+  without the change. Two causes, both worth knowing: (1) the app persists
+  its in-memory state on any `update()` (the Health screen acks a milestone
+  on mount), so a write made while it is running is overwritten moments
+  later — **terminate first, then write, then launch**; (2)
+  `@react-native-async-storage` spills large values out of `manifest.json`
+  into a sibling file and leaves the manifest entry `null`, so a script that
+  only edits the manifest writes into a void. Read whichever of the two
+  actually holds the value.
+- **The simulator cannot be tapped (2026-07-19):** `xcrun simctl` has no
+  tap/swipe verb, so screens behind a navigation push or below the fold are
+  unreachable by script. Workarounds that cost nothing and revert cleanly:
+  a temporary `initialRouteName` on the navigator to land directly on a
+  screen, and a temporary `contentOffset` on its `ScrollView` to inspect a
+  lower section. Both are throwaway edits — check `git diff` is empty before
+  committing, since they are easy to leave behind.
 - **`simctl launch` does not reload a running app (2026-07-19):** a change
   looked completely absent from the simulator — the new element simply
   wasn't on screen — while every indirect check said it had shipped: Metro
