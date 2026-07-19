@@ -7,41 +7,42 @@
 // (the only place that ground is used, per the design system).
 
 import React from 'react';
-import { ScrollView, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import Svg, { Defs, Ellipse, RadialGradient, Stop } from 'react-native-svg';
 import {
-  PACE_RATE,
-  Pace,
   baselineSixthsFor,
   budgetSixths,
+  currentPlanRate,
   dayKey,
-  quitDate,
+  frac,
+  quitDateAtRate,
   trailing7Totals,
-  weeksToQuit,
+  weeksToQuitAtRate,
 } from '../domain';
 import { useApp, useProfile } from '../AppContext';
 import { ProfileButton } from '../ProfileButton';
+import { useNav } from '../navigation';
 import { color, font, radius } from '../theme';
-
-const PACE_LABEL: Record<Pace, string> = { chill: '½', steady: '1', beast: '2' };
 
 export function GoalScreen() {
   const { data } = useApp();
   const profile = useProfile();
+  const nav = useNav();
   const entries = data.entries;
   const now = Date.now();
   const todayKey = dayKey(now);
   // Quit-day progress and the 7-day-average fallback measure against the
   // onboarding baseline; the budget itself follows the dated history.
   const baseline = baselineSixthsFor(profile.baselineHistory, profile.installDayKey);
-  const budget = budgetSixths(entries, todayKey, profile.installDayKey, profile.baselineHistory);
+  const budget = budgetSixths(entries, todayKey, profile.installDayKey, profile.baselineHistory, profile.planHistory);
   const avg7 =
     trailing7Totals(entries, todayKey + 1, profile.installDayKey, baseline).reduce((a, b) => a + b, 0) / 7;
 
-  const pace = profile.pace;
-  const rate = PACE_RATE[pace];
-  const weeks = weeksToQuit(budget, pace);
-  const quit = quitDate(budget, pace, now).toLocaleDateString('en-IN', {
+  // the plan's rate is canonical (§11.2) — it may not match any preset, so
+  // the glide path and date read it rather than the pace label
+  const rate = currentPlanRate(profile.planHistory);
+  const weeks = weeksToQuitAtRate(budget, rate);
+  const quit = quitDateAtRate(budget, rate, now).toLocaleDateString('en-IN', {
     day: 'numeric',
     month: 'long',
     year: 'numeric',
@@ -109,9 +110,23 @@ export function GoalScreen() {
         >
           Last cigarette
         </Text>
-        <Text style={{ fontFamily: font.medium, fontSize: 26, color: color.text, marginTop: 4 }}>
-          {quit}
-        </Text>
+        {/* the date is the second door onto the plan control (§5.3): config
+            lives on Profile, but "change my quit date" has to be reachable
+            where the date is actually shown */}
+        <Pressable
+          onPress={() => nav.navigate('Profile')}
+          accessibilityRole="button"
+          accessibilityLabel={`Last cigarette ${quit}. Change your plan`}
+          style={({ pressed }) => ({
+            alignSelf: 'flex-start',
+            opacity: pressed ? 0.6 : 1,
+          })}
+        >
+          <Text style={{ fontFamily: font.medium, fontSize: 26, color: color.text, marginTop: 4 }}>
+            {quit}{' '}
+            <Text style={{ fontSize: 15, color: color.accent300 }}>change</Text>
+          </Text>
+        </Pressable>
         <Text
           style={{
             fontFamily: font.regular,
@@ -122,7 +137,7 @@ export function GoalScreen() {
             opacity: 0.9,
           }}
         >
-          Based on your last 7 days ({(avg7 / 6).toFixed(1)}/day), stepping down {PACE_LABEL[pace]} a
+          Based on your last 7 days ({(avg7 / 6).toFixed(1)}/day), stepping down {frac(rate)} a
           week gets you to zero in {weeks} weeks. No cold turkey, no drama.
         </Text>
 

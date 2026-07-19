@@ -4,7 +4,16 @@
 import React, { useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
-import { BaselineRecord, Entry, budgetSixths, dayKey, entriesForDay, frac, totalSixths } from '../domain';
+import {
+  BaselineRecord,
+  Entry,
+  PlanRecord,
+  budgetSixths,
+  dayKey,
+  entriesForDay,
+  frac,
+  totalSixths,
+} from '../domain';
 import {
   Bar,
   StatsRange,
@@ -33,7 +42,7 @@ export function StatsScreen() {
 
   const now = Date.now();
   const todayKey = dayKey(now);
-  const budget = budgetSixths(entries, todayKey, profile.installDayKey, profile.baselineHistory);
+  const budget = budgetSixths(entries, todayKey, profile.installDayKey, profile.baselineHistory, profile.planHistory);
   const today = entriesForDay(entries, todayKey);
   const total = totalSixths(today);
 
@@ -43,18 +52,19 @@ export function StatsScreen() {
     todayKey,
     profile.installDayKey,
     profile.baselineHistory,
+    profile.planHistory,
     profile.priceHistory,
     now,
   );
   const insight = pickInsight(entries, todayKey, profile.installDayKey, budget, now);
-  const streaks = underBudgetStreaks(entries, todayKey, profile.installDayKey, profile.baselineHistory);
+  const streaks = underBudgetStreaks(entries, todayKey, profile.installDayKey, profile.baselineHistory, profile.planHistory);
 
   const bars =
     range === 'day'
       ? dayBars(today)
       : range === 'month'
         ? monthBars(entries, todayKey, profile.installDayKey)
-        : weekBars(entries, todayKey, profile.installDayKey, profile.baselineHistory);
+        : weekBars(entries, todayKey, profile.installDayKey, profile.baselineHistory, profile.planHistory);
   const chartTitle =
     range === 'day'
       ? 'Today by time of day'
@@ -233,7 +243,9 @@ export function StatsScreen() {
           <Text style={{ fontFamily: font.regular, fontSize: 12, color: color.neutral500, marginTop: 24, marginBottom: 10 }}>
             Last 28 days
           </Text>
-          <Heatmap entries={entries} todayKey={todayKey} installDayKey={profile.installDayKey} baselineHistory={profile.baselineHistory} />
+          <Heatmap entries={entries} todayKey={todayKey} installDayKey={profile.installDayKey} baselineHistory={profile.baselineHistory}
+            planHistory={profile.planHistory}
+          />
         </>
       )}
 
@@ -407,8 +419,15 @@ function Heatmap(props: {
   todayKey: number;
   installDayKey: number;
   baselineHistory: BaselineRecord[];
+  planHistory: PlanRecord[];
 }) {
-  const cells = heatCells(props.entries, props.todayKey, props.installDayKey, props.baselineHistory);
+  const cells = heatCells(
+    props.entries,
+    props.todayKey,
+    props.installDayKey,
+    props.baselineHistory,
+    props.planHistory,
+  );
   // explicit rows of 7 — percentage-based wrapping breaks rows unevenly and
   // leaves ragged vertical space
   const rows = [0, 1, 2, 3].map((r) => cells.slice(r * 7, r * 7 + 7));

@@ -8,7 +8,16 @@ import React from 'react';
 import { Alert, Pressable, ScrollView, Share, Text, View } from 'react-native';
 import { useApp, useProfile } from '../AppContext';
 import { brandInfo } from '../brands';
-import { Pace, budgetSixths, dayKey, weeksToQuit } from '../domain';
+import {
+  PACE_RATE,
+  Pace,
+  budgetSixths,
+  currentPlanRate,
+  dayKey,
+  paceForRate,
+  quitDateAtRate,
+  weeksToQuitAtRate,
+} from '../domain';
 import { haptic } from '../haptics';
 import { useNav } from '../navigation';
 import { copy } from '../strings';
@@ -25,14 +34,23 @@ export function ProfileScreen() {
   const profile = useProfile();
   const nav = useNav();
   const brand = brandInfo(profile.brandId, profile.customBrandName);
-  // Pace now lives only here (it used to be duplicated on Goal), so this
+  const now = Date.now();
+  const todayKey = dayKey(now);
+  // The plan lives only here (it used to be duplicated on Goal), so this
   // control carries the weeks-to-quit comparison Goal's picker used to show.
   const budget = budgetSixths(
     data.entries,
-    dayKey(Date.now()),
+    todayKey,
     profile.installDayKey,
     profile.baselineHistory,
+    profile.planHistory,
   );
+  // Rate is canonical (§11.2). A target-date picker as the second door onto
+  // it was built and pulled before beta — see BACKLOG "Later". The presets
+  // are the only door for now; the date below is derived, not editable.
+  const rate = currentPlanRate(profile.planHistory);
+  const activePreset = paceForRate(rate);
+  const target = quitDateAtRate(budget, rate, now);
 
   const exportData = () => {
     Share.share({
@@ -134,11 +152,11 @@ export function ProfileScreen() {
         </Text>
       </Pressable>
 
-      {/* pace */}
-      <SectionLabel>Your pace</SectionLabel>
+      {/* plan — presets and a target date are two doors onto one rate (§11) */}
+      <SectionLabel>Your plan</SectionLabel>
       <View style={{ flexDirection: 'row', gap: 8 }}>
         {PACE_LABEL.map((p) => {
-          const selected = profile.pace === p.id;
+          const selected = activePreset === p.id;
           return (
             <Pressable
               key={p.id}
@@ -172,11 +190,33 @@ export function ProfileScreen() {
                   marginTop: 4,
                 }}
               >
-                {weeksToQuit(budget, p.id)} wks
+                {weeksToQuitAtRate(budget, PACE_RATE[p.id])} wks
               </Text>
             </Pressable>
           );
         })}
+      </View>
+
+      {/* what the chosen pace actually means, in a date. Read-only: the
+          presets are the control, and a date the user can't edit can't
+          become a deadline they feel they're failing. */}
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          backgroundColor: color.surface,
+          borderRadius: radius.md,
+          padding: 16,
+          marginTop: 8,
+        }}
+      >
+        <Text style={{ fontFamily: font.regular, fontSize: 13, color: color.neutral400 }}>
+          Last cigarette, at this pace
+        </Text>
+        <Text style={{ fontFamily: font.medium, fontSize: 15, color: color.text }}>
+          {target.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+        </Text>
       </View>
 
       {/* data */}

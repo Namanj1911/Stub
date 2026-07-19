@@ -316,6 +316,15 @@ technicality the user hasn't lived yet.
 
 ## 11. The plan control — presets + date picker (hybrid)
 
+> **Superseded in part, 2026-07-19.** The date picker was built and then
+> removed before shipping; presets are the only door for now and the picker
+> is deferred to after the friends-and-family beta (see BACKLOG "Later" for
+> the reasoning and the rounding lesson). **Everything else in this section
+> shipped and stands** — the canonical rate, `min(adaptive, planned)`, the
+> floor exemption and the effective-dated `planHistory`. Those are what make
+> a *pace* bite; none of them were about dates. §11.1's decision 12(b) is
+> live. Read §11.2's "two doors" as one door, for now.
+
 Decided: keep the three preset blocks **and** add a target-date picker;
 either input recomputes the plan. They are two ways of setting one fact, so
 the model has to make that literal.
@@ -410,7 +419,7 @@ today's log).
 | 6 | Placement | Goal, after moving config to Profile (§5) |
 | 7 | Post-zero | In scope for this design (§10) |
 | 8 | Shape on Goal | Milestone card + `Health` drill-in (§5.5) |
-| 9 | Plan control | Hybrid: presets + date picker, rate is canonical (§11) |
+| 9 | Plan control | Hybrid: presets + date picker, rate is canonical (§11) — *picker deferred post-beta 2026-07-19; rate/plan math shipped* |
 | 10 | Tomorrow's budget | Moves to Log, meter caption (§13) |
 | 11 | "Zero" | 7 consecutive zero days (§12) |
 | 12 | Date vs budget | (b) — the date constrains: `min(adaptive, planned)` (§11.1) |
