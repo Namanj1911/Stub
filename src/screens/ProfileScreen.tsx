@@ -20,6 +20,8 @@ import {
 } from '../domain';
 import { haptic } from '../haptics';
 import { useNav } from '../navigation';
+import { DEFAULT_NOTIF_PREFS } from '../notificationPlan';
+import { sendPreviewNotifications } from '../notifications';
 import { copy } from '../strings';
 import { color, font, radius } from '../theme';
 
@@ -30,7 +32,8 @@ const PACE_LABEL: { id: Pace; name: string; rate: string }[] = [
 ];
 
 export function ProfileScreen() {
-  const { data, setCountPerDay, setPace, resetAll } = useApp();
+  const { data, setCountPerDay, setPace, setNotifPref, resetAll } = useApp();
+  const prefs = data.notifPrefs ?? DEFAULT_NOTIF_PREFS;
   const profile = useProfile();
   const nav = useNav();
   const brand = brandInfo(profile.brandId, profile.customBrandName);
@@ -219,6 +222,56 @@ export function ProfileScreen() {
         </Text>
       </View>
 
+      {/* notifications (SPEC S15/S17 AC: each category is togglable) */}
+      <SectionLabel>Nudges</SectionLabel>
+      <View style={{ backgroundColor: color.surface, borderRadius: radius.md, padding: 16, gap: 16 }}>
+        <ToggleRow
+          label="Budget check"
+          note="A poke 45 minutes after you've spent 80% of the day's budget."
+          on={prefs.budget}
+          onToggle={(v) => setNotifPref('budget', v)}
+        />
+        <View style={{ height: 1, backgroundColor: color.neutral900 }} />
+        <ToggleRow
+          label="Milestones"
+          note="First day under budget, first smoke-free day, streaks worth mentioning. Arrives the next morning."
+          on={prefs.milestones}
+          onToggle={(v) => setNotifPref('milestones', v)}
+        />
+        <Text style={{ fontFamily: font.regular, fontSize: 12, color: color.neutral500, lineHeight: 17 }}>
+          {copy('notifNote')}
+        </Text>
+        {/* The real triggers are a 45-minute wait and 9am tomorrow, so this is
+            the only way to watch one actually arrive. Stripped from release
+            builds by __DEV__. */}
+        {__DEV__ ? (
+          <Pressable
+            onPress={async () => {
+              haptic.select();
+              const ok = await sendPreviewNotifications();
+              Alert.alert(
+                ok ? 'Sample sent' : 'Notifications are off',
+                ok
+                  ? 'Two samples land in about 10 seconds. Background the app to see them on the lock screen.'
+                  : 'Permission was denied, so nothing can be delivered. Turn it on in iOS Settings → Stub.',
+              );
+            }}
+            accessibilityLabel="Send sample notifications"
+            style={({ pressed }) => ({
+              borderWidth: 1,
+              borderColor: pressed ? color.accent : color.neutral800,
+              borderRadius: radius.md,
+              paddingVertical: 10,
+              alignItems: 'center',
+            })}
+          >
+            <Text style={{ fontFamily: font.medium, fontSize: 13, color: color.accent300 }}>
+              send a sample (dev only)
+            </Text>
+          </Pressable>
+        ) : null}
+      </View>
+
       {/* data */}
       <SectionLabel>Your data</SectionLabel>
       <Pressable
@@ -277,6 +330,71 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
     >
       {children}
     </Text>
+  );
+}
+
+// Switch-free by design: the app has no other Switch, and iOS's green would
+// be the only saturated non-accent colour in the Nocturne system. This is the
+// same pill the pace presets use, shrunk.
+function ToggleRow({
+  label,
+  note,
+  on,
+  onToggle,
+}: {
+  label: string;
+  note: string;
+  on: boolean;
+  onToggle: (on: boolean) => void;
+}) {
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
+      <View style={{ flex: 1 }}>
+        <Text style={{ fontFamily: font.medium, fontSize: 15, color: color.text }}>{label}</Text>
+        <Text
+          style={{
+            fontFamily: font.regular,
+            fontSize: 12,
+            color: color.neutral500,
+            marginTop: 3,
+            lineHeight: 17,
+          }}
+        >
+          {note}
+        </Text>
+      </View>
+      <Pressable
+        onPress={() => {
+          haptic.select();
+          onToggle(!on);
+        }}
+        hitSlop={10}
+        accessibilityRole="switch"
+        accessibilityLabel={label}
+        accessibilityState={{ checked: on }}
+        style={({ pressed }) => ({
+          minWidth: 56,
+          alignItems: 'center',
+          borderWidth: 1,
+          borderColor: on ? color.accent : color.neutral700,
+          backgroundColor: on ? color.accentTint10 : 'transparent',
+          borderRadius: radius.md,
+          paddingVertical: 8,
+          paddingHorizontal: 12,
+          transform: [{ scale: pressed ? 0.96 : 1 }],
+        })}
+      >
+        <Text
+          style={{
+            fontFamily: font.medium,
+            fontSize: 13,
+            color: on ? color.accent300 : color.neutral500,
+          }}
+        >
+          {on ? 'on' : 'off'}
+        </Text>
+      </Pressable>
+    </View>
   );
 }
 

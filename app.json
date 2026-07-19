@@ -24,6 +24,12 @@
     "plugins": [
       "expo-font",
       [
+        "expo-notifications",
+        {
+          "color": "#161826"
+        }
+      ],
+      [
         "expo-splash-screen",
         {
           "image": "./assets/splash-icon.png",
