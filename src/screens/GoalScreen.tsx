@@ -20,8 +20,16 @@ import {
   weeksToQuitAtRate,
 } from '../domain';
 import { useApp, useProfile } from '../AppContext';
-import { furthestEarned, gaps, liveMilestones, resolveMilestones } from '../health';
+import {
+  furthestEarned,
+  gaps,
+  liveMilestones,
+  milestoneRank,
+  resolveMilestones,
+} from '../health';
 import { Medal } from '../Medal';
+import { ZERO_DAYS_TO_FLIP, goalMode, smokeFree } from '../postzero';
+import { arrivedCopy, smokeFreeCopy } from '../strings';
 import { ProfileButton } from '../ProfileButton';
 import { useNav } from '../navigation';
 import { color, font, radius } from '../theme';
@@ -64,6 +72,23 @@ export function GoalScreen() {
 
   const progress = Math.min(100, Math.max(0, Math.round((1 - budget / baseline) * 100)));
 
+  // Goal's tense (design §10). The screen's narrative job is unchanged in all
+  // three modes — "where is this going" — but at zero it stops being a
+  // forecast and becomes a record of arrival.
+  const sf = smokeFree(entries, todayKey, profile.installDayKey);
+  const mode = goalMode(budget, sf);
+  // Smoke-free *since* is the day after the last cigarette: the first day
+  // with nothing in it. Dating it from the cigarette itself would credit the
+  // user with a day they spent smoking.
+  const smokeFreeSince =
+    sf.lastSmokeAt == null
+      ? null
+      : new Date(sf.lastSmokeAt + 86_400_000).toLocaleDateString('en-IN', {
+          day: 'numeric',
+          month: 'long',
+          year: 'numeric',
+        });
+
   // Milestone card (design/HEALTH_TIMELINE.md §5.5) — the live "right now"
   // milestone plus the next one, drilling into the full timeline.
   //
@@ -79,7 +104,9 @@ export function GoalScreen() {
   const earnedMilestone = furthestEarned(resolvedMilestones);
   // §9.3: no push until the dev build, so the card is where an unseen
   // achievement announces itself — it nudges until the Health screen acks it.
-  const unseen = earnedMilestone != null && earnedMilestone.id !== data.ackedMilestoneId;
+  const unseen =
+    earnedMilestone != null &&
+    milestoneRank(earnedMilestone.id) > milestoneRank(data.ackedMilestoneId);
 
   return (
     <ScrollView
@@ -93,8 +120,109 @@ export function GoalScreen() {
         <ProfileButton />
       </View>
 
+      {/* ---------------------------------------------------------------- */}
+      {/* post-zero hero (§10) — the glide path has arrived and retires; the */}
+      {/* same screen keeps its narrative job in a new tense                 */}
+      {/* ---------------------------------------------------------------- */}
+      {mode === 'postZero' && (
+        <HeroCard>
+          <HeroLabel>Smoke-free since</HeroLabel>
+          <Text style={{ fontFamily: font.medium, fontSize: 26, color: color.text, marginTop: 4 }}>
+            {smokeFreeSince}
+          </Text>
+          <Text
+            style={{
+              fontFamily: font.regular,
+              fontSize: 13,
+              color: color.accent200,
+              lineHeight: 19,
+              marginTop: 10,
+              opacity: 0.9,
+            }}
+          >
+            {smokeFreeCopy(sf.streakDays, sf.bestDays)}
+          </Text>
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              borderTopWidth: 1,
+              borderTopColor: 'rgba(233, 233, 237, 0.12)',
+              marginTop: 18,
+              paddingTop: 14,
+            }}
+          >
+            <View>
+              <Text style={{ fontFamily: font.regular, fontSize: 13, color: color.accent200 }}>
+                Days clean
+              </Text>
+              {/* best shows only when it beats the current run — same
+                  declutter rule as the under-budget streak card */}
+              {sf.bestDays > sf.streakDays && (
+                <Text
+                  style={{ fontFamily: font.regular, fontSize: 11, color: color.accent300, marginTop: 3 }}
+                >
+                  Best: {sf.bestDays}
+                </Text>
+              )}
+            </View>
+            <Text style={{ fontFamily: font.medium, fontSize: 20, color: color.text }}>
+              {sf.streakDays}
+            </Text>
+          </View>
+        </HeroCard>
+      )}
+
+      {/* ---------------------------------------------------------------- */}
+      {/* arrived (§12) — budget is zero, the seven days aren't lived yet    */}
+      {/* ---------------------------------------------------------------- */}
+      {mode === 'arrived' && (
+        <HeroCard>
+          <HeroLabel>Budget</HeroLabel>
+          <Text style={{ fontFamily: font.medium, fontSize: 26, color: color.text, marginTop: 4 }}>
+            Zero
+          </Text>
+          <Text
+            style={{
+              fontFamily: font.regular,
+              fontSize: 13,
+              color: color.accent200,
+              lineHeight: 19,
+              marginTop: 10,
+              opacity: 0.9,
+            }}
+          >
+            {arrivedCopy()}
+          </Text>
+          {/* the only countdown in the app that counts *up* to something */}
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              borderTopWidth: 1,
+              borderTopColor: 'rgba(233, 233, 237, 0.12)',
+              marginTop: 18,
+              paddingTop: 14,
+            }}
+          >
+            <Text style={{ fontFamily: font.regular, fontSize: 13, color: color.accent200 }}>
+              Clean days lived
+            </Text>
+            <Text style={{ fontFamily: font.medium, fontSize: 20, color: color.text }}>
+              {sf.completedZeroDays} / {ZERO_DAYS_TO_FLIP}
+            </Text>
+          </View>
+        </HeroCard>
+      )}
+
       {/* plan card (S10) — now also carries progress-to-quit-day, which used
-          to be a full-width card of its own rendering a single number */}
+          to be a full-width card of its own rendering a single number.
+          Tapering only: once the budget reaches zero the forecast has nothing
+          left to forecast, and `weeksToQuitAtRate` would floor at 1 and
+          promise a quit date a week away from a user already at zero. */}
+      {mode === 'tapering' && (
       <View
         style={{
           borderRadius: radius.lg,
@@ -203,6 +331,7 @@ export function GoalScreen() {
           </Text>
         </View>
       </View>
+      )}
 
       {/* milestone card (§5.5) — the body's version of the same argument the
           plan card makes in cigarettes: here's when you stop, here's what you
@@ -284,14 +413,73 @@ export function GoalScreen() {
           style={{ fontFamily: font.regular, fontSize: 12, color: color.neutral500, marginTop: 8 }}
         >
           {unseen
-            ? 'Your longest gap ever got you here — and it stays earned. Tap for the full timeline.'
+            ? // only the short horizon banks permanently — promising a
+              // long-horizon mark "stays earned" would be a claim about
+              // sustained abstinence that stops being true on the next
+              // cigarette (§9.1)
+              earnedMilestone?.horizon === 'long'
+              ? 'Earned by staying stopped, and still running. Tap for the full timeline.'
+              : 'Your longest gap ever got you here — and it stays earned. Tap for the full timeline.'
             : nextMilestone == null
               ? 'Every milestone on the board. Tap to see them.'
               : nextMilestone.horizon === 'long'
-                ? 'Past 24 hours — the rest of the timeline counts from your last cigarette.'
+                ? // post-zero this is the main event rather than a "past 24
+                  // hours" footnote, and the next mark is a real date
+                  mode === 'postZero'
+                  ? `Next up: ${nextMilestone.label} smoke-free.`
+                  : 'Past 24 hours — the rest of the timeline counts from your last cigarette.'
                 : `Next at ${nextMilestone.label}: ${nextMilestone.body.toLowerCase()}`}
         </Text>
       </Pressable>
     </ScrollView>
+  );
+}
+
+// The hero slot, shared by all three of Goal's tenses (§10). Same deep-indigo
+// section ground and radial glow the plan card has always used — the screen's
+// story changes tense, not its furniture, which is the whole reason post-zero
+// lives on Goal rather than getting a screen of its own.
+function HeroCard({ children }: { children: React.ReactNode }) {
+  return (
+    <View
+      style={{
+        borderRadius: radius.lg,
+        backgroundColor: color.section,
+        padding: 18,
+        marginTop: 24,
+        overflow: 'hidden',
+      }}
+    >
+      <Svg
+        style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+        width="100%"
+        height="100%"
+      >
+        <Defs>
+          <RadialGradient id="heroGlow" cx="50%" cy="0%" rx="80%" ry="90%">
+            <Stop offset="0%" stopColor={color.sectionGlow} stopOpacity={0.9} />
+            <Stop offset="100%" stopColor={color.section} stopOpacity={0} />
+          </RadialGradient>
+        </Defs>
+        <Ellipse cx="50%" cy="0%" rx="80%" ry="90%" fill="url(#heroGlow)" />
+      </Svg>
+      {children}
+    </View>
+  );
+}
+
+function HeroLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <Text
+      style={{
+        fontFamily: font.medium,
+        fontSize: 10,
+        letterSpacing: 1.4,
+        textTransform: 'uppercase',
+        color: color.accent300,
+      }}
+    >
+      {children}
+    </Text>
   );
 }

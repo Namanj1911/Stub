@@ -17,7 +17,8 @@ import { useApp, useProfile } from '../AppContext';
 import { haptic } from '../haptics';
 import { ProfileButton } from '../ProfileButton';
 import { useNav } from '../navigation';
-import { copy, logToast, tomorrowNudge } from '../strings';
+import { smokeFree } from '../postzero';
+import { copy, logToast, relapseNote, tomorrowNudge } from '../strings';
 import { color, font, radius } from '../theme';
 
 export function LogScreen() {
@@ -60,6 +61,7 @@ export function LogScreen() {
   const today = entriesForDay(entries, todayKey).sort((a, b) => a.timestamp - b.timestamp);
   const total = totalSixths(today);
   const budget = budgetSixths(entries, todayKey, profile.installDayKey, profile.baselineHistory, profile.planHistory);
+  const sf = smokeFree(entries, todayKey, profile.installDayKey);
   const left = budget - total;
   // tomorrow's budget (S11) lives here rather than on Goal — it's an
   // operational number, and Goal is the narrative screen
@@ -85,7 +87,16 @@ export function LogScreen() {
     haptic.logged();
     addEntry(sixths); // optimistic, never blocked (S4)
     setNow(Date.now());
-    showToast(logToast({ priorTotal: total, budget, sixths }));
+    // A post-zero slip gets the quiet note, never the budget roast: with a
+    // budget of zero every log lands in the 'torched' pool, which would
+    // lecture the user about a budget that no longer exists at the worst
+    // possible moment (design §10 — no lecture, no ceremony).
+    //
+    // `sf` is this render's value, i.e. the mode *before* this cigarette —
+    // which is the reading we want ("you were smoke-free and slipped"). Don't
+    // recompute it from the post-log entries: the slip itself clears
+    // sf.active, and the toast would fall straight back to the budget roast.
+    showToast(sf.active ? relapseNote() : logToast({ priorTotal: total, budget, sixths }));
   };
 
   return (

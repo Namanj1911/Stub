@@ -354,6 +354,87 @@ export function milestoneCelebration(): string {
   return MILESTONE_CELEBRATIONS[CELEBRATION_ROLL];
 }
 
+// ---------------------------------------------------------------------------
+// Post-zero mode (design/HEALTH_TIMELINE.md §10, §12)
+//
+// The §8 tone rule still holds, plus one that only applies here: **a relapse
+// gets no lecture and no ceremony.** §10 is explicit — the app notes it and
+// moves on. There is no "start over" screen, no streak-broken theatre, and
+// nothing that treats the user as having failed. §9.2's "notify on gain, stay
+// silent on loss" is the same instinct; this is its in-app half.
+//
+// That is also why relapseNote() exists at all. Without it a post-zero slip
+// falls through to LOG_TOASTS, where a budget of zero puts it straight into
+// the 'torched' pool — "budget torched, we're just doing archaeology" — which
+// is a lecture, delivered at the user's lowest moment, about a budget that no
+// longer exists. Exactly the fear-selling §8 bans.
+
+// The in-between state: the plan has reached zero but the seven days that
+// earn the mode haven't been lived yet (§12).
+const ARRIVED_LINES = [
+  'Budget: zero. The plan did its part — now it is just you and the days.',
+  'The taper has landed. Nothing left to ration.',
+  'Zero on paper. Seven clean days makes it zero in practice.',
+  'The number finally ran out of room. Go be boring for a week.',
+];
+
+const ARRIVED_ROLL = Math.floor(Math.random() * ARRIVED_LINES.length);
+
+export function arrivedCopy(): string {
+  return ARRIVED_LINES[ARRIVED_ROLL];
+}
+
+const SMOKE_FREE_LINES: Record<'fresh' | 'building' | 'record', string[]> = {
+  // just flipped — the mode is new
+  fresh: [
+    'Seven days clean. The app has changed its job description.',
+    'You are out of the taper and into the part nobody warned you about: normal.',
+    'Mode switched. You are not quitting any more — you quit.',
+  ],
+  // running, short of the personal best
+  building: [
+    'The counter is doing its favourite thing: going up.',
+    'Still clean. Past you is somewhere back there, impressed.',
+    'Nothing to ration, nothing to spend. Just days.',
+  ],
+  // at the personal best
+  record: [
+    'Longest you have ever gone. The record is yours to keep breaking.',
+    'New territory, one boring day at a time.',
+    'This is the furthest you have been. Keep walking.',
+  ],
+};
+
+const SMOKE_FREE_ROLL = Math.random();
+
+export function smokeFreeCopy(streakDays: number, bestDays: number): string {
+  const state = streakDays <= 8 ? 'fresh' : streakDays >= bestDays ? 'record' : 'building';
+  const pool = SMOKE_FREE_LINES[state];
+  return pool[Math.floor(SMOKE_FREE_ROLL * pool.length)];
+}
+
+// A relapse, logged. Honest, unbothered, and over in one line — the app
+// notices and carries on. No line here may scold, mourn a streak, or suggest
+// starting over; the cumulative totals and the money didn't reset, and
+// neither should the tone.
+const RELAPSE_LINES = [
+  'Logged. The streak resets; nothing else does.',
+  'Noted, and moving on. Your totals are untouched.',
+  'Logged. One cigarette is one cigarette — not a verdict.',
+  'On the record. Tomorrow is still available.',
+];
+
+let lastRelapseLine = '';
+
+export function relapseNote(): string {
+  let line = RELAPSE_LINES[Math.floor(Math.random() * RELAPSE_LINES.length)];
+  if (line === lastRelapseLine && RELAPSE_LINES.length > 1) {
+    line = RELAPSE_LINES[(RELAPSE_LINES.indexOf(line) + 1) % RELAPSE_LINES.length];
+  }
+  lastRelapseLine = line;
+  return line;
+}
+
 // Brand-switch roast (BACKLOG P1): the app noticed, and has opinions.
 export function brandSwitchRoast(
   prev: { nicotineMg: number; estimated: boolean } | null,
