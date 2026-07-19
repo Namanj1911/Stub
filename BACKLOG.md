@@ -493,20 +493,25 @@ deliberately **not** here — deferred until after beta + PMF, see Later.
     double-celebrate one moment. First-under-budget and first-clean-day can
     land the same morning on a strong day 1; judged acceptable since it
     happens once ever.
-  - [x] **Android notification icon** — **done 2026-07-19**
+  - [x] **Android notification icon** — **done 2026-07-20**
     (`feat/android-notification-icon`): `assets/notification-icon.svg` →
     96×96 white-on-transparent PNG, plugin `icon` now set. Android masks the
     image to its alpha channel and tints it, so this is a *silhouette*
     problem, not a scaled-down logo: everything in the mark that carried
-    meaning through colour had to go. The ember's radial glow flattens to a
-    solid disc and the ember dot merges invisibly into the tip it overlaps
-    (variants with and without it were indistinguishable); the smoke wisp is
-    ~1px at status-bar size and read as fuzz; the filter band was a colour
-    change, and kept as a notch it read exactly as wide as the break, so the
-    mark looked like three loose chunks rather than one cigarette snapped in
-    two. Final icon is the two pieces and one gap — the break is the only
-    gap in the icon — rotated -30° onto the square's diagonal, which buys 26%
-    more size at the same padding since the mark is long and thin.
+    meaning through colour had to go. A first in-repo attempt (two bars, one
+    gap, rotated -30°) was rejected by the owner as not good enough; the
+    shipped icon is **option D from a fresh Claude design pass**
+    (`design_handoff_stub_app 3/assets`, see its ICONS.md) briefed with the
+    findings from that attempt. What the findings established, so nobody
+    rediscovers them: the ember's radial glow flattens to a solid disc, and
+    the ember *dot* merges invisibly into the tip while they touch — the
+    handoff's answer is to **detach the ember** and float it beyond the
+    broken half, which keeps "still lit" legible as a clean ~4px dot at
+    status-bar size; the smoke wisp is ~1px at that size and read as fuzz
+    (a smoke variant F exists in the handoff, not chosen); the filter band
+    kept as a notch read exactly as wide as the break, making three loose
+    chunks of one snapped cigarette — the shipped icon has no notch, the
+    break plus the ember gap carry the whole concept.
     Variants were compared as rendered pixels at true 24px, not at 96px:
     every decision above only becomes visible at the size it ships at.
   - **Fixed while here: the `color` tint was `#161826`**, the theme
