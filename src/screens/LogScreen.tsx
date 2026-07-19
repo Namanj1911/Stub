@@ -67,6 +67,7 @@ export function LogScreen() {
   // raises its voice once today is ≥80% spent.
   const tomorrow = tomorrowBudgetSixths(entries, todayKey, profile.installDayKey, profile.baselineHistory);
   const tomorrowLoud = total >= budget * 0.8;
+  const tomorrowDrop = Math.max(0, budget - tomorrow);
   // max timestamp, not last array element — backfills append out of
   // chronological order. ("undo last" stays last-array-element by design:
   // it undoes the most recent *action*, including a just-added backfill.)
@@ -159,33 +160,65 @@ export function LogScreen() {
           />
         </View>
 
-        {/* tomorrow's budget (S11) — one quiet line under the meter, so it
-            touches no interactive target and dodges both the FAB and the
-            scrolling list */}
-        <View style={{ marginTop: 10 }}>
+        {/* tomorrow's budget (S11) — a stat row under the meter (label left,
+            value right, per the Goal card), not a caption: as a 12px grey
+            line it read as a footnote and was missed on device. Deliberately
+            borderless — it sits directly above the log buttons, and anything
+            with a border there reads as a fourth button. Touches no
+            interactive target; dodges the FAB and the scrolling list. */}
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginTop: 14,
+          }}
+          accessible
+          accessibilityLabel={`Tomorrow's budget: ${frac(tomorrow)}${
+            tomorrowDrop > 0 ? `, down ${frac(tomorrowDrop)} from today` : ''
+          }`}
+        >
+          <Text
+            style={{
+              fontFamily: font.medium,
+              fontSize: 11,
+              letterSpacing: 1,
+              textTransform: 'uppercase',
+              color: tomorrowLoud ? color.accent300 : color.neutral500,
+            }}
+          >
+            Tomorrow
+          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 7 }}>
+            {/* the drop is the point of the number — the taper, made visible */}
+            {tomorrowDrop > 0 && (
+              <Text style={{ fontFamily: font.regular, fontSize: 12, color: color.accent300 }}>
+                −{frac(tomorrowDrop)}
+              </Text>
+            )}
+            <Text
+              style={{
+                fontFamily: font.medium,
+                fontSize: 18,
+                color: tomorrowLoud ? color.accent300 : color.text,
+              }}
+            >
+              {frac(tomorrow)}
+            </Text>
+          </View>
+        </View>
+        {tomorrowLoud && (
           <Text
             style={{
               fontFamily: font.regular,
               fontSize: 12,
-              color: tomorrowLoud ? color.accent300 : color.neutral500,
+              color: color.neutral500,
+              marginTop: 5,
             }}
-            accessibilityLabel={`Tomorrow's budget: ${frac(tomorrow)}`}
           >
-            tomorrow: {frac(tomorrow)}
+            {tomorrowNudge()}
           </Text>
-          {tomorrowLoud && (
-            <Text
-              style={{
-                fontFamily: font.regular,
-                fontSize: 12,
-                color: color.neutral500,
-                marginTop: 3,
-              }}
-            >
-              {tomorrowNudge()}
-            </Text>
-          )}
-        </View>
+        )}
 
         {/* log buttons (S1) */}
         <View style={{ flexDirection: 'row', gap: 8, marginTop: 18 }}>
