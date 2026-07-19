@@ -246,20 +246,36 @@ deliberately **not** here — deferred until after beta + PMF, see Later.
   which also removed the pattern picker. Breath-cue tick on in/out (not
   holds) kept after device test; prompt-stage tick silenced while
   breathing. Pacing lives in `BREATH_SEGMENTS` constants.
-- [ ] **Health-recovery timeline** — the single most motivating screen in
-  every leading competitor (WHO/CDC milestones, 20 min → 10 years). One
-  design decision needed first: classic timelines key off time-since-last-
-  smoke, which resets constantly in a reduction app — either render the
-  reset honestly (very roastable) or model partial recovery from actual
-  reduction (novel; no competitor does it). Milestone data needs a citable
-  source — same sourcing bar as brand MRPs.
+- [ ] **Health-recovery timeline** — **design settled 2026-07-19, see
+  `design/HEALTH_TIMELINE.md`.** The reset problem (classic timelines key
+  off time-since-last-smoke, which resets constantly in a reduction app) is
+  resolved with a hybrid: a resetting short clock anchored by longest-gap-
+  ever, a never-resetting cumulative section, and a locked post-zero
+  horizon. The always-growing number is **exposure avoided**, not healing
+  achieved — novel, and citable without extrapolating the abstinence
+  literature into partial-recovery percentages we can't source. Single
+  primary source (Surgeon General 2020).
+  The design also settled several things it forced: the timeline lands on
+  **Goal** (not Stats) once config moves to Profile, tomorrow's budget moves
+  to **Log**, the plan control becomes **presets + date picker** with the
+  date genuinely constraining the budget (today pace only projects — it
+  does not affect `budgetSeries()` at all), and post-zero is designed here.
+  Build order in §16 — five steps, each device-testable:
+  - [x] 1. Goal/Profile restructure — **built 2026-07-19**
+    (`feat/goal-profile-restructure`), awaiting device check.
+  - [ ] 2. Plan control (canonical rate, date picker, `min(adaptive, planned)`)
+  - [ ] 3. Timeline phase 1 (dataset, `src/health.ts`, Health screen,
+        milestone card, in-app achievements)
+  - [ ] 4. Post-zero mode (unlock, 7-consecutive-zero-day flip, relapse)
+  - [ ] 5. Timeline phase 2 (milestone pushes — needs the dev build)
 - [ ] **Post-zero mode** — the product story currently ends at the quit
   date; for Smoke Free/Kwit, what comes after *is* the product. At zero,
   flip into a smoke-free companion: smoke-free streak, money saved keeps
   compounding, SOS stays, a relapse is logged honestly without resetting
-  the world. Needs its own design pass — but must ship before the first
-  real cohort reaches its quit date, or we lose users at the moment the
-  app succeeds.
+  the world. **Designed 2026-07-19 as part of `design/HEALTH_TIMELINE.md`
+  §10** (it shares most of its surface with the timeline's locked section);
+  tracked as step 4 above. Still must ship before the first real cohort
+  reaches its quit date, or we lose users at the moment the app succeeds.
 
 ## Later / needs discussion
 
