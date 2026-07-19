@@ -8,7 +8,7 @@ import React from 'react';
 import { Alert, Pressable, ScrollView, Share, Text, View } from 'react-native';
 import { useApp, useProfile } from '../AppContext';
 import { brandInfo } from '../brands';
-import { Pace } from '../domain';
+import { Pace, budgetSixths, dayKey, weeksToQuit } from '../domain';
 import { haptic } from '../haptics';
 import { useNav } from '../navigation';
 import { copy } from '../strings';
@@ -25,6 +25,14 @@ export function ProfileScreen() {
   const profile = useProfile();
   const nav = useNav();
   const brand = brandInfo(profile.brandId, profile.customBrandName);
+  // Pace now lives only here (it used to be duplicated on Goal), so this
+  // control carries the weeks-to-quit comparison Goal's picker used to show.
+  const budget = budgetSixths(
+    data.entries,
+    dayKey(Date.now()),
+    profile.installDayKey,
+    profile.baselineHistory,
+  );
 
   const exportData = () => {
     Share.share({
@@ -155,6 +163,16 @@ export function ProfileScreen() {
               </Text>
               <Text style={{ fontFamily: font.regular, fontSize: 11, color: color.neutral500, marginTop: 2 }}>
                 {p.rate}
+              </Text>
+              <Text
+                style={{
+                  fontFamily: font.regular,
+                  fontSize: 11,
+                  color: selected ? color.accent300 : color.neutral500,
+                  marginTop: 4,
+                }}
+              >
+                {weeksToQuit(budget, p.id)} wks
               </Text>
             </Pressable>
           );
