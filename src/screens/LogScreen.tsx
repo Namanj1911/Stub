@@ -59,13 +59,13 @@ export function LogScreen() {
   const todayKey = dayKey(now);
   const today = entriesForDay(entries, todayKey).sort((a, b) => a.timestamp - b.timestamp);
   const total = totalSixths(today);
-  const budget = budgetSixths(entries, todayKey, profile.installDayKey, profile.baselineHistory);
+  const budget = budgetSixths(entries, todayKey, profile.installDayKey, profile.baselineHistory, profile.planHistory);
   const left = budget - total;
   // tomorrow's budget (S11) lives here rather than on Goal — it's an
   // operational number, and Goal is the narrative screen
   // (design/HEALTH_TIMELINE.md §13). The caption is always visible; it only
   // raises its voice once today is ≥80% spent.
-  const tomorrow = tomorrowBudgetSixths(entries, todayKey, profile.installDayKey, profile.baselineHistory);
+  const tomorrow = tomorrowBudgetSixths(entries, todayKey, profile.installDayKey, profile.baselineHistory, profile.planHistory);
   const tomorrowLoud = total >= budget * 0.8;
   const tomorrowDrop = Math.max(0, budget - tomorrow);
   // max timestamp, not last array element — backfills append out of

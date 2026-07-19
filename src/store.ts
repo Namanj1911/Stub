@@ -5,7 +5,16 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { BRAND_AVERAGES, DATASET_VERSION, findBrand } from './brands';
-import { BaselineRecord, Entry, Pace, PriceRecord, dayKey } from './domain';
+import {
+  BaselineRecord,
+  Entry,
+  PACE_RATE,
+  Pace,
+  PlanRecord,
+  PriceRecord,
+  budgetSixths,
+  dayKey,
+} from './domain';
 
 export type Profile = {
   // countPerDay / pricePerStick mirror the last history record (kept in sync
@@ -19,6 +28,7 @@ export type Profile = {
   triggers?: string[];
   baselineHistory: BaselineRecord[]; // ascending fromDayKey, never empty
   priceHistory: PriceRecord[]; // ascending fromTimestamp, never empty
+  planHistory: PlanRecord[]; // ascending fromDayKey, never empty
 };
 
 export type Craving = {
@@ -63,6 +73,29 @@ function migrate(parsed: Partial<AppData>): AppData {
       { fromTimestamp: 0, pricePerStick: price, brandId: profile.brandId },
     ];
     profile.pricePerStick = price;
+  }
+
+  // Seed the taper plan for installs that predate it, from the pace they
+  // already chose. Deliberately anchored at TODAY, not install day: the plan
+  // caps the budget, so back-dating it would retroactively lower past budgets
+  // and silently flip old under-budget verdicts in the streaks and heatmap.
+  // Existing history stays exactly as it was scored; the plan takes over from
+  // here. Same principle as the price seed leaving old savings alone.
+  if (!profile.planHistory?.length) {
+    const today = dayKey(Date.now());
+    profile.planHistory = [
+      {
+        fromDayKey: today,
+        rate: PACE_RATE[profile.pace],
+        startBudget: budgetSixths(
+          data.entries,
+          today,
+          profile.installDayKey,
+          profile.baselineHistory,
+          [],
+        ),
+      },
+    ];
   }
 
   // A dataset MRP revision (shipped in an app update) re-prices the user's
@@ -123,6 +156,14 @@ export function useAppData() {
           baselineHistory: [{ fromDayKey: installDayKey, countPerDay: input.countPerDay }],
           priceHistory: [
             { fromTimestamp: 0, pricePerStick: input.pricePerStick, brandId: input.brandId },
+          ],
+          // day 1's budget is the stated baseline (S13: the taper starts day 2)
+          planHistory: [
+            {
+              fromDayKey: installDayKey,
+              rate: PACE_RATE[input.pace],
+              startBudget: input.countPerDay * 6,
+            },
           ],
         },
       }));
@@ -241,11 +282,45 @@ export function useAppData() {
     [update],
   );
 
+  // The plan is effective-dated like the baseline: a new rate applies from
+  // today forward and past budgets keep the rate they were scored under.
+  // Same-day changes collapse (last write wins), so dithering between presets
+  // and dates doesn't pile up records. `startBudget` re-anchors to whatever
+  // the budget is today, so a reschedule tapers from where the user actually
+  // is rather than from an old, higher starting point.
+  const setPlanRate = useCallback(
+    (rate: number) => {
+      update((d) => {
+        if (!d.profile) return d;
+        const today = dayKey(Date.now());
+        const kept = d.profile.planHistory.filter((r) => r.fromDayKey !== today);
+        const startBudget = budgetSixths(
+          d.entries,
+          today,
+          d.profile.installDayKey,
+          d.profile.baselineHistory,
+          kept,
+        );
+        return {
+          ...d,
+          profile: {
+            ...d.profile,
+            planHistory: [...kept, { fromDayKey: today, rate, startBudget }],
+          },
+        };
+      });
+    },
+    [update],
+  );
+
+  // Pace presets are one of the two doors onto the same value (§11.2): the
+  // label is kept for display, the rate is what the math reads.
   const setPace = useCallback(
     (pace: Pace) => {
       update((d) => (d.profile ? { ...d, profile: { ...d.profile, pace } } : d));
+      setPlanRate(PACE_RATE[pace]);
     },
-    [update],
+    [update, setPlanRate],
   );
 
   // The one thing we can't undo — wipes storage and returns to onboarding.
@@ -266,6 +341,7 @@ export function useAppData() {
     setCountPerDay,
     switchBrand,
     setPace,
+    setPlanRate,
     resetAll,
   };
 }

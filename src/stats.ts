@@ -8,6 +8,7 @@
 
 import {
   BaselineRecord,
+  PlanRecord,
   Entry,
   PriceRecord,
   budgetSeries,
@@ -71,9 +72,10 @@ export function weekBars(
   todayKey: number,
   installDayKey: number,
   baselineHistory: BaselineRecord[],
+  planHistory: PlanRecord[],
 ): Bar[] {
   const week = dailyTotals(entries, todayKey, installDayKey, 7);
-  const budgets = budgetSeries(entries, todayKey, installDayKey, baselineHistory);
+  const budgets = budgetSeries(entries, todayKey, installDayKey, baselineHistory, planHistory);
   const keys = week.map((_, i) => todayKey - 6 + i);
   const max = Math.max(
     ...week.map((v) => v ?? 0),
@@ -118,9 +120,10 @@ function underBudgetCount(
   todayKey: number,
   installDayKey: number,
   baselineHistory: BaselineRecord[],
+  planHistory: PlanRecord[],
   n: number,
 ): { under: number; days: number } {
-  const budgets = budgetSeries(entries, todayKey, installDayKey, baselineHistory);
+  const budgets = budgetSeries(entries, todayKey, installDayKey, baselineHistory, planHistory);
   let under = 0;
   let days = 0;
   for (let k = Math.max(installDayKey, todayKey - n + 1); k <= todayKey; k++) {
@@ -140,8 +143,9 @@ export function underBudgetStreaks(
   todayKey: number,
   installDayKey: number,
   baselineHistory: BaselineRecord[],
+  planHistory: PlanRecord[],
 ): { current: number; best: number } {
-  const budgets = budgetSeries(entries, todayKey, installDayKey, baselineHistory);
+  const budgets = budgetSeries(entries, todayKey, installDayKey, baselineHistory, planHistory);
   let current = 0;
   let best = 0;
   for (let k = installDayKey; k <= todayKey; k++) {
@@ -182,6 +186,7 @@ export function tiles(
   todayKey: number,
   installDayKey: number,
   baselineHistory: BaselineRecord[],
+  planHistory: PlanRecord[],
   priceHistory: PriceRecord[],
   now: number,
 ): { tiles: TileData[]; trendLine: string; trendDown: boolean } {
@@ -223,7 +228,7 @@ export function tiles(
   }
 
   if (range === 'week') {
-    const u = underBudgetCount(entries, todayKey, installDayKey, baselineHistory, 7);
+    const u = underBudgetCount(entries, todayKey, installDayKey, baselineHistory, planHistory, 7);
     return {
       trendLine,
       trendDown,
@@ -248,7 +253,7 @@ export function tiles(
     prevAvg28 != null && prevAvg28 > 0
       ? Math.round(((avg28 - prevAvg28) / prevAvg28) * 100)
       : null;
-  const u28 = underBudgetCount(entries, todayKey, installDayKey, baselineHistory, 28);
+  const u28 = underBudgetCount(entries, todayKey, installDayKey, baselineHistory, planHistory, 28);
   return {
     trendLine,
     trendDown,
@@ -319,8 +324,9 @@ export function heatCells(
   todayKey: number,
   installDayKey: number,
   baselineHistory: BaselineRecord[],
+  planHistory: PlanRecord[],
 ): HeatCell[] {
-  const budgets = budgetSeries(entries, todayKey, installDayKey, baselineHistory);
+  const budgets = budgetSeries(entries, todayKey, installDayKey, baselineHistory, planHistory);
   const cells: HeatCell[] = [];
   for (let k = todayKey - 27; k <= todayKey; k++) {
     if (k < installDayKey) {

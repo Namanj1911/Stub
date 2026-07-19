@@ -60,7 +60,7 @@ export function MoneyScreen() {
 
   // projections: budget tapers weekly from here to zero. The budget's
   // pre-install fallback is the onboarding baseline, not today's.
-  const budget = budgetSixths(entries, todayKey, profile.installDayKey, profile.baselineHistory);
+  const budget = budgetSixths(entries, todayKey, profile.installDayKey, profile.baselineHistory, profile.planHistory);
   const rate = PACE_RATE[profile.pace];
   const weeks = weeksToQuit(budget, profile.pace);
   let byQuitDay = saved;

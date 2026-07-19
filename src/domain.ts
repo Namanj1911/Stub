@@ -15,6 +15,18 @@ export type Pace = 'chill' | 'steady' | 'beast';
 // edits apply from a day key; brand/price switches apply from a wall-clock
 // moment. History is append-only so money-saved never rewrites the past.
 export type BaselineRecord = { fromDayKey: number; countPerDay: number };
+
+// The taper plan (design/HEALTH_TIMELINE.md §11). Effective-dated like the
+// baseline: changing the plan must never rewrite past budgets, because
+// budgetSeries() is what streaks, the heatmap and under-budget grading are
+// scored against — a reschedule that silently flipped old verdicts would be
+// the app rewriting history.
+//
+// `rate` is sixths/week and is the canonical value: the three presets set it
+// (3/6/12 via PACE_RATE) and the date picker sets it from the distance to the
+// target. `startBudget` anchors the straight line the plan draws from
+// `fromDayKey`.
+export type PlanRecord = { fromDayKey: number; rate: number; startBudget: number };
 export type PriceRecord = {
   fromTimestamp: number; // epoch ms; the seed record uses 0 (retroactive)
   pricePerStick: number;
@@ -78,6 +90,39 @@ export function computeSavings(
     if (k > todayKey - 7) savedWeek += daySaved;
   }
   return { saved, savedWeek };
+}
+
+// The budget the plan calls for on a given day: a straight line down from
+// `startBudget` at the plan's rate, rounded to the half-cigarette the UI can
+// actually display.
+//
+// Deliberately NOT subject to budgetSeries()'s max(3) floor. That floor keeps
+// the *adaptive* budget from collapsing to zero on a quiet week, but applied
+// to the plan it would park every user at ½ a cigarette a day forever — the
+// quit date would be unreachable by construction, and post-zero mode could
+// never trigger. The plan is the one path that is allowed to reach 0.
+export function plannedBudgetFor(history: PlanRecord[], key: number): number | null {
+  if (!history.length) return null;
+  let current = history[0];
+  for (const r of history) {
+    if (r.fromDayKey <= key) current = r;
+    else break;
+  }
+  if (key < current.fromDayKey) return null;
+  const weeks = (key - current.fromDayKey) / 7;
+  return Math.max(0, Math.round((current.startBudget - current.rate * weeks) / 3) * 3);
+}
+
+// Days from `budget` to zero at `rate` sixths/week, and the rate that gets
+// from `budget` to zero by `targetDayKey` — the two directions of the same
+// fact (§11.2: one canonical value, two doors).
+export function rateForTarget(budget: number, todayKey: number, targetDayKey: number): number {
+  const weeks = Math.max(1 / 7, (targetDayKey - todayKey) / 7);
+  return Math.max(1, Math.ceil(budget / weeks));
+}
+
+export function targetKeyForRate(budget: number, todayKey: number, rate: number): number {
+  return todayKey + Math.ceil((budget / rate) * 7);
 }
 
 // sixths/day reduced per week. Retuned 2026-07-18 from ¼/½/1 cigs — ¼/wk sat
@@ -152,6 +197,7 @@ export function budgetSeries(
   todayKey: number,
   installDayKey: number,
   baselineHistory: BaselineRecord[],
+  planHistory: PlanRecord[],
 ): number[] {
   const preInstall = baselineSixthsFor(baselineHistory, installDayKey);
   const totals = new Map<number, number>();
@@ -170,6 +216,11 @@ export function budgetSeries(
     const base = baselineSixthsFor(baselineHistory, k);
     if (base !== baselineSixthsFor(baselineHistory, k - 1)) budget = base;
     budget = Math.min(budget, Math.max(3, Math.round(((window / 7) * 0.9) / 3) * 3));
+    // the plan is a ceiling, not a replacement: whichever of the two is
+    // stricter wins (§11.1(b)). The adaptive side keeps reacting to what was
+    // actually smoked; the plan keeps pulling the ceiling down toward zero.
+    const planned = plannedBudgetFor(planHistory, k);
+    if (planned != null) budget = Math.min(budget, planned);
     out.push(budget);
     window += totalFor(k) - totalFor(k - 7);
   }
@@ -181,8 +232,9 @@ export function budgetSixths(
   todayKey: number,
   installDayKey: number,
   baselineHistory: BaselineRecord[],
+  planHistory: PlanRecord[],
 ): number {
-  const series = budgetSeries(entries, todayKey, installDayKey, baselineHistory);
+  const series = budgetSeries(entries, todayKey, installDayKey, baselineHistory, planHistory);
   return series[series.length - 1];
 }
 
@@ -196,13 +248,16 @@ export function tomorrowBudgetSixths(
   todayKey: number,
   installDayKey: number,
   baselineHistory: BaselineRecord[],
+  planHistory: PlanRecord[],
 ): number {
-  const today = budgetSixths(entries, todayKey, installDayKey, baselineHistory);
+  const today = budgetSixths(entries, todayKey, installDayKey, baselineHistory, planHistory);
   const preInstall = baselineSixthsFor(baselineHistory, installDayKey);
   const avg =
     trailing7Totals(entries, todayKey + 1, installDayKey, preInstall).reduce((a, b) => a + b, 0) /
     7;
-  return Math.min(today, Math.max(3, Math.round((avg * 0.9) / 3) * 3));
+  const adaptive = Math.max(3, Math.round((avg * 0.9) / 3) * 3);
+  const planned = plannedBudgetFor(planHistory, todayKey + 1);
+  return Math.min(today, planned != null ? Math.min(adaptive, planned) : adaptive);
 }
 
 export function weeksToQuit(budget: number, pace: Pace): number {
@@ -211,6 +266,28 @@ export function weeksToQuit(budget: number, pace: Pace): number {
 
 export function quitDate(budget: number, pace: Pace, now = Date.now()): Date {
   return new Date(now + weeksToQuit(budget, pace) * 7 * 86_400_000);
+}
+
+// Rate-based equivalents. The rate is the canonical plan value (§11.2), so
+// these are what the screens should use; the Pace versions above remain for
+// the preset labels and onboarding.
+export function currentPlanRate(history: PlanRecord[]): number {
+  return history.length ? history[history.length - 1].rate : PACE_RATE.steady;
+}
+
+export function weeksToQuitAtRate(budget: number, rate: number): number {
+  return Math.max(1, Math.ceil(budget / Math.max(1, rate)));
+}
+
+export function quitDateAtRate(budget: number, rate: number, now = Date.now()): Date {
+  return new Date(now + weeksToQuitAtRate(budget, rate) * 7 * 86_400_000);
+}
+
+// Which preset, if any, a rate corresponds to — the plan control highlights a
+// preset only when the rate actually matches it, so a date-derived rate shows
+// as "custom" rather than pretending to be one of the three.
+export function paceForRate(rate: number): Pace | null {
+  return (Object.keys(PACE_RATE) as Pace[]).find((p) => PACE_RATE[p] === rate) ?? null;
 }
 
 export function fmtSince(lastAt: number | null, now = Date.now()): string {
