@@ -490,10 +490,41 @@ deliberately **not** here — deferred until after beta + PMF, see Later.
     combined, and it's the one most likely to feel creepy — ship these two,
     live with them, then decide). Health-timeline milestones are **not**
     pushed; they already celebrate in-app and pushing them would
-    double-celebrate one moment. No Android notification icon asset yet
-    (plugin `icon` unset — white-on-transparent PNG needed before Android
-    ships). First-under-budget and first-clean-day can land the same
-    morning on a strong day 1; judged acceptable since it happens once ever.
+    double-celebrate one moment. First-under-budget and first-clean-day can
+    land the same morning on a strong day 1; judged acceptable since it
+    happens once ever.
+  - [x] **Android notification icon** — **done 2026-07-19**
+    (`feat/android-notification-icon`): `assets/notification-icon.svg` →
+    96×96 white-on-transparent PNG, plugin `icon` now set. Android masks the
+    image to its alpha channel and tints it, so this is a *silhouette*
+    problem, not a scaled-down logo: everything in the mark that carried
+    meaning through colour had to go. The ember's radial glow flattens to a
+    solid disc and the ember dot merges invisibly into the tip it overlaps
+    (variants with and without it were indistinguishable); the smoke wisp is
+    ~1px at status-bar size and read as fuzz; the filter band was a colour
+    change, and kept as a notch it read exactly as wide as the break, so the
+    mark looked like three loose chunks rather than one cigarette snapped in
+    two. Final icon is the two pieces and one gap — the break is the only
+    gap in the icon — rotated -30° onto the square's diagonal, which buys 26%
+    more size at the same padding since the mark is long and thin.
+    Variants were compared as rendered pixels at true 24px, not at 96px:
+    every decision above only becomes visible at the size it ships at.
+  - **Fixed while here: the `color` tint was `#161826`**, the theme
+    *background* — almost certainly copied from the splash plugin's
+    `backgroundColor` two entries below it, where that value is correct. In
+    expo-notifications `color` is not a background; it is the accent the
+    white icon is tinted with in the tray, so the app was set to stamp
+    near-black on Android's light notification shade. Now `#9184d9` (theme
+    accent) — the P3 gold note's own reasoning applies: accent purple is the
+    app's ambient colour and says "this is Stub". 3.2:1 on a white shade,
+    past the 1.4.11 non-text minimum.
+  - ⚠ **Not device-verified**: notification icons are an Android-only surface
+    and there is no Android device or dev build yet, so nothing here has been
+    seen in a real tray. The asset was verified by decoding actual pixels
+    (96×96 RGBA, 73% genuinely transparent, every visible pixel pure white) —
+    which is the check the splash post-mortem asks for and which `hasAlpha`
+    failed to provide — but per that same post-mortem, that is not the same
+    as looking at the screen. First Android build should confirm it.
 - Product analytics for the maintainer (DAU/MAU, retention, feature usage) —
   the first feature that sends data off-device, so it drags in user consent,
   a privacy policy (DPDP), and a telemetry backend choice. Own design pass.
