@@ -358,6 +358,14 @@ deliberately **not** here — deferred until after beta + PMF, see Later.
   pixels — `hasAlpha` proves nothing; (3) config-level checks cannot
   substitute for looking at the screen. Caught only by building to the
   iOS simulator.
+- **Homebrew not on the agent's PATH (2026-07-19):** a later `npx expo
+  run:ios` failed with "CocoaPods CLI not found… spawn brew ENOENT" even
+  though `brew install cocoapods` had already been done. Both
+  `/opt/homebrew/bin/brew` and `/opt/homebrew/bin/pod` existed — the
+  non-interactive shell just doesn't load the profile that adds
+  `/opt/homebrew/bin` to PATH. Fix: `export PATH="/opt/homebrew/bin:$PATH"`
+  before `run:ios`. The error message blames the install, not the PATH,
+  which sends you off reinstalling something that is already there.
 - **Toolchain for local iOS builds (2026-07-19):** macOS system Ruby is
   2.6.10 and CocoaPods needs `ffi`, which requires Ruby >= 3.0, so
   `gem install --user-install cocoapods` fails. Fix is `brew install
