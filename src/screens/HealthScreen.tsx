@@ -33,13 +33,16 @@ import {
   cumulativeAvoided,
   fmtDuration,
   fmtMg,
+  furthestBanked,
   furthestEarned,
   gaps,
   liveMilestones,
+  milestoneRank,
   resolveMilestones,
 } from '../health';
 import { haptic } from '../haptics';
 import { Medal } from '../Medal';
+import { smokeFree } from '../postzero';
 import { useNav } from '../navigation';
 import { underBudgetCount } from '../stats';
 import { avoidedCopy, healthBehind, healthClockCopy, milestoneCelebration } from '../strings';
@@ -67,11 +70,19 @@ export function HealthScreen() {
   const resolved = resolveMilestones(g);
   const { current, next } = liveMilestones(resolved);
   const earned = furthestEarned(resolved);
+  // the record line promises permanence, so it may only cite a mark that
+  // actually is permanent — the long horizon relocks (§9.1)
+  const banked = furthestBanked(resolved);
 
   // Freeze the celebration decision at mount. The ack below lands in the same
   // commit cycle, so reading it live would tear the celebration off the
   // screen the instant it appeared.
-  const [celebrating] = useState(() => earned != null && earned.id !== data.ackedMilestoneId);
+  // Forward moves only — see milestoneRank(). A relapse relocks the long
+  // horizon and drags `earned` backwards; celebrating that would congratulate
+  // the user for slipping.
+  const [celebrating] = useState(
+    () => earned != null && milestoneRank(earned.id) > milestoneRank(data.ackedMilestoneId),
+  );
   const celebrateAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -85,7 +96,11 @@ export function HealthScreen() {
         tension: 90,
       }).start();
     }
-    ackMilestone(earned.id);
+    // keep the acknowledgement at the high-water mark: never walk it back to
+    // a lower milestone, or the higher one would celebrate a second time
+    if (milestoneRank(earned.id) > milestoneRank(data.ackedMilestoneId)) {
+      ackMilestone(earned.id);
+    }
     // Runs once per visit: `earned` is derived from logs that don't change
     // while this screen is open, and re-acking on every tick would be noise.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -121,6 +136,64 @@ export function HealthScreen() {
     d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
 
   const clockState = g.sinceLast == null ? 'none' : g.longestIsLive ? 'record' : 'building';
+
+  // §10: post-zero the long horizon stops being aspirational and becomes the
+  // main event, so it moves above the cumulative section. Its dates also stop
+  // being projections — they anchor to the actual last cigarette instead of
+  // the plan's predicted one, because the clock is genuinely running now.
+  const sf = smokeFree(entries, todayKey, profile.installDayKey);
+  const anchor = sf.active && sf.lastSmokeAt != null ? new Date(sf.lastSmokeAt) : quit;
+
+  const longHorizon = (
+    <>
+      <SectionLabel>{sf.active ? 'The road ahead' : 'The long horizon'}</SectionLabel>
+      <Text
+        style={{
+          fontFamily: font.regular,
+          fontSize: 13,
+          color: color.neutral400,
+          lineHeight: 19,
+          marginTop: 8,
+        }}
+      >
+        {sf.active ? (
+          <>
+            Counting from your last cigarette on{' '}
+            <Text style={{ color: color.accent300 }}>{fmtDate(anchor)}</Text>. These are real dates
+            now — the clock is running.
+          </>
+        ) : (
+          <>
+            These count from your last cigarette. Not your latest one — your last one. On your
+            current plan that's{' '}
+            <Text style={{ color: color.accent300 }}>{fmtDate(quit)}</Text>, so here's what's
+            waiting.
+          </>
+        )}
+      </Text>
+
+      <View style={{ gap: 8, marginTop: 12 }}>
+        {resolved
+          .filter((m) => m.horizon === 'long')
+          .map((m) => (
+            <MilestoneRow
+              key={m.id}
+              milestone={m}
+              // A locked row with a real date on it is a destination; a locked
+              // row without one is just grey. Day one, this is the only thing
+              // keeping the section from reading as a wall of nothing.
+              subtitle={
+                m.state === 'locked'
+                  ? `${sf.active ? 'on' : 'from'} ${fmtDate(
+                      new Date(anchor.getTime() + m.hours * 3_600_000),
+                    )}`
+                  : undefined
+              }
+            />
+          ))}
+      </View>
+    </>
+  );
 
   return (
     <ScrollView
@@ -319,11 +392,11 @@ export function HealthScreen() {
             >
               {g.longestIsLive && g.sinceLast != null
                 ? healthClockCopy('record')
-                : earned
+                : banked
                   ? // labels are standalone durations ("20 minutes"), so they
                     // don't work as adjectives — "the 24 hours mark" reads
                     // broken. "clear X" fits every label in the set.
-                    `Far enough to clear ${earned.label}. That one's permanent.`
+                    `Far enough to clear ${banked.label}. That one's permanent.`
                   : healthClockCopy(clockState)}
             </Text>
           </View>
@@ -341,6 +414,10 @@ export function HealthScreen() {
             <MilestoneRow key={m.id} milestone={m} />
           ))}
       </View>
+
+      {/* post-zero the horizon leads (§10): it stops being the thing you're
+          walking toward and becomes the thing that's happening */}
+      {sf.active && longHorizon}
 
       {/* ---------------------------------------------------------------- */}
       {/* §4.2 cumulative — never resets                                    */}
@@ -387,42 +464,7 @@ export function HealthScreen() {
         </>
       )}
 
-      {/* ---------------------------------------------------------------- */}
-      {/* §4.3 the long horizon — locked                                    */}
-      {/* ---------------------------------------------------------------- */}
-      <SectionLabel>The long horizon</SectionLabel>
-      <Text
-        style={{
-          fontFamily: font.regular,
-          fontSize: 13,
-          color: color.neutral400,
-          lineHeight: 19,
-          marginTop: 8,
-        }}
-      >
-        These count from your last cigarette. Not your latest one — your last one. On your current
-        plan that's{' '}
-        <Text style={{ color: color.accent300 }}>{fmtDate(quit)}</Text>, so here's what's waiting.
-      </Text>
-
-      <View style={{ gap: 8, marginTop: 12 }}>
-        {resolved
-          .filter((m) => m.horizon === 'long')
-          .map((m) => (
-            <MilestoneRow
-              key={m.id}
-              milestone={m}
-              // A locked row with a real date on it is a destination; a locked
-              // row without one is just grey. Day one, this is the only thing
-              // keeping the section from reading as a wall of nothing.
-              subtitle={
-                m.state === 'locked'
-                  ? `from ${fmtDate(new Date(quit.getTime() + m.hours * 3_600_000))}`
-                  : undefined
-              }
-            />
-          ))}
-      </View>
+      {!sf.active && longHorizon}
 
       {/* fine print — one document-level citation (§6), plus the disclaimer */}
       <Text

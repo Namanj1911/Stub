@@ -329,7 +329,51 @@ deliberately **not** here — deferred until after beta + PMF, see Later.
         Also fixed: a `HEALTH_CLOCK_LINES.building` line said "Still going",
         which is nonsense at 0m immediately after a log. No line in that pool
         may presume elapsed time; the reset stays quiet either way.
-  - [ ] 4. Post-zero mode (unlock, 7-consecutive-zero-day flip, relapse)
+  - [x] 4. Post-zero mode — **built 2026-07-19** (`feat/post-zero`),
+        awaiting device check. `src/postzero.ts` owns one question ("which
+        mode?") and the streak arithmetic; nothing is persisted, so the mode
+        is derived from `entries` on every read and a relapse is honest by
+        construction — there is no stored "you are quit now" flag that could
+        disagree with the logs.
+        **Goal now has three tenses**, not two: `tapering` → `arrived` →
+        `postZero`. The middle one was not in the design and turned out to be
+        necessary — a user whose budget has hit zero but who hasn't lived the
+        seven days is a real, common state, and the rate math floors at
+        `max(1, …)` so it would have promised "quit in 1 week" to someone
+        already at zero. All three share one `HeroCard`: the screen changes
+        tense, not furniture.
+        **Corrected a phase-3 bug this step surfaced.** §9.1 row 4 says the
+        long horizon *resets* on a relapse, but phase 1 banked both horizons
+        off longest-gap-ever. Long-horizon marks are claims about *sustained*
+        abstinence ("circulation has improved"), so they are only true while
+        the abstinence is — someone whose record fortnight was last year,
+        smoking daily since, has not halved anything. Now short banks
+        permanently and long relocks, which is also what post-zero needed.
+        Fallout: `furthestBanked()` exists because any copy promising "that
+        one's permanent" must cite a *short* mark, or it promises permanence
+        about a claim that expires on the next cigarette.
+        **Celebration is now a high-water mark** (`milestoneRank`). Caught on
+        device: because a relapse relocks the long horizon, `furthestEarned`
+        moves *backwards* (2wk → 24h), and the old `earned.id !== ackedId`
+        test read that regression as something new — the app threw a gold
+        celebration seconds after the user slipped. Exactly the ceremony §10
+        bans. Ranks are compared and the ack only ever moves forward.
+        Also: a post-zero slip bypasses `logToast` entirely (`relapseNote`).
+        With a budget of zero every log lands in the `torched` pool —
+        "budget torched, we're just doing archaeology" — a lecture about a
+        budget that no longer exists, at the user's lowest moment.
+        ⚠ **Open, needs an owner decision before real users:** a post-install
+        day with no entries counts as a zero day (the app's existing
+        convention — `domain.trailing7Totals`, "a clean day is a clean day").
+        For an engaged user that's right, but the app cannot distinguish
+        "didn't smoke" from "didn't open the app", so someone who installs,
+        logs once and goes quiet for a week gets flipped into post-zero and
+        told they're smoke-free — a claim we have no evidence for, and the
+        most trust-damaging thing this screen could get wrong. Deliberately
+        left unguarded because every fix is a design call, not a code one:
+        (a) confirmation tap on the flip, (b) require any app activity in the
+        window, (c) decay the streak after N silent days, (d) accept it and
+        say so in copy. Noted in `postzero.ts`.
   - [ ] 5. Timeline phase 2 (milestone pushes — needs the dev build)
 - [ ] **Post-zero mode** — the product story currently ends at the quit
   date; for Smoke Free/Kwit, what comes after *is* the product. At zero,

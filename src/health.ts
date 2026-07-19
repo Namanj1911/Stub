@@ -21,7 +21,6 @@ import {
   Entry,
   PriceRecord,
   baselineSixthsFor,
-  dayKey,
   entriesForDay,
   priceRecordAtEndOfDay,
   totalSixths,
@@ -220,21 +219,29 @@ export type MilestoneState = 'reached' | 'earned' | 'locked';
 
 export type ResolvedMilestone = Milestone & { state: MilestoneState };
 
-// One rule for both horizons: a milestone is earned when the longest gap ever
-// cleared it. The long-horizon ones stay locked in practice — nobody on a
-// taper goes two weeks — but they unlock honestly if someone actually does,
-// rather than being decoratively dead. That is also exactly the behaviour
-// post-zero mode needs (§10), so step 4 inherits it instead of replacing it.
+// The two horizons bank differently, and the difference is the §9.1 table.
+//
+// Short horizon banks permanently. Those milestones key off a *single*
+// cigarette, so clearing one is a fact about a day that already happened —
+// a record, and records don't un-happen.
+//
+// Long horizon does NOT bank. Those are claims about *sustained* abstinence
+// ("circulation has improved", "excess coronary risk is halved"), and they
+// are only true while the abstinence is. Someone whose record fortnight was
+// last year, smoking daily since, has not halved anything. So a relapse
+// relocks them (§9.1 row 4, §10) — which is also exactly what post-zero mode
+// needs, and it means a long-horizon row is only ever live or locked, never
+// banked.
+//
+// Phase 1 had both horizons banking off the record. That was wrong for the
+// long horizon and would have quietly printed a medical claim the user's
+// current behaviour no longer supports.
 export function resolveMilestones(g: Gaps): ResolvedMilestone[] {
   return MILESTONES.map((m) => {
     const ms = m.hours * HOUR_MS;
-    const state: MilestoneState =
-      g.sinceLast != null && g.sinceLast >= ms
-        ? 'reached'
-        : g.longestEver >= ms
-          ? 'earned'
-          : 'locked';
-    return { ...m, state };
+    if (g.sinceLast != null && g.sinceLast >= ms) return { ...m, state: 'reached' as const };
+    if (m.horizon === 'short' && g.longestEver >= ms) return { ...m, state: 'earned' as const };
+    return { ...m, state: 'locked' as const };
   });
 }
 
@@ -254,11 +261,37 @@ export function liveMilestones(resolved: ResolvedMilestone[]): {
   };
 }
 
-// The furthest milestone the record ever cleared — what the "longest gap
-// ever" line gets to claim, and the thing the celebration acknowledges.
+// The furthest milestone currently standing, banked or live — what the
+// celebration acknowledges.
 export function furthestEarned(resolved: ResolvedMilestone[]): ResolvedMilestone | null {
   const earned = resolved.filter((m) => m.state !== 'locked');
   return earned.length ? earned[earned.length - 1] : null;
+}
+
+// Milestones are ordered by `hours`, so position in MILESTONES is a rank.
+// Unknown/absent ids rank below everything, which makes "never acknowledged
+// anything" compare correctly against the first milestone.
+//
+// This exists because the acked milestone has to be a **high-water mark**,
+// not an equality check. `furthestEarned` can move *backwards* — a relapse
+// relocks the long horizon, dropping it from, say, 2 weeks to 24 hours — and
+// an `earned.id !== ackedId` test reads that regression as something new to
+// celebrate. The app would then congratulate the user seconds after they
+// slipped, which is the ceremony §10 explicitly bans and the fear-adjacent
+// tone §8 bans. Compare ranks, and only ever move forward.
+export function milestoneRank(id?: string): number {
+  if (!id) return -1;
+  return MILESTONES.findIndex((m) => m.id === id);
+}
+
+// The furthest milestone that is *permanently* banked. Only the short horizon
+// qualifies: long-horizon marks relock on a relapse, so any copy promising
+// "that one's yours forever" must ask this rather than furthestEarned(), or
+// it will promise permanence about a claim that expires the next time the
+// user smokes.
+export function furthestBanked(resolved: ResolvedMilestone[]): ResolvedMilestone | null {
+  const banked = resolved.filter((m) => m.horizon === 'short' && m.state !== 'locked');
+  return banked.length ? banked[banked.length - 1] : null;
 }
 
 // ---------------------------------------------------------------------------
