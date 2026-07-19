@@ -141,7 +141,7 @@ export function HealthScreen() {
   // main event, so it moves above the cumulative section. Its dates also stop
   // being projections — they anchor to the actual last cigarette instead of
   // the plan's predicted one, because the clock is genuinely running now.
-  const sf = smokeFree(entries, todayKey, profile.installDayKey);
+  const sf = smokeFree(entries, todayKey, profile.installDayKey, data.postZeroConfirmedFrom);
   const anchor = sf.active && sf.lastSmokeAt != null ? new Date(sf.lastSmokeAt) : quit;
 
   const longHorizon = (

@@ -59,14 +59,17 @@ const QUIET_END = 9;
 // the day. Two reasons, and the second is the important one:
 //
 // 1. At 8am, "today is under budget" is trivially true and means nothing.
-// 2. src/postzero.ts documents the app's sharpest known limitation: it cannot
-//    tell "didn't smoke" from "didn't open the app". Pushing "a smoke-free
+// 2. The app cannot tell "didn't smoke" from "didn't open the app" (the
+//    silent-day problem, written up in src/postzero.ts). Pushing "a smoke-free
 //    day!" to someone who simply stopped using the app is exactly the
-//    trust-damaging claim that comment warns about. Requiring the app to have
+//    trust-damaging claim that note warns about. Requiring the app to have
 //    been open in the *evening* of the day being judged is the cheapest real
 //    evidence of engagement we have. It doesn't fully close the hole (they
 //    could open the app at 8pm and smoke at 11pm without logging), but it
 //    turns "never opened the app" from a false positive into a silence.
+//    Post-zero mode answers the same problem differently — it asks the user
+//    to confirm rather than inferring — because a mode change can afford a
+//    tap and a push cannot.
 const EVENING_HOUR = 20;
 
 // Streak lengths worth interrupting someone for. SPEC S17 says "each week

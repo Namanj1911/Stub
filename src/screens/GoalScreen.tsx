@@ -29,13 +29,14 @@ import {
 } from '../health';
 import { Medal } from '../Medal';
 import { ZERO_DAYS_TO_FLIP, goalMode, smokeFree } from '../postzero';
-import { arrivedCopy, smokeFreeCopy } from '../strings';
+import { arrivedCopy, postZeroOfferCopy, smokeFreeCopy } from '../strings';
+import { haptic } from '../haptics';
 import { ProfileButton } from '../ProfileButton';
 import { useNav } from '../navigation';
 import { color, font, radius } from '../theme';
 
 export function GoalScreen() {
-  const { data } = useApp();
+  const { data, confirmPostZero } = useApp();
   const profile = useProfile();
   const nav = useNav();
   const entries = data.entries;
@@ -75,7 +76,7 @@ export function GoalScreen() {
   // Goal's tense (design §10). The screen's narrative job is unchanged in all
   // three modes — "where is this going" — but at zero it stops being a
   // forecast and becomes a record of arrival.
-  const sf = smokeFree(entries, todayKey, profile.installDayKey);
+  const sf = smokeFree(entries, todayKey, profile.installDayKey, data.postZeroConfirmedFrom);
   const mode = goalMode(budget, sf);
   // Smoke-free *since* is the day after the last cigarette: the first day
   // with nothing in it. Dating it from the cigarette itself would credit the
@@ -171,6 +172,69 @@ export function GoalScreen() {
               {sf.streakDays}
             </Text>
           </View>
+        </HeroCard>
+      )}
+
+      {/* ---------------------------------------------------------------- */}
+      {/* the offer — the days are lived, and the app asks rather than tells */}
+      {/* (src/postzero.ts). This is the whole silent-day guard: everything   */}
+      {/* downstream of post-zero mode hangs off one deliberate tap.          */}
+      {/* ---------------------------------------------------------------- */}
+      {mode === 'offer' && (
+        <HeroCard>
+          <HeroLabel>{sf.streakDays} days clean</HeroLabel>
+          <Text style={{ fontFamily: font.medium, fontSize: 26, color: color.text, marginTop: 4 }}>
+            Ready to call it?
+          </Text>
+          <Text
+            style={{
+              fontFamily: font.regular,
+              fontSize: 13,
+              color: color.accent200,
+              lineHeight: 19,
+              marginTop: 10,
+              opacity: 0.9,
+            }}
+          >
+            {postZeroOfferCopy()}
+          </Text>
+          {/* No decline button, deliberately: not tapping is the "no", so the
+              offer simply keeps standing and there is no refusal to store. */}
+          <Pressable
+            onPress={() => {
+              if (sf.runStartDayKey == null) return; // unreachable while eligible
+              haptic.survived();
+              confirmPostZero(sf.runStartDayKey);
+            }}
+            accessibilityRole="button"
+            accessibilityLabel={`Confirm you are smoke-free after ${sf.streakDays} clean days`}
+            style={({ pressed }) => ({
+              alignSelf: 'flex-start',
+              borderRadius: radius.md,
+              borderWidth: 1,
+              borderColor: color.gold,
+              backgroundColor: color.goldTint8,
+              paddingHorizontal: 16,
+              paddingVertical: 11,
+              marginTop: 18,
+              opacity: pressed ? 0.7 : 1,
+            })}
+          >
+            <Text style={{ fontFamily: font.medium, fontSize: 14, color: color.goldBright }}>
+              I've stopped smoking
+            </Text>
+          </Pressable>
+          <Text
+            style={{
+              fontFamily: font.regular,
+              fontSize: 12,
+              color: color.accent300,
+              lineHeight: 18,
+              marginTop: 12,
+            }}
+          >
+            Not yet? Nothing happens, and this stays here until you say so.
+          </Text>
         </HeroCard>
       )}
 
