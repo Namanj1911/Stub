@@ -16,6 +16,7 @@ import {
   dayKey,
   paceForRate,
   quitDateAtRate,
+  recentDailyAverageSixths,
   weeksToQuitAtRate,
 } from '../domain';
 import { haptic } from '../haptics';
@@ -32,7 +33,7 @@ const PACE_LABEL: { id: Pace; name: string; rate: string }[] = [
 ];
 
 export function ProfileScreen() {
-  const { data, setCountPerDay, setPace, setNotifPref, resetAll } = useApp();
+  const { data, setCountPerDay, setPace, setNotifPref, resetAll, startNewTaper } = useApp();
   const prefs = data.notifPrefs ?? DEFAULT_NOTIF_PREFS;
   const profile = useProfile();
   const nav = useNav();
@@ -66,6 +67,15 @@ export function ProfileScreen() {
   // for ever. Rendering three dead options with invented forecasts on them is
   // worse than rendering none.
   const atZero = budget <= 0;
+  // …unless the logs contradict the plan. A user at zero who is still smoking
+  // was the worst case of the one-way door: every screen told them "past the
+  // taper" while they smoked 20 a day, and nothing in the app could lift the
+  // budget back off zero. `startNewTaper` is the exit, offered only here —
+  // measured recent smoking is what decides whether to offer it, so a user who
+  // genuinely stopped keeps the plain "the taper is done" card and is never
+  // nudged back toward a taper they've finished.
+  const smokingAgain =
+    atZero && recentDailyAverageSixths(data.entries, todayKey, profile.installDayKey) > 0;
 
   const exportData = () => {
     Share.share({
@@ -172,7 +182,7 @@ export function ProfileScreen() {
       {atZero ? (
         <View style={{ backgroundColor: color.surface, borderRadius: radius.md, padding: 16 }}>
           <Text style={{ fontFamily: font.medium, fontSize: 15, color: color.text }}>
-            {copy('planDone')}
+            {copy(smokingAgain ? 'taperRestartTitle' : 'planDone')}
           </Text>
           <Text
             style={{
@@ -183,8 +193,32 @@ export function ProfileScreen() {
               lineHeight: 18,
             }}
           >
-            {copy('planDoneNote')}
+            {copy(smokingAgain ? 'taperRestartNote' : 'planDoneNote')}
           </Text>
+          {smokingAgain ? (
+            <Pressable
+              onPress={() => {
+                haptic.select();
+                startNewTaper();
+              }}
+              accessibilityRole="button"
+              accessibilityLabel={copy('taperRestartCta')}
+              style={({ pressed }) => ({
+                alignItems: 'center',
+                borderWidth: 1,
+                borderColor: color.accent,
+                backgroundColor: color.accentTint10,
+                borderRadius: radius.md,
+                paddingVertical: 12,
+                marginTop: 14,
+                transform: [{ scale: pressed ? 0.98 : 1 }],
+              })}
+            >
+              <Text style={{ fontFamily: font.medium, fontSize: 14, color: color.accent300 }}>
+                {copy('taperRestartCta')}
+              </Text>
+            </Pressable>
+          ) : null}
         </View>
       ) : (
         <>

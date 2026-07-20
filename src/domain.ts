@@ -120,6 +120,42 @@ export function plannedBudgetFor(history: PlanRecord[], key: number): number | n
   return Math.max(0, Math.round((current.startBudget - current.rate * weeks) / 3) * 3);
 }
 
+// The plan record that begins exactly on `key`, if any. budgetSeries() re-seeds
+// its taper chain on these: a plan record's `startBudget` is authoritative for
+// its own start day (see the re-seed there for why this is the only way off a
+// zero budget).
+export function planStartingOn(history: PlanRecord[], key: number): PlanRecord | null {
+  return history.find((r) => r.fromDayKey === key) ?? null;
+}
+
+// What the user is *actually* smoking lately, rounded to the half-cigarette the
+// UI displays. Unlike budgetSeries this applies no 90% taper and no monotone
+// clamp — it is a measurement, not a target, and it is what a restarted taper
+// anchors on. Pre-install days are excluded: we only do arithmetic on days we
+// watched (same rule as Money and the cumulative health section).
+//
+// Today counts, via max() rather than as another term in the mean. Two reasons,
+// and they pull the same way: today is a *partial* day, so averaging it in
+// drags the anchor below the real rate; and a relapse that happens today is
+// invisible to a trailing window that ends yesterday, which is exactly the user
+// most likely to be tapping "start a new taper". Anchoring below what someone
+// is already smoking hands them a budget they have blown before they start.
+export function recentDailyAverageSixths(
+  entries: Entry[],
+  todayKey: number,
+  installDayKey: number,
+): number {
+  const from = Math.max(installDayKey, todayKey - 7);
+  let mean = 0;
+  if (todayKey > from) {
+    let total = 0;
+    for (let k = from; k < todayKey; k++) total += totalSixths(entriesForDay(entries, k));
+    mean = total / (todayKey - from);
+  }
+  const today = totalSixths(entriesForDay(entries, todayKey));
+  return Math.round(Math.max(mean, today) / 3) * 3;
+}
+
 // NOTE: the date→rate conversion (rateForTarget/targetKeyForRate) was built
 // and removed on 2026-07-19 with the target-date picker — see BACKLOG
 // "Later". If it comes back, the rate must be fractional and the date derived
@@ -185,10 +221,11 @@ export function trailing7Totals(
 // Adaptive budget = max(½ cig, 90% of trailing 7-day average rounded to
 // nearest ½) — clamped so it only ever tapers: a day's budget never exceeds
 // the previous day's, so smoking over budget can't raise tomorrow's bar.
-// A baseline edit re-seeds the taper from its effective day (the one honest
-// way the budget may rise: "I actually smoke more than I said"). On install
-// day there is no history yet: budget = stated baseline (S13 — taper begins
-// day 2).
+// Two things re-seed the taper from their effective day — the only honest ways
+// the budget may rise. A baseline edit ("I actually smoke more than I said"),
+// and a new plan record, whose `startBudget` is authoritative for its own start
+// day. On install day there is no history yet: budget = stated baseline
+// (S13 — taper begins day 2).
 //
 // The clamp chains each day on the previous one, so per-day grading
 // (streaks, under-budget counts, heatmap) must read from this series —
@@ -217,6 +254,16 @@ export function budgetSeries(
   for (let k = installDayKey + 1; k <= todayKey; k++) {
     const base = baselineSixthsFor(baselineHistory, k);
     if (base !== baselineSixthsFor(baselineHistory, k - 1)) budget = base;
+    // A plan record re-anchors the chain on its start day. Without this the
+    // monotone clamp below makes zero a one-way door: once `budget` reaches 0
+    // no later plan can lift it, because min() only ever descends — a new pace
+    // re-anchored at startBudget 0 and a baseline edit got mined out by the
+    // still-zero plan. For an ordinary mid-taper pace change this is a no-op
+    // (setPlanRate anchors startBudget at the budget already in force today);
+    // it only bites when the anchor is deliberately higher, which is what
+    // "start a new taper" writes.
+    const restart = planStartingOn(planHistory, k);
+    if (restart) budget = restart.startBudget;
     budget = Math.min(budget, Math.max(3, Math.round(((window / 7) * 0.9) / 3) * 3));
     // the plan is a ceiling, not a replacement: whichever of the two is
     // stricter wins (§11.1(b)). The adaptive side keeps reacting to what was
