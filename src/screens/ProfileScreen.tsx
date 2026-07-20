@@ -65,13 +65,7 @@ export function ProfileScreen() {
   // budgetSeries mins against it, so every rate produces the same zero budget
   // for ever. Rendering three dead options with invented forecasts on them is
   // worse than rendering none.
-  //
-  // Dev-only preview, same pattern and same reasoning as the Log one that was
-  // reverted after its device check (7e3f410): local state overriding a single
-  // number, so it touches nothing persisted and stays out of the store object
-  // useNotificationSync reconciles from. Strip it before merging.
-  const [devZeroBudget, setDevZeroBudget] = React.useState(false);
-  const atZero = (__DEV__ && devZeroBudget) || budget <= 0;
+  const atZero = budget <= 0;
 
   const exportData = () => {
     Share.share({
@@ -192,32 +186,7 @@ export function ProfileScreen() {
             {copy('planDoneNote')}
           </Text>
         </View>
-      ) : null}
-      {__DEV__ ? (
-        <Pressable
-          onPress={() => {
-            haptic.select();
-            setDevZeroBudget((on) => !on);
-          }}
-          hitSlop={8}
-          accessibilityRole="switch"
-          accessibilityLabel="Preview the finished plan state"
-          accessibilityState={{ checked: devZeroBudget }}
-          style={{ alignSelf: 'flex-start', marginTop: 8 }}
-        >
-          <Text
-            style={{
-              fontFamily: font.regular,
-              fontSize: 12,
-              color: devZeroBudget ? color.accent300 : color.neutral500,
-              textDecorationLine: 'underline',
-            }}
-          >
-            {devZeroBudget ? 'dev: plan done' : 'dev: finish the plan'}
-          </Text>
-        </Pressable>
-      ) : null}
-      {!atZero && (
+      ) : (
         <>
       <View style={{ flexDirection: 'row', gap: 8 }}>
         {PACE_LABEL.map((p) => {
