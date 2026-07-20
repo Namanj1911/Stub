@@ -60,22 +60,7 @@ export function LogScreen() {
   const todayKey = dayKey(now);
   const today = entriesForDay(entries, todayKey).sort((a, b) => a.timestamp - b.timestamp);
   const total = totalSixths(today);
-  // Dev-only preview of the zero-budget state. Reaching it for real is a full
-  // taper away, and design/GO_LIVE.md's splash post-mortem is explicit that
-  // config-level checks are not verification — so this is the only way to see
-  // the state on a device inside a testing session.
-  //
-  // Deliberately local React state overriding one number, rather than a store
-  // flag or a seeded plan record: it touches no persisted data, so it cannot
-  // damage a real taper, and it stays out of the store object that
-  // useNotificationSync reconciles from — a faked zero budget there would
-  // schedule the real 'quit-day' push and permanently mark it announced,
-  // silencing the genuine one months later. It also resets on reload, so
-  // there is no way to get stuck in it. __DEV__ strips it from any release
-  // build (see sendPreviewNotifications for the same pattern).
-  const [devZeroBudget, setDevZeroBudget] = useState(false);
-  const realBudget = budgetSixths(entries, todayKey, profile.installDayKey, profile.baselineHistory, profile.planHistory);
-  const budget = __DEV__ && devZeroBudget ? 0 : realBudget;
+  const budget = budgetSixths(entries, todayKey, profile.installDayKey, profile.baselineHistory, profile.planHistory);
   const sf = smokeFree(entries, todayKey, profile.installDayKey, data.postZeroConfirmedFrom);
   const left = budget - total;
   // The plan is allowed to reach zero (domain.plannedBudgetFor), and once it
@@ -339,31 +324,6 @@ export function LogScreen() {
               missed one?
             </Text>
           </Pressable>
-          {/* Forces the post-taper state so it can be seen on device without
-              waiting out a real taper. Stripped from release builds. */}
-          {__DEV__ ? (
-            <Pressable
-              onPress={() => {
-                haptic.select();
-                setDevZeroBudget((on) => !on);
-              }}
-              hitSlop={10}
-              accessibilityRole="switch"
-              accessibilityLabel="Preview the zero budget state"
-              accessibilityState={{ checked: devZeroBudget }}
-            >
-              <Text
-                style={{
-                  fontFamily: font.regular,
-                  fontSize: 12,
-                  color: devZeroBudget ? color.accent300 : color.neutral500,
-                  textDecorationLine: 'underline',
-                }}
-              >
-                {devZeroBudget ? 'dev: at zero' : 'dev: zero budget'}
-              </Text>
-            </Pressable>
-          ) : null}
         </View>
 
         <Text
