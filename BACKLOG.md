@@ -13,6 +13,39 @@ without discussion.
   heatmap. *(feedback #6)* — **done 2026-07-16** (`fix/chart-baseline`): bars,
   daily-average and days-under-budget tiles, and the trend line now use real
   days only; trend shows "no trend yet" until 7 full prior days exist.
+- [x] **Log screen broke once the budget reached zero.** The plan-control
+  round made zero reachable (`plannedBudgetFor` is exempt from the adaptive
+  `max(3)` floor) and post-zero mode was built on it, but Log was never taught
+  about it: the caption printed "of a 0 budget · budget torched" at a user who
+  had smoked *nothing*, the meter laid out at `NaN%` (`total / budget` = 0/0),
+  and the tomorrow row sat permanently in its loud accent treatment with a
+  "tomorrow starts lower" nudge, because `total >= budget * 0.8` is `0 >= 0`.
+  — **done 2026-07-20** (`fix/log-zero-budget`): meter and tomorrow row retire
+  together at zero, caption switches to "past the taper · nothing logged today"
+  / "· on the record".
+  The toast guard was the real find. `logToast` grades `after >= budget * 1.5`,
+  which at zero is true of *every* log, so all of them fell into the `torched`
+  pool — and the guard only covered **confirmed** post-zero users. That left
+  `arrived` (plan just hit zero, the seven days not yet lived) getting "budget
+  torched, we're just doing archaeology" at the most fragile moment in the app.
+  Now gated on the budget being gone, not on the user having confirmed a mode:
+  confirmation is consent to a mode, not a precondition for being treated
+  decently.
+  Device-checked 2026-07-20 via a `__DEV__`-only toggle that forced the state,
+  reverted before merge (`7e3f410`). Worth repeating for other slow-to-reach
+  states: it overrode one number in local React state rather than seeding a
+  plan record, deliberately — a faked zero budget inside the store object
+  would have reached `useNotificationSync`, scheduling the real `quit-day`
+  push and permanently marking it announced, silencing the genuine one months
+  later.
+  **Same class of bug still open on Profile** — see P0 below.
+- [ ] **Profile promises a quit date to a user already at zero.**
+  `weeksToQuitAtRate` floors at `Math.max(1, …)`. Goal was explicitly guarded
+  against this ("would promise a quit date a week away from a user already at
+  zero"), Profile wasn't: at budget 0 the plan section still renders "Last
+  cigarette, at this pace: *one week from now*" and "1 wks" under all three
+  presets. Needs an arrived/post-zero state, or hide the date and week counts
+  at budget ≤ 0. Found in the 2026-07-20 review — see `REVIEW_FINDINGS.md` #3.
 
 ## P1 — core UX
 
