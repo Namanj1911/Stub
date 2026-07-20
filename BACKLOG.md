@@ -39,13 +39,38 @@ without discussion.
   push and permanently marking it announced, silencing the genuine one months
   later.
   **Same class of bug still open on Profile** — see P0 below.
-- [ ] **Profile promises a quit date to a user already at zero.**
+- [x] **Profile promised a quit date to a user already at zero.**
   `weeksToQuitAtRate` floors at `Math.max(1, …)`. Goal was explicitly guarded
   against this ("would promise a quit date a week away from a user already at
-  zero"), Profile wasn't: at budget 0 the plan section still renders "Last
+  zero"), Profile wasn't: at budget 0 the plan section rendered "Last
   cigarette, at this pace: *one week from now*" and "1 wks" under all three
-  presets. Needs an arrived/post-zero state, or hide the date and week counts
-  at budget ≤ 0. Found in the 2026-07-20 review — see `REVIEW_FINDINGS.md` #3.
+  presets. — **done 2026-07-20** (`fix/profile-zero-budget`), device-checked.
+  The presets turned out not to be merely mislabelled there but **inert**: a
+  plan record anchored at `startBudget: 0` pins `plannedBudgetFor` to 0 and
+  `budgetSeries` mins against it, so every rate yields the same permanent
+  zero. Three dead buttons wearing invented forecasts is worse than none, so
+  the section becomes a plain "the taper is done" statement. Dev toggle used
+  for the check, stripped before merge (`5c78912`).
+- [ ] **P0 — zero budget is a one-way door.** Surfaced 2026-07-20 while
+  fixing the above, by probing the real maths rather than reading it. Once
+  the plan reaches zero **nothing in the app can lift the budget back off
+  it**: a pace change re-anchors at `startBudget: 0` (so every rate stays 0),
+  and a baseline edit doesn't help either — `budgetSeries` does re-seed on a
+  baseline change but then mins against the still-zero plan. Probed: baseline
+  10 → 15 and smoking 15/day for ten days leaves the budget at **0.0**, while
+  the same relapse without a zero plan record recovers to **0.5/day**. So a
+  user who reaches zero and relapses is stuck for ever, with no exit but the
+  data-wiping reset — and both zero-budget fixes above will cheerfully say
+  "past the taper" / "the taper is done" to someone smoking 20 a day.
+  Note `domain.budgetSeries` still calls a baseline edit "the one honest way
+  the budget may rise"; that stopped being true when the plan ceiling landed.
+  **Deliberately not fixed — wants an owner decision**, since the question is
+  what *should* happen, not what the code does. Options roughly in order of
+  how much they change the model: (a) drop a `startBudget === 0` plan record
+  from the min once the user logs again; (b) let a baseline edit append a
+  fresh plan record anchored at the new baseline; (c) an explicit "start a
+  new taper" control on Profile — the best fit for the app's ask-don't-assume
+  habit (`postzero.ts`). Full write-up in `REVIEW_FINDINGS.md` #10.
 
 ## P1 — core UX
 
