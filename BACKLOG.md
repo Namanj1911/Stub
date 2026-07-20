@@ -156,6 +156,31 @@ refs re-checked against main 2026-07-20 after the taper-restart merge.
   1020/958/1005/1017. A "deterministic hash" that is merely deterministic
   silently deletes half the copy pool, and nothing about the app would look
   broken.
+  ↳ **Correction, 2026-07-20 (`feat/jest-suite`).** The collapse was real but
+  the attribution above is wrong — found by mutation-testing the new suite,
+  where the spread tests passed against a finalizer-less hash and so were
+  asserting nothing. Measuring all four combinations of `Math.imul` × finalizer
+  over 4000 real-shaped seeds, only losing **both** breaks the pool:
+
+  | `Math.imul` | finalizer | spread over the 4 nudge lines |
+  | --- | --- | --- |
+  | yes | yes | 964 / 1018 / 1031 / 987 |
+  | yes | no | 999 / 986 / 1012 / 1003 |
+  | no | yes | 1022 / 989 / 948 / 1041 |
+  | no | no | **3994 / 2 / 4 / 0** |
+
+  The without-finalizer baseline is *even*, so `Math.imul` is doing at least as
+  much of the work. The likeliest history is that the "before" code had neither
+  — a plain `*`, which overflows float64 and destroys exactly the low bits the
+  `% 4` index reads — and both steps were added in the same edit. Both stay:
+  five cheap lines, and the redundancy means either one failing alone is now
+  survivable. But the rationale comment in `strings.ts` (~line 561) still
+  credits the finalizer alone and should be corrected when something next
+  touches that file — same class as the `store.ts` note below, and the reason
+  that class is worth chasing. Full matrix in the header of `strings.test.ts`.
+  No test can catch removing the finalizer on its own, because on its own it
+  changes nothing; the tests assert the property (every line reachable, none
+  dominant), which is what actually protects the copy.
   Verified by exercising the compiled planner (the ad-hoc pattern finding #11
   wants replaced with a real runner): 200 identical replans yield one
   signature, 60 reconciles as the clock advances leave the pending nudge's
@@ -230,7 +255,7 @@ refs re-checked against main 2026-07-20 after the taper-restart merge.
 
 ### Not bugs, but recorded (finding #11)
 
-- [ ] **There is no test runner at all.** `notificationPlan.ts` and
+- [x] **There is no test runner at all.** `notificationPlan.ts` and
   `postzero.ts` both say they were kept pure "so the interesting decisions can
   be tested without a device", but `package.json` has no runner and no test
   files exist. Every verification so far has been ad-hoc: compiling a module
@@ -240,6 +265,34 @@ refs re-checked against main 2026-07-20 after the taper-restart merge.
   budget series with the plan ceiling, the two re-seeds, tomorrow prediction,
   flip/relapse arithmetic, nudge timing — is exactly what a small jest suite
   should pin down. Worth doing before the next maths change, not after.
+  — **done 2026-07-20** (`feat/jest-suite`), taken before finding #7 on exactly
+  that reasoning. 77 tests over the four pure modules: `npm test`.
+  Plain jest + ts-jest, deliberately **not** `jest-expo` — every module under
+  test is pure TypeScript with no React Native imports (`notificationPlan`'s
+  only store dependency is an `import type`, which erases), so the RN transform
+  stack would cost startup time and buy nothing. Switch presets if component or
+  hook tests ever land, not before. Type-checking the tests earned its keep
+  immediately: it caught a transposed `budgetSeries` argument in a test that
+  would otherwise have passed while asserting the wrong thing.
+  `jest.config.js` pins `TZ=Asia/Kolkata`, and this is load-bearing rather than
+  tidy: `dayKey` shifts by 4 hours *and* by `getTimezoneOffset()`, so every
+  day-key and every hour gate (quiet hours, the 8pm evening gate) means
+  something different in another zone. A runner in UTC would exercise different
+  branches and still report green. `fixtures.test.ts` asserts the zone is in
+  force so that failure is loud and local.
+  **Every test was verified by mutation** — the bug reintroduced, the suite
+  watched to fail, the mutation reverted. That was not ceremony: the first pass
+  of the copy-spread tests passed against a deliberately broken hash, i.e. it
+  was asserting nothing. Eight mutations now fail loudly (plan re-seed removed,
+  monotone clamp removed, nudge re-anchored on `now`, evening gate removed,
+  once-means-once guard removed, both hash-mixing steps removed, and the
+  finding #5 fix). A test that has never been seen red is a test that has not
+  been written yet.
+  Two characterization tests deliberately encode *current* behaviour rather
+  than desired: finding #5's install-day counting, and finding #8's bound. Both
+  say so in a comment and both name the finding, so the open bug is visible in
+  the suite instead of only in this file. When #5 lands, flip the expectations
+  rather than deleting the test.
 - [ ] **Stale rationale comment in `store.ts`** (~line 355): `ackMilestone`
   says "the earned set is derived from longest-gap-ever, which never shrinks",
   which stopped being true when the long horizon began relocking on relapse
