@@ -168,10 +168,11 @@ function planNudge(
   if (inQuietHours(fireAt)) return null; // would be stale by morning anyway
   if (dayKey(fireAt) !== todayKey) return null; // never nudge about a closed day
 
+  const id = `nudge-${todayKey}`;
   return {
-    id: `nudge-${todayKey}`,
+    id,
     fireAt,
-    ...budgetNudgeCopy(budget - spent, fireAt),
+    ...budgetNudgeCopy(budget - spent, fireAt, `${id}:${fireAt}`),
     screen: 'Log',
     milestone: false,
   };
@@ -193,11 +194,13 @@ function planMilestones(
   const add = (id: string, screen: PlannedNotification['screen']) => {
     const prior = announced.get(id);
     if (prior && prior.fireAt <= now) return; // already delivered; once means once
-    const copy = milestonePushCopy(id);
-    if (!copy) return;
     // Reuse a pending record's fire time so a reconcile at 9:30pm doesn't
-    // shunt an already-scheduled 9am push to the morning after.
-    out.push({ id, fireAt: prior?.fireAt ?? nextMorning(now), ...copy, screen, milestone: true });
+    // shunt an already-scheduled 9am push to the morning after. It also keeps
+    // the copy seed stable across reconciles, since the seed carries fireAt.
+    const fireAt = prior?.fireAt ?? nextMorning(now);
+    const copy = milestonePushCopy(id, `${id}:${fireAt}`);
+    if (!copy) return;
+    out.push({ id, fireAt, ...copy, screen, milestone: true });
   };
 
   // Quit day is a fact about the plan, not a verdict on today's logging, so
