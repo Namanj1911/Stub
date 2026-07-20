@@ -123,7 +123,7 @@ actionable summary, and each is self-contained enough to pick up alone. Line
 refs re-checked against main 2026-07-20 after the taper-restart merge.
 **Ordered by severity; agree before building, as with everything here.**
 
-- [ ] **Notification reconcile's change-detection never fires** *(medium —
+- [x] **Notification reconcile's change-detection never fires** *(medium —
   the biggest of these)*. `reconcile()` short-circuits when the planned
   schedule signature is unchanged (`src/notifications.ts:87-101`), but the
   signature includes `title`/`body` and the copy generators roll a **random
@@ -139,6 +139,38 @@ refs re-checked against main 2026-07-20 after the taper-restart merge.
   `fireAt`/day). The second also stops the reshuffling and is probably the
   right one, since a pending notification quietly rewriting itself is its own
   small dishonesty. *(finding #2)*
+  — **done 2026-07-20** (`fix/notification-signature`), second option taken.
+  `pick(pool, seed)` in `strings.ts` replaces `roll()` for push copy only (the
+  in-app pools still roll freely — nothing re-reads them); both generators take
+  a seed, and both callers pass `${id}:${fireAt}`. The signature keeps covering
+  title/body, so a nudge whose remaining-count wording genuinely changed is
+  still rescheduled. Milestone `fireAt` now resolves *before* the copy call so
+  the seed is stable across reconciles — which also means a streak broken and
+  re-earned later reads differently, same milestone, different occasion.
+  **The keeper, and it nearly shipped wrong:** the hash needs murmur3's
+  finalizer. Pools are 2–4 lines, so the index is `% 4` and reads only the
+  bottom two bits, and plain FNV-1a barely mixes those for keys differing in
+  their *tail* — which is exactly our seeds (`nudge-20654:…`,
+  `nudge-20655:…`). Without the avalanche only two of the four nudge lines
+  were reachable at all, split 910/3090 over 4000 seeds; with it,
+  1020/958/1005/1017. A "deterministic hash" that is merely deterministic
+  silently deletes half the copy pool, and nothing about the app would look
+  broken.
+  Verified by exercising the compiled planner (the ad-hoc pattern finding #11
+  wants replaced with a real runner): 200 identical replans yield one
+  signature, 60 reconciles as the clock advances leave the pending nudge's
+  copy untouched, and 12 different days still draw all 4 lines. The probe was
+  written to fail loudly if the scenario planned nothing — the first run did
+  exactly that (budget had tapered to 0.5/day, so the crossing was hours past
+  and the nudge was correctly dropped), which is the only reason the numbers
+  above mean anything.
+  ⚠ **Merged un-device-checked** (owner's call, 2026-07-20) — the second
+  deliberate exception, after `feat/postzero-confirm`. The reasoning here is
+  narrower than that one: this change is *the absence of churn*, with no new
+  surface to look at, and the copy pools it touches were already device-seen.
+  What a device still can't rule out: nothing was observed in a real OS queue,
+  so the claim "a pending notification no longer rewrites itself" rests on the
+  planner probe rather than on a phone.
 - [ ] **Re-tapping an already-selected pace preset re-anchors the plan**
   *(low/medium, but it silently costs the user taper progress)*. The pace
   chips call `setPace` unconditionally (`src/screens/ProfileScreen.tsx:233`,
