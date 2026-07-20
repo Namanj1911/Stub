@@ -8,6 +8,14 @@ const TABLE = {
   edited: 'Fixed. Revisionist history, but fine.',
   deleted: 'Deleted. We saw nothing.',
   budgetTorched: 'budget torched',
+  // Log's caption once the plan reaches zero. The budget framing retires
+  // there — "of a 0 budget · budget torched" printed the roast at a user who
+  // had smoked nothing, which is the lecture design §10 bans. Neither line
+  // may congratulate or scold: the mode is Goal's story to tell, and a slip
+  // gets noted, not judged.
+  taperDone: 'past the taper',
+  taperDoneClean: 'nothing logged today',
+  taperDoneLogged: 'on the record',
   backfilled: 'Bar night, huh. Logged — stats recomputed.',
   backfillZero: 'Add zero? Bold strategy. Tap an amount first.',
   moneyBehind:

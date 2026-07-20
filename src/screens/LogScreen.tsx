@@ -63,6 +63,13 @@ export function LogScreen() {
   const budget = budgetSixths(entries, todayKey, profile.installDayKey, profile.baselineHistory, profile.planHistory);
   const sf = smokeFree(entries, todayKey, profile.installDayKey, data.postZeroConfirmedFrom);
   const left = budget - total;
+  // The plan is allowed to reach zero (domain.plannedBudgetFor), and once it
+  // does every budget-shaped thing on this screen stops meaning anything: the
+  // meter divides by it, the caption rations against it, and the tomorrow row
+  // previews a taper that has already landed. They retire together rather than
+  // rendering 0/0. Covers `arrived` and `offer` as well as confirmed post-zero
+  // — the budget is gone in all three, whether or not the user has said so.
+  const atZero = budget <= 0;
   // tomorrow's budget (S11) lives here rather than on Goal — it's an
   // operational number, and Goal is the narrative screen
   // (design/HEALTH_TIMELINE.md §13). The caption is always visible; it only
@@ -87,16 +94,24 @@ export function LogScreen() {
     haptic.logged();
     addEntry(sixths); // optimistic, never blocked (S4)
     setNow(Date.now());
-    // A post-zero slip gets the quiet note, never the budget roast: with a
-    // budget of zero every log lands in the 'torched' pool, which would
-    // lecture the user about a budget that no longer exists at the worst
-    // possible moment (design §10 — no lecture, no ceremony).
+    // A slip at zero gets the quiet note, never the budget roast: logToast
+    // grades `after >= budget * 1.5`, which at a budget of zero is true of
+    // every log, so all of them land in the 'torched' pool — a lecture about
+    // a budget that no longer exists, at the worst possible moment (design
+    // §10 — no lecture, no ceremony).
     //
-    // `sf` is this render's value, i.e. the mode *before* this cigarette —
-    // which is the reading we want ("you were smoke-free and slipped"). Don't
-    // recompute it from the post-log entries: the slip itself clears
-    // sf.active, and the toast would fall straight back to the budget roast.
-    showToast(sf.active ? relapseNote() : logToast({ priorTotal: total, budget, sixths }));
+    // Gated on `atZero`, not just `sf.active`: the roast is most damaging in
+    // `arrived`, where the plan has just hit zero and the user hasn't earned
+    // the flip yet. Confirmation is consent to a mode, not a precondition for
+    // being treated decently.
+    //
+    // `sf`/`atZero` are this render's values, i.e. the state *before* this
+    // cigarette — which is the reading we want ("you were smoke-free and
+    // slipped"). Don't recompute from the post-log entries: the slip itself
+    // clears sf.active, and the toast falls straight back to the roast.
+    showToast(
+      sf.active || atZero ? relapseNote() : logToast({ priorTotal: total, budget, sixths }),
+    );
   };
 
   return (
@@ -145,38 +160,64 @@ export function LogScreen() {
           {frac(total)}
         </Text>
         <Text style={{ fontFamily: font.regular, fontSize: 13, color: color.neutral500, marginTop: 2 }}>
-          of a {frac(budget)} budget ·{' '}
-          <Text style={{ color: left > 0 ? color.neutral400 : color.accent300 }}>
-            {left > 0 ? `${frac(left)} left` : copy('budgetTorched')}
+          {atZero ? copy('taperDone') : `of a ${frac(budget)} budget`} ·{' '}
+          <Text
+            style={{
+              color: atZero
+                ? total === 0
+                  ? color.neutral400
+                  : color.accent300
+                : left > 0
+                  ? color.neutral400
+                  : color.accent300,
+            }}
+          >
+            {atZero
+              ? copy(total === 0 ? 'taperDoneClean' : 'taperDoneLogged')
+              : left > 0
+                ? `${frac(left)} left`
+                : copy('budgetTorched')}
           </Text>
         </Text>
 
-        {/* meter — caps at 100% (S4) */}
-        <View
-          style={{
-            height: 6,
-            borderRadius: radius.pill,
-            backgroundColor: color.neutral900,
-            marginTop: 14,
-            overflow: 'hidden',
-          }}
-        >
+        {/* meter — caps at 100% (S4). Retires at zero: `total / budget` is
+            0/0 there, which lays out as NaN%, and a bar measuring spend
+            against nothing has nothing to say. */}
+        {!atZero && (
           <View
             style={{
-              width: `${Math.min(100, (total / budget) * 100)}%`,
               height: 6,
               borderRadius: radius.pill,
-              backgroundColor: color.accent,
+              backgroundColor: color.neutral900,
+              marginTop: 14,
+              overflow: 'hidden',
             }}
-          />
-        </View>
+          >
+            <View
+              style={{
+                width: `${Math.min(100, (total / budget) * 100)}%`,
+                height: 6,
+                borderRadius: radius.pill,
+                backgroundColor: color.accent,
+              }}
+            />
+          </View>
+        )}
 
         {/* tomorrow's budget (S11) — a stat row under the meter (label left,
             value right, per the Goal card), not a caption: as a 12px grey
             line it read as a footnote and was missed on device. Deliberately
             borderless — it sits directly above the log buttons, and anything
             with a border there reads as a fourth button. Touches no
-            interactive target; dodges the FAB and the scrolling list. */}
+            interactive target; dodges the FAB and the scrolling list.
+
+            Retires at zero along with the meter: tomorrow is zero too, so the
+            row printed "Tomorrow 0" with no drop — and `total >= budget * 0.8`
+            is 0 >= 0, so it did it in the loud accent treatment with a
+            "tomorrow starts lower" nudge under it, permanently. There is no
+            taper left to preview. */}
+        {!atZero && (
+        <>
         <View
           style={{
             flexDirection: 'row',
@@ -230,9 +271,12 @@ export function LogScreen() {
             {tomorrowNudge()}
           </Text>
         )}
+        </>
+        )}
 
-        {/* log buttons (S1) */}
-        <View style={{ flexDirection: 'row', gap: 8, marginTop: 18 }}>
+        {/* log buttons (S1) — at zero they follow the caption directly, so
+            they take back the spacing the meter and tomorrow row gave up */}
+        <View style={{ flexDirection: 'row', gap: 8, marginTop: atZero ? 30 : 18 }}>
           <LogButton label="1" a11yLabel="Log one cigarette" onPress={() => log(6)} />
           <LogButton label="½" a11yLabel="Log half a cigarette" onPress={() => log(3)} />
           <LogButton label="⅓ shared" a11yLabel="Log a third, shared" onPress={() => log(2)} />
