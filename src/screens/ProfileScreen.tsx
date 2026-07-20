@@ -54,6 +54,18 @@ export function ProfileScreen() {
   const rate = currentPlanRate(profile.planHistory);
   const activePreset = paceForRate(rate);
   const target = quitDateAtRate(budget, rate, now);
+  // Once the budget reaches zero this control has nothing left to control.
+  // `weeksToQuitAtRate` floors at max(1, …), so the presets each advertised
+  // "1 wks" and the row below printed a last-cigarette date a week out — to
+  // someone whose last cigarette the plan says already happened. Goal was
+  // guarded against exactly this; Profile was not.
+  //
+  // The buttons are not merely mislabelled at zero, they are inert: a plan
+  // record anchored at startBudget 0 keeps plannedBudgetFor pinned to 0, and
+  // budgetSeries mins against it, so every rate produces the same zero budget
+  // for ever. Rendering three dead options with invented forecasts on them is
+  // worse than rendering none.
+  const atZero = budget <= 0;
 
   const exportData = () => {
     Share.share({
@@ -157,6 +169,25 @@ export function ProfileScreen() {
 
       {/* plan — presets and a target date are two doors onto one rate (§11) */}
       <SectionLabel>Your plan</SectionLabel>
+      {atZero ? (
+        <View style={{ backgroundColor: color.surface, borderRadius: radius.md, padding: 16 }}>
+          <Text style={{ fontFamily: font.medium, fontSize: 15, color: color.text }}>
+            {copy('planDone')}
+          </Text>
+          <Text
+            style={{
+              fontFamily: font.regular,
+              fontSize: 12,
+              color: color.neutral500,
+              marginTop: 6,
+              lineHeight: 18,
+            }}
+          >
+            {copy('planDoneNote')}
+          </Text>
+        </View>
+      ) : (
+        <>
       <View style={{ flexDirection: 'row', gap: 8 }}>
         {PACE_LABEL.map((p) => {
           const selected = activePreset === p.id;
@@ -221,6 +252,8 @@ export function ProfileScreen() {
           {target.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
         </Text>
       </View>
+        </>
+      )}
 
       {/* notifications (SPEC S15/S17 AC: each category is togglable) */}
       <SectionLabel>Nudges</SectionLabel>
