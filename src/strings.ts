@@ -558,13 +558,28 @@ const NUDGE_LINES: ((left: string, when: string) => string)[] = [
   (left, when) => `${when}, ${left} to go. Pace yourself or don't — we'll log it either way.`,
 ];
 
-// FNV-1a over the seed, then murmur3's finalizer. Any stable hash would do for
-// determinism — the finalizer is there for *spread*, and it is not optional:
-// our pools are 2–4 long, so the index is `% 4`, which reads only the bottom
-// two bits. FNV-1a's low bits are barely mixed for keys that differ only in
-// their tail (`nudge-20654:…`, `nudge-20655:…` — exactly our seeds), and
-// without the avalanche below only two of the four nudge lines were ever
-// reachable, split 910/3090 over 4000 seeds. With it: 1020/958/1005/1017.
+// FNV-1a over the seed (with Math.imul), then murmur3's finalizer. Any stable
+// hash would do for determinism — these two steps are there for *spread*, and
+// spread is the half that fails silently: our pools are 2–4 long, so the index
+// is `% 4` and reads only the bottom two bits. Get that wrong and lines nobody
+// ever sees are simply deleted from the app, with nothing looking broken.
+//
+// Both steps stay, but they are redundant rather than individually essential —
+// measured over 4000 real-shaped seeds (`nudge-20654:…`, `nudge-20655:…`),
+// only losing BOTH collapses the pool:
+//
+//   imul + finalizer   964 / 1018 / 1031 / 987
+//   imul only          999 /  986 / 1012 / 1003
+//   finalizer only    1022 /  989 /  948 / 1041
+//   neither           3994 /    2 /    4 /    0   <— three lines gone
+//
+// An earlier version of this comment credited the finalizer alone (and quoted
+// a 910/3090 split); the matrix above is what actually reproduces. The likely
+// history is that the code being compared against had neither — a plain `*`,
+// which overflows float64 and destroys exactly the low bits the index reads.
+// So if you are ever tempted to simplify: dropping Math.imul is the dangerous
+// one, and only while the finalizer is also gone. src/__tests__/strings.test.ts
+// asserts the property that matters (every line reachable, none dominant).
 function pick<T>(pool: T[], seed: string): T {
   let h = 0x811c9dc5;
   for (let i = 0; i < seed.length; i++) {

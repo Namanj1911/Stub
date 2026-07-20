@@ -174,10 +174,10 @@ refs re-checked against main 2026-07-20 after the taper-restart merge.
   — a plain `*`, which overflows float64 and destroys exactly the low bits the
   `% 4` index reads — and both steps were added in the same edit. Both stay:
   five cheap lines, and the redundancy means either one failing alone is now
-  survivable. But the rationale comment in `strings.ts` (~line 561) still
-  credits the finalizer alone and should be corrected when something next
-  touches that file — same class as the `store.ts` note below, and the reason
-  that class is worth chasing. Full matrix in the header of `strings.test.ts`.
+  survivable. The rationale comment in `strings.ts` was corrected on the same
+  branch to carry this matrix — same class as the `store.ts` note below (wrong
+  about *why*, which is the kind that survives longest), and the reason that
+  class is worth chasing. Full matrix also in the header of `strings.test.ts`.
   No test can catch removing the finalizer on its own, because on its own it
   changes nothing; the tests assert the property (every line reachable, none
   dominant), which is what actually protects the copy.
