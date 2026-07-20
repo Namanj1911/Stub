@@ -4,7 +4,7 @@
 // to the local-first escape hatches: export (the only backup until cloud
 // sync exists) and the confirm-guarded full reset.
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Alert, Pressable, ScrollView, Share, Text, View } from 'react-native';
 import { useApp, useProfile } from '../AppContext';
 import { brandInfo } from '../brands';
@@ -42,13 +42,22 @@ export function ProfileScreen() {
   const todayKey = dayKey(now);
   // The plan lives only here (it used to be duplicated on Goal), so this
   // control carries the weeks-to-quit comparison Goal's picker used to show.
-  const budget = budgetSixths(
+  // Dev-only preview of the relapsed-at-zero state. Reaching it for real is a
+  // full taper plus a relapse away, and design/GO_LIVE.md's splash post-mortem
+  // is explicit that config-level checks are not verification. Same shape as
+  // the LogScreen toggle used for the sibling fix (b43ffc5, reverted in
+  // 7e3f410): local React state overriding one number, touching nothing
+  // persisted, resetting on reload, stripped from release builds by __DEV__.
+  const [devRelapsedAtZero, setDevRelapsedAtZero] = useState(false);
+  const previewing = __DEV__ && devRelapsedAtZero;
+  const realBudget = budgetSixths(
     data.entries,
     todayKey,
     profile.installDayKey,
     profile.baselineHistory,
     profile.planHistory,
   );
+  const budget = previewing ? 0 : realBudget;
   // Rate is canonical (§11.2). A target-date picker as the second door onto
   // it was built and pulled before beta — see BACKLOG "Later". The presets
   // are the only door for now; the date below is derived, not editable.
@@ -75,7 +84,8 @@ export function ProfileScreen() {
   // genuinely stopped keeps the plain "the taper is done" card and is never
   // nudged back toward a taper they've finished.
   const smokingAgain =
-    atZero && recentDailyAverageSixths(data.entries, todayKey, profile.installDayKey) > 0;
+    previewing ||
+    (atZero && recentDailyAverageSixths(data.entries, todayKey, profile.installDayKey) > 0);
 
   const exportData = () => {
     Share.share({
@@ -199,6 +209,16 @@ export function ProfileScreen() {
             <Pressable
               onPress={() => {
                 haptic.select();
+                // In preview the budget is a lie held in local state, so the
+                // real budget is not zero and there is nothing to restart —
+                // writing a plan record here would re-anchor a live taper off
+                // a state the user is not actually in. The press still fires
+                // its haptic and press treatment, which is the part that needs
+                // eyes; the arithmetic is covered numerically.
+                if (previewing) {
+                  Alert.alert('Preview only', "Dev preview — the real budget isn't zero, so no plan record was written.");
+                  return;
+                }
                 startNewTaper();
               }}
               accessibilityRole="button"
@@ -334,6 +354,30 @@ export function ProfileScreen() {
           >
             <Text style={{ fontFamily: font.medium, fontSize: 13, color: color.accent300 }}>
               send a sample (dev only)
+            </Text>
+          </Pressable>
+        ) : null}
+        {/* Forces the plan section into the relapsed-at-zero state so the
+            restart card can be seen without living out a taper and a relapse.
+            Stripped from release builds. */}
+        {__DEV__ ? (
+          <Pressable
+            onPress={() => {
+              haptic.select();
+              setDevRelapsedAtZero((v) => !v);
+            }}
+            accessibilityLabel="Preview the relapsed-at-zero plan state"
+            accessibilityState={{ selected: devRelapsedAtZero }}
+            style={({ pressed }) => ({
+              borderWidth: 1,
+              borderColor: devRelapsedAtZero || pressed ? color.accent : color.neutral800,
+              borderRadius: radius.md,
+              paddingVertical: 10,
+              alignItems: 'center',
+            })}
+          >
+            <Text style={{ fontFamily: font.medium, fontSize: 13, color: color.accent300 }}>
+              dev: relapsed at zero {devRelapsedAtZero ? 'on' : 'off'}
             </Text>
           </Pressable>
         ) : null}
