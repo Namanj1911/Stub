@@ -114,6 +114,111 @@ without discussion.
   without nagging someone who has slipped. Same bar as the restart copy: state
   it, don't scold.
 
+## Bugs — code review 2026-07-20 (18→20 Jul work)
+
+Findings #2 and #4–#8 from the review of everything merged 18–20 Jul; #1, #3
+and #10 are already fixed and written up in P0 above. Full write-ups with the
+original reasoning are in `REVIEW_FINDINGS.md` — these entries are the
+actionable summary, and each is self-contained enough to pick up alone. Line
+refs re-checked against main 2026-07-20 after the taper-restart merge.
+**Ordered by severity; agree before building, as with everything here.**
+
+- [ ] **Notification reconcile's change-detection never fires** *(medium —
+  the biggest of these)*. `reconcile()` short-circuits when the planned
+  schedule signature is unchanged (`src/notifications.ts:87-101`), but the
+  signature includes `title`/`body` and the copy generators roll a **random
+  line per call** (`roll()` in `src/strings.ts` — milestone and nudge pools
+  are deliberately per-call, not per-launch). So whenever anything is
+  actually planned the signature never matches: every store write and every
+  foregrounding does a full `cancelAllScheduledNotificationsAsync` +
+  reschedule + permission check. The dampener is dead code in exactly the
+  case it exists for — it only works when the plan is empty. Scheduled copy
+  also silently reshuffles on every log.
+  Two fixes, and the choice matters: sign over `(id, fireAt)` only, or make
+  the copy deterministic per notification (seed the roll from `id` +
+  `fireAt`/day). The second also stops the reshuffling and is probably the
+  right one, since a pending notification quietly rewriting itself is its own
+  small dishonesty. *(finding #2)*
+- [ ] **Re-tapping an already-selected pace preset re-anchors the plan**
+  *(low/medium, but it silently costs the user taper progress)*. The pace
+  chips call `setPace` unconditionally (`src/screens/ProfileScreen.tsx:233`,
+  no `if (selected) return` guard), and `setPace` → `setPlanRate` always
+  writes a fresh record `{fromDayKey: today, startBudget: today's budget}`
+  (`src/store.ts`). Because `startBudget` re-anchors at the *rounded* current
+  budget, every tap discards the plan line's sub-half-cigarette progress:
+  tapping the chip you are already on pushes the next half-cig step-down out
+  by up to ~1.75 days at Steady. Browsing Profile should not delay the taper.
+  Guard on same-rate (skip the write when the rate is unchanged).
+  Note the store migration has the same visible effect once per update, where
+  it is deliberate — `migrate()` anchors the seeded plan at that day rather
+  than rewriting history — so the fix must not "correct" that too.
+  *(finding #7)*
+- [ ] **Money projects from `profile.pace`, not the canonical rate** *(low/
+  medium, latent today)*. The plan round made the rate canonical; Goal,
+  Profile and Health follow it, but `MoneyScreen` still uses
+  `PACE_RATE[profile.pace]` / `weeksToQuit(budget, profile.pace)` /
+  `quitDate(budget, profile.pace, now)`
+  (`src/screens/MoneyScreen.tsx:64-70`). Harmless while presets keep pace and
+  rate in sync — but the moment a non-preset rate exists, Money's quit day and
+  its by-quit-day savings will disagree with Goal's, and the taper-restart
+  work has now added a second writer of plan records. Switch to
+  `currentPlanRate` + the rate-based helpers. *(finding #4)*
+- [ ] **The 7-day post-zero flip counts the partial install day as clean**
+  *(low)*. `smokeFree()` runs from `installDayKey` (`src/postzero.ts:66`), so
+  the install day — nearly always partial — counts as one of the seven lived
+  zero days. `countCleanDays` in the same round excludes it for exactly this
+  reason ("a 'clean' install day usually means 'installed at 11pm'",
+  `src/notificationPlan.ts:243-252`). Someone who installs at 11pm and never
+  logs gets offered "Ready to call it?" after six whole days plus an hour.
+  The confirm gate stops it being a false *claim*, so this is a consistency
+  bug rather than a trust one — but two modules applying the same silent-day
+  reasoning differently is how the next bug gets written. Run should probably
+  start at `installDayKey + 1`. *(finding #5)*
+- [ ] **Post-zero date/count nits on Goal** *(low, two small ones)*.
+  *(a)* "Smoke-free since" can be off by one day: it shows the calendar date
+  of `lastSmokeAt + 24h` (`src/screens/GoalScreen.tsx:84-91`), so a last
+  cigarette logged between midnight and 4am — which day-keys to the previous
+  evening — yields a since-date one day *after* the first clean day-key.
+  Derive it from `runStartDayKey` to match the day-key convention used
+  everywhere else. *(b)* The offer headline overstates by one: eligibility
+  needs 7 *completed* days but the headline prints `sf.streakDays`, which
+  includes today in progress — so the card typically reads "8 days clean"
+  above copy saying "Seven days with nothing logged". Print
+  `completedZeroDays`. *(finding #6)*
+- [ ] **Tomorrow card doesn't say it's conditional** *(low, UX)*.
+  `tomorrowBudgetSixths` is arithmetically correct — verified same window,
+  same rounding, same min as the real next-day chain step
+  (`src/domain.ts:243-263`) — but it predicts *assuming no more smokes
+  today*. Smoking after checking raises the trailing average, so the number
+  the user saw can rise overnight (capped at today's budget). Observed on
+  device 2026-07-19→20: "tomorrow 4.5" became an actual 5. The maths is fine;
+  the problem is that a number which visibly climbs back up reads as a broken
+  promise. Either label it ("if you stop now: 4.5") or floor the display at
+  the last value shown that day. *(finding #8)*
+
+### Not bugs, but recorded (finding #11)
+
+- [ ] **There is no test runner at all.** `notificationPlan.ts` and
+  `postzero.ts` both say they were kept pure "so the interesting decisions can
+  be tested without a device", but `package.json` has no runner and no test
+  files exist. Every verification so far has been ad-hoc: compiling a module
+  to a scratch dir and exercising it by hand (the taper-restart fix, the
+  post-zero sweep). That has caught real bugs, but none of it is repeatable or
+  runs again when something else changes. The maths shipped this round —
+  budget series with the plan ceiling, the two re-seeds, tomorrow prediction,
+  flip/relapse arithmetic, nudge timing — is exactly what a small jest suite
+  should pin down. Worth doing before the next maths change, not after.
+- [ ] **Stale rationale comment in `store.ts`** (~line 355): `ackMilestone`
+  says "the earned set is derived from longest-gap-ever, which never shrinks",
+  which stopped being true when the long horizon began relocking on relapse
+  (`src/health.ts:239-246`). The behaviour is correct — rank comparison
+  handles it — but the comment is now wrong about *why*, which is the kind
+  that survives longest. Cheap; fold into whatever next touches the file.
+- **Process slip, for the record:** `feat/postzero-confirm` was merged without
+  the on-device check the repo rules require (`b4ed451`), the one deliberate
+  exception so far. Its offer card was still unverified on device as of this
+  review — see the ⚠ under P3 step 4.
+
 ## P1 — core UX
 
 - [x] **SOS: floating button, not a tab.** Circular floating button on the Log
