@@ -14,6 +14,7 @@ import {
   PriceRecord,
   budgetSixths,
   dayKey,
+  recentDailyAverageSixths,
 } from './domain';
 // From the pure planning module, not notifications.ts — the store must not
 // drag the native notifications module into its import graph.
@@ -341,6 +342,37 @@ export function useAppData() {
     [update],
   );
 
+  // Starts a fresh taper from where the user actually is. This is the only exit
+  // from a zero budget, and it is deliberately explicit: the app can see the
+  // contradiction (the plan says done, the logs say otherwise) but it does not
+  // get to decide that someone has relapsed — same reasoning as the post-zero
+  // confirmation tap, where the claim belongs to the party holding the evidence.
+  //
+  // Anchors on measured recent smoking, not the stale onboarding baseline and
+  // not today's budget: the budget is zero (that is the whole problem) and the
+  // baseline is a number the user stated months ago, before any of this.
+  // Floored at ½ a cigarette so the anchor is never itself another zero.
+  // Keeps the current pace — once the budget is off zero the ordinary preset
+  // control comes back and can change it.
+  const startNewTaper = useCallback(() => {
+    update((d) => {
+      if (!d.profile) return d;
+      const today = dayKey(Date.now());
+      const kept = d.profile.planHistory.filter((r) => r.fromDayKey !== today);
+      const startBudget = Math.max(
+        3,
+        recentDailyAverageSixths(d.entries, today, d.profile.installDayKey),
+      );
+      return {
+        ...d,
+        profile: {
+          ...d.profile,
+          planHistory: [...kept, { fromDayKey: today, rate: PACE_RATE[d.profile.pace], startBudget }],
+        },
+      };
+    });
+  }, [update]);
+
   // Pace presets are one of the two doors onto the same value (§11.2): the
   // label is kept for display, the rate is what the math reads.
   const setPace = useCallback(
@@ -417,6 +449,7 @@ export function useAppData() {
     switchBrand,
     setPace,
     setPlanRate,
+    startNewTaper,
     ackMilestone,
     confirmPostZero,
     setNotifPref,

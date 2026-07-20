@@ -16,14 +16,27 @@ const TABLE = {
   taperDone: 'past the taper',
   taperDoneClean: 'nothing logged today',
   taperDoneLogged: 'on the record',
-  // Profile's plan section at zero. Says nothing about restarting a taper:
-  // verified 2026-07-20 that nothing in the app can lift the budget back off
-  // zero — not a pace change, not a baseline edit — so any "you can start
-  // again by…" line here would be a promise the app does not keep. See
-  // BACKLOG P0 for the underlying one-way-door bug.
+  // Profile's plan section at zero, for a user whose logs agree they're done.
+  // This pair said nothing about restarting because until 2026-07-20 nothing
+  // could: zero was a one-way door, so any "you can start again by…" line was a
+  // promise the app didn't keep. `startNewTaper` is now that exit, but it is
+  // offered only to a user who is actually smoking again (see taperRestart*) —
+  // dangling a restart in front of someone who has genuinely stopped invites
+  // them back to a taper they no longer need.
   planDone: 'The taper is done.',
   planDoneNote:
     "Your plan stepped the budget all the way down to zero, so there's no pace left to set. Goal has the rest of the story.",
+  // Shown instead of the pair above when the budget is zero but the logs say
+  // otherwise. Must not congratulate and must not scold: the user is looking at
+  // this screen because the app has been telling them the taper is done while
+  // they've been smoking, which is the app's error to own, not theirs. It
+  // states the contradiction and offers the door — no streak-shaming, and
+  // nothing framed as starting over from scratch.
+  taperRestartTitle: 'Your plan says done. Your logs disagree.',
+  taperRestartNote:
+    "The taper ran to zero, but you've been smoking since — so the budget stopped meaning anything. Start a new one and it'll pick up from what you're actually smoking now, not from a number you gave us months ago.",
+  taperRestartCta: 'Start a new taper',
+  taperRestartDone: 'New taper started — budget picks up from here.',
   backfilled: 'Bar night, huh. Logged — stats recomputed.',
   backfillZero: 'Add zero? Bold strategy. Tap an amount first.',
   moneyBehind:
