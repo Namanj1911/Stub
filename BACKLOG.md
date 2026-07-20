@@ -51,7 +51,7 @@ without discussion.
   zero. Three dead buttons wearing invented forecasts is worse than none, so
   the section becomes a plain "the taper is done" statement. Dev toggle used
   for the check, stripped before merge (`5c78912`).
-- [ ] **P0 — zero budget is a one-way door.** Surfaced 2026-07-20 while
+- [x] **P0 — zero budget is a one-way door.** Surfaced 2026-07-20 while
   fixing the above, by probing the real maths rather than reading it. Once
   the plan reaches zero **nothing in the app can lift the budget back off
   it**: a pace change re-anchors at `startBudget: 0` (so every rate stays 0),
@@ -64,13 +64,55 @@ without discussion.
   "past the taper" / "the taper is done" to someone smoking 20 a day.
   Note `domain.budgetSeries` still calls a baseline edit "the one honest way
   the budget may rise"; that stopped being true when the plan ceiling landed.
-  **Deliberately not fixed — wants an owner decision**, since the question is
-  what *should* happen, not what the code does. Options roughly in order of
-  how much they change the model: (a) drop a `startBudget === 0` plan record
-  from the min once the user logs again; (b) let a baseline edit append a
-  fresh plan record anchored at the new baseline; (c) an explicit "start a
-  new taper" control on Profile — the best fit for the app's ask-don't-assume
-  habit (`postzero.ts`). Full write-up in `REVIEW_FINDINGS.md` #10.
+  *(Comment corrected in the fix below — there are now two honest ways, and
+  they are the two re-seeds.)*
+  Options were (a) drop a `startBudget === 0` plan record from the min once
+  the user logs again; (b) let a baseline edit append a fresh plan record
+  anchored at the new baseline; (c) an explicit "start a new taper" control on
+  Profile. Full write-up in `REVIEW_FINDINGS.md` #10.
+  — **owner chose (c), done 2026-07-20** (`fix/taper-restart`), device-checked.
+  Both implicit options were rejected for the same reason the post-zero
+  confirmation tap exists: the app can *see* the contradiction but does not get
+  to decide that someone has relapsed, and a budget that reappears on its own
+  is a change the user never asked for and cannot account for.
+  **The root cause was deeper than this entry first recorded, and this is the
+  keeper:** appending a plan record is *not enough*. `budgetSeries`'s taper
+  chain only ever descends, so once `budget` reaches 0 `min()` can never
+  recover it — which is why a new pace *and* a baseline edit both died. The fix
+  is a **re-seed**: a plan record's `startBudget` is authoritative for its own
+  start day, exactly as a baseline edit already re-seeded one line above. It is
+  a no-op for ordinary mid-taper pace changes, since `setPlanRate` anchors at
+  the budget already in force — verified by asserting the entire prior series
+  stays byte-identical, so no past day is silently re-graded.
+  Two design calls made in the build: the new taper anchors on **measured**
+  recent smoking (`recentDailyAverageSixths`), not the stale onboarding
+  baseline and not today's budget (which is zero — the whole problem); and it
+  counts today via `max()` rather than as another term in the mean, because
+  today is a *partial* day and a relapse that happened today is invisible to a
+  window ending yesterday, which is exactly the user reaching for the button.
+  Anchoring below what someone is already smoking hands them a budget they have
+  blown before they start.
+  The control is offered only when the budget is zero **and** measured smoking
+  disagrees, so a user who genuinely stopped keeps the plain "the taper is
+  done" card and is never nudged back toward a taper they have finished.
+  Verified numerically against the compiled domain module — the bug is
+  reproduced *first* (this entry's own scenario lands at 0.0/day, and both dead
+  ends reproduce), then recovery to 13.5/day with the adaptive taper still
+  biting. Dev toggle used for the device check, reverted before merge
+  (`aca7b6e`); unlike its predecessor the restart button was **inert while
+  previewing**, since the previewed budget is a lie held in local state and
+  writing a plan record would have re-anchored a live taper off a state the
+  owner was not in.
+- [ ] **The restart is only discoverable on Profile.** Fallout from the
+  fix above, deliberately left open. A relapsed user still reads "past the
+  taper" on Log and "the taper is done" on Goal until they happen to open
+  Profile and find the card — so the one screen that now tells the truth is the
+  one they have no reason to visit. Inherent to choosing the explicit option
+  (the implicit ones needed no discovery), and not a bug in it. Wants a design
+  call rather than a patch: which surface points at it (Goal is the likely one
+  — it already owns the taper's tense), and copy that flags the contradiction
+  without nagging someone who has slipped. Same bar as the restart copy: state
+  it, don't scold.
 
 ## P1 — core UX
 
