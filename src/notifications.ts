@@ -84,6 +84,12 @@ let lastSignature: string | null = null;
 // Reconcile stands down briefly after a preview.
 let previewUntil = 0;
 
+// Covers the copy as well as the timing, so a nudge whose remaining-count
+// wording changed is genuinely rescheduled. That only works because push copy
+// is picked deterministically from (id, fireAt) — see strings.ts. While it was
+// rolled at random this signature could never match whenever anything was
+// planned, and the short-circuit below was dead in exactly the case it exists
+// for: every store write cancelled and rebuilt the entire schedule.
 function signature(planned: PlannedNotification[]): string {
   return JSON.stringify(planned.map((n) => [n.id, n.fireAt, n.title, n.body]));
 }
@@ -194,9 +200,16 @@ export async function sendPreviewNotifications(): Promise<boolean> {
   previewUntil = Date.now() + 45_000;
   lastSignature = null; // the real schedule gets rebuilt once the window closes
 
+  // Seeded on the clock so consecutive presses show different lines — the
+  // point of the preview is to see the pool, and a preview is not a scheduled
+  // notification anything reconciles against.
+  const previewSeed = String(Date.now());
   const samples = [
-    { ...budgetNudgeCopy(9, Date.now()), screen: 'Log' },
-    { ...(milestonePushCopy('first-clean-day') ?? { title: '', body: '' }), screen: 'Stats' },
+    { ...budgetNudgeCopy(9, Date.now(), previewSeed), screen: 'Log' },
+    {
+      ...(milestonePushCopy('first-clean-day', previewSeed) ?? { title: '', body: '' }),
+      screen: 'Stats',
+    },
   ];
   for (let i = 0; i < samples.length; i++) {
     await Notifications.scheduleNotificationAsync({

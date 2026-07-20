@@ -538,8 +538,18 @@ export function setupReaction(countPerDay: number): string {
 //    screen next to the user's name. Roast the budget, not the smoker.
 // 4. Two lines, max. iOS truncates a collapsed banner hard.
 //
-// Rolled per call rather than per launch: unlike the in-app pools, two
-// notifications of the same kind are days apart, so a repeat is invisible.
+// Picked deterministically from the notification's own identity, not rolled.
+// The in-app pools roll freely because nothing re-reads them; a scheduled
+// notification is different — reconcile() rebuilds the whole schedule from
+// scratch on every store write, so a random roll handed the same push a
+// different line every pass. That quietly rewrote the wording of something
+// already sitting in the OS queue, and it defeated reconcile()'s own
+// change-detection, whose signature covers title and body: nothing ever
+// matched while anything was planned, so every write cancelled and rebuilt
+// the entire schedule. Seeding from (id, fireAt) makes the copy a pure
+// function of the notification. Variety survives — two notifications differ
+// because their seeds differ, not because time passed between two reads of
+// the same one.
 
 const NUDGE_LINES: ((left: string, when: string) => string)[] = [
   (left, when) => `${left} left, and it's only ${when}.`,
@@ -548,7 +558,26 @@ const NUDGE_LINES: ((left: string, when: string) => string)[] = [
   (left, when) => `${when}, ${left} to go. Pace yourself or don't — we'll log it either way.`,
 ];
 
-const roll = <T,>(pool: T[]): T => pool[Math.floor(Math.random() * pool.length)];
+// FNV-1a over the seed, then murmur3's finalizer. Any stable hash would do for
+// determinism — the finalizer is there for *spread*, and it is not optional:
+// our pools are 2–4 long, so the index is `% 4`, which reads only the bottom
+// two bits. FNV-1a's low bits are barely mixed for keys that differ only in
+// their tail (`nudge-20654:…`, `nudge-20655:…` — exactly our seeds), and
+// without the avalanche below only two of the four nudge lines were ever
+// reachable, split 910/3090 over 4000 seeds. With it: 1020/958/1005/1017.
+function pick<T>(pool: T[], seed: string): T {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < seed.length; i++) {
+    h ^= seed.charCodeAt(i);
+    h = Math.imul(h, 0x01000193);
+  }
+  h ^= h >>> 16;
+  h = Math.imul(h, 0x85ebca6b);
+  h ^= h >>> 13;
+  h = Math.imul(h, 0xc2b2ae35);
+  h ^= h >>> 16;
+  return pool[(h >>> 0) % pool.length];
+}
 
 // "3pm" / "11am" — the hour is the point ("it's only 3pm"), minutes are noise.
 function fmtHour(timestamp: number): string {
@@ -564,6 +593,7 @@ function fmtHour(timestamp: number): string {
 export function budgetNudgeCopy(
   remainingSixths: number,
   fireAt: number,
+  seed: string,
 ): { title: string; body: string } {
   // frac() renders sixths as ⅓/½/1½ etc. A bare fraction reads wrong with a
   // plural noun ("½ cigarettes"), so anything under a whole one gets "a".
@@ -573,7 +603,7 @@ export function budgetNudgeCopy(
       : remainingSixths < 6
         ? `${frac(remainingSixths)} of a cigarette`
         : `${frac(remainingSixths)} cigarettes`;
-  return { title: 'Budget check', body: roll(NUDGE_LINES)(left, fmtHour(fireAt)) };
+  return { title: 'Budget check', body: pick(NUDGE_LINES, seed)(left, fmtHour(fireAt)) };
 }
 
 // S17 milestones + the milestone roasts (BACKLOG "Later", decided 2026-07-17).
@@ -629,14 +659,20 @@ const STREAK_PUSH: Record<number, string[]> = {
   ],
 };
 
-export function milestonePushCopy(id: string): { title: string; body: string } | null {
+// `seed` should carry the fire time as well as the id, so a streak that is
+// broken and later re-earned reads differently the second time — same
+// milestone, genuinely different occasion.
+export function milestonePushCopy(
+  id: string,
+  seed: string,
+): { title: string; body: string } | null {
   const streak = id.match(/^streak-(\d+)$/);
   if (streak) {
     const n = Number(streak[1]);
     const pool = STREAK_PUSH[n];
     if (!pool) return null;
-    return { title: `${n} days under budget`, body: roll(pool) };
+    return { title: `${n} days under budget`, body: pick(pool, seed) };
   }
   const m = MILESTONE_PUSH[id];
-  return m ? { title: m.title, body: roll(m.lines) } : null;
+  return m ? { title: m.title, body: pick(m.lines, seed) } : null;
 }
