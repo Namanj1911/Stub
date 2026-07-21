@@ -99,8 +99,8 @@ of the 90-day rebuild treadmill.
 | Asset | Status |
 |---|---|
 | App icon + splash | **Done** — assets exported, wired in `app.json` |
-| Privacy policy URL | ☐ One static page; GitHub Pages is free and fine |
-| Support channel URL + email | ☐ Required listing field — see §8.2 |
+| Privacy policy URL | **Done** — `docs/index.html` in the repo; owner enables GitHub Pages (main, `/docs`) → `https://namanj1911.github.io/Stub/` |
+| Support channel URL + email | **Done** — `stubapp.help@gmail.com` (created 2026-07-22; forwards to owner, 2FA); same page serves as support URL |
 | Screenshots | ☐ 6.7" and 6.5" iPhone sets minimum; shoot from the dev build |
 | Store description | ☐ Cessation-framed, one health-disclaimer line, no medical claims |
 
@@ -162,10 +162,10 @@ Asked 2026-07-21; answers are decisions unless marked open.
 ### 7.2 "Do I need a separate mailbox / mail IDs?"
 
 **Yes, one address** — the support field in the listing is mandatory, and it
-becomes the DPDP grievance contact later. A dedicated address
-(`stub.app.help@gmail.com` or similar; a custom domain is nice-to-have, not
-required) keeps support out of the personal inbox and survives handing
-support to anyone else. Same address goes on the privacy-policy page.
+becomes the DPDP grievance contact later. **Created 2026-07-22:
+`stubapp.help@gmail.com`** (personal Google account named "Stub Support",
+forwarding to the owner's inbox, 2FA on; a custom domain stays
+nice-to-have, not required). Same address is on the privacy-policy page.
 App Store Connect correspondence itself arrives at the Apple ID used to
 enroll — that stays the owner's personal one.
 
@@ -291,8 +291,9 @@ their own design/discussion pass first.
    retire the Expo Go constraint and the SDK 54 pin question.
 4. ✅ Notifications S15–S17 — shipped.
 5. ☐ Sentry crash reporting (small; alongside step 3).
-6. ☐ Support mailbox + privacy-policy/support static page (one GitHub Pages
-   site — needed by step 8, cheap to do early).
+6. ✅ Support mailbox (`stubapp.help@gmail.com`) + privacy/support page
+   (`docs/index.html`, 2026-07-22). Last click: owner enables GitHub Pages
+   (repo Settings → Pages → deploy from `main`, folder `/docs`).
 7. ☐ TestFlight internal (owner + a few friends) — first real-user feedback,
    via TestFlight's built-in feedback. ⚠ Optional in-app feedback row
    (§7.4) discussed/built here if wanted.
