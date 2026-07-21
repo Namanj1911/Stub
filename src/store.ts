@@ -14,6 +14,7 @@ import {
   PriceRecord,
   budgetSixths,
   dayKey,
+  planHistoryWithRate,
   recentDailyAverageSixths,
 } from './domain';
 // From the pure planning module, not notifications.ts — the store must not
@@ -321,22 +322,17 @@ export function useAppData() {
     (rate: number) => {
       update((d) => {
         if (!d.profile) return d;
-        const today = dayKey(Date.now());
-        const kept = d.profile.planHistory.filter((r) => r.fromDayKey !== today);
-        const startBudget = budgetSixths(
+        const planHistory = planHistoryWithRate(
+          d.profile.planHistory,
+          rate,
+          dayKey(Date.now()),
           d.entries,
-          today,
           d.profile.installDayKey,
           d.profile.baselineHistory,
-          kept,
         );
-        return {
-          ...d,
-          profile: {
-            ...d.profile,
-            planHistory: [...kept, { fromDayKey: today, rate, startBudget }],
-          },
-        };
+        // Same reference means the rate was unchanged — don't re-anchor the plan.
+        if (planHistory === d.profile.planHistory) return d;
+        return { ...d, profile: { ...d.profile, planHistory } };
       });
     },
     [update],

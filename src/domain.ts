@@ -324,6 +324,29 @@ export function currentPlanRate(history: PlanRecord[]): number {
   return history.length ? history[history.length - 1].rate : PACE_RATE.steady;
 }
 
+// Effective-dated plan write (§11.2). Returns the history to persist for
+// `rate` taking effect today. Re-selecting the rate already in force returns
+// the SAME array reference — a signal to the store to skip the write. This
+// matters because a fresh record re-anchors `startBudget` to today's rounded
+// budget, restarting the sub-half-cigarette progress and pushing the next
+// step-down out by up to ~1.75 days; without the guard, merely browsing the
+// pace chips (or re-confirming the same target date) silently delays the taper.
+// A genuine rate change collapses same-day (last write wins) so dithering
+// between presets doesn't pile up records.
+export function planHistoryWithRate(
+  history: PlanRecord[],
+  rate: number,
+  todayKey: number,
+  entries: Entry[],
+  installDayKey: number,
+  baselineHistory: BaselineRecord[],
+): PlanRecord[] {
+  if (currentPlanRate(history) === rate) return history;
+  const kept = history.filter((r) => r.fromDayKey !== todayKey);
+  const startBudget = budgetSixths(entries, todayKey, installDayKey, baselineHistory, kept);
+  return [...kept, { fromDayKey: todayKey, rate, startBudget }];
+}
+
 export function weeksToQuitAtRate(budget: number, rate: number): number {
   return Math.max(1, Math.ceil(budget / Math.max(1, rate)));
 }
