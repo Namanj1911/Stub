@@ -12,6 +12,7 @@ import {
   Pace,
   PlanRecord,
   PriceRecord,
+  budgetHoldOnLog,
   budgetSixths,
   dayKey,
   planHistoryWithRate,
@@ -72,7 +73,23 @@ export type AppData = {
   // what keeps a relapse honest — the value stops matching the live run by
   // itself. Absent on every install that has never been asked.
   postZeroConfirmedFrom?: number;
+  // The budget level (sixths) at which we last showed the "your taper paused"
+  // sheet (src/domain.ts budgetHoldOnLog, src/screens/BudgetHoldSheet). Dedup,
+  // not truth: the budget only ever descends between re-anchors, so distinct
+  // stalls sit at strictly lower levels — storing the level we announced makes
+  // the sheet fire once per stall episode rather than on every over-budget log.
+  budgetHoldNoticedAt?: number;
+  // Transient one-shot signal that a just-logged cigarette held the budget flat
+  // (payload for the sheet). Persisted so an optimistic write can't drop it and
+  // so it survives the reload after logging; cleared when the sheet is
+  // dismissed. Null/absent means nothing to show.
+  pendingHoldNotice?: HoldNotice | null;
 };
+
+// What the budget-holding sheet needs to render: the level the budget is
+// holding at, and the lower level it would have stepped down to but for this
+// cigarette (both sixths). Frozen at log time so the copy can't drift.
+export type HoldNotice = { budget: number; wouldHaveBeen: number };
 
 const KEY = 'stub/v1';
 
@@ -286,10 +303,43 @@ export function useAppData() {
         timestamp,
         ...(backfilled ? { backfilled: true } : {}),
       };
-      update((d) => ({ ...d, entries: [...d.entries, entry] }));
+      update((d) => {
+        const entries = [...d.entries, entry];
+        // Did this cigarette hold the budget flat that was going to step down?
+        // Only for a live "I just smoked" log: a backfill corrects the past and
+        // must not pop a "your taper paused" sheet, and the signal is about the
+        // day the smoke lands on, so it has to be today. Guard on the profile
+        // too — no baseline/plan history means no budget chain to reason about.
+        const today = dayKey(Date.now());
+        if (d.profile && !backfilled && dayKey(timestamp) === today) {
+          const { held, budget, wouldHaveBeen } = budgetHoldOnLog(
+            d.entries,
+            entries,
+            today,
+            d.profile.installDayKey,
+            d.profile.baselineHistory,
+            d.profile.planHistory,
+          );
+          // Fire once per stall episode: suppress if we already announced a hold
+          // at this exact budget level (the level is stable for the whole stall).
+          if (held && d.budgetHoldNoticedAt !== budget) {
+            return {
+              ...d,
+              entries,
+              budgetHoldNoticedAt: budget,
+              pendingHoldNotice: { budget, wouldHaveBeen },
+            };
+          }
+        }
+        return { ...d, entries };
+      });
     },
     [update],
   );
+
+  const dismissHoldNotice = useCallback(() => {
+    update((d) => (d.pendingHoldNotice ? { ...d, pendingHoldNotice: null } : d));
+  }, [update]);
 
   const undoLast = useCallback(() => {
     update((d) => ({ ...d, entries: d.entries.slice(0, -1) }));
@@ -437,6 +487,7 @@ export function useAppData() {
     loaded,
     completeSetup,
     addEntry,
+    dismissHoldNotice,
     undoLast,
     editEntry,
     removeEntry,

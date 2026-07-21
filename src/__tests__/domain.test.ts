@@ -11,6 +11,7 @@
 // a run. Sixths throughout (NFR2): 6 = one cigarette, 3 = a half.
 
 import {
+  budgetHoldOnLog,
   budgetSeries,
   budgetSixths,
   currentPlanRate,
@@ -236,6 +237,63 @@ describe('tomorrowBudgetSixths', () => {
       const t = tomorrowBudgetSixths(soFar, today, I, b10, [plan(I, 6, 60)]);
       expect(t).toBeLessThanOrEqual(budgetSixths(soFar, today, I, b10, [plan(I, 6, 60)]));
     }
+  });
+});
+
+// The honest "your taper paused" signal (budget-holding notice). Fires only for
+// the cigarette that cancels a step-down the adaptive ceiling had lined up —
+// the moment the flat budget number stops being a surprise and starts being an
+// explained consequence.
+describe('budgetHoldOnLog — the budget-holding signal', () => {
+  // baseline 10/day, then a 6/day week: as the higher baseline rolls out of the
+  // trailing window the budget is still stepping down (36 → 33 due tomorrow).
+  const hist = smokeDaily(I + 1, 3, 6);
+  const today = I + 4;
+
+  it('fires on the smoke that holds a due step-down flat (adaptive-bound)', () => {
+    // 6 already smoked today; tomorrow was set to drop to 5½ (33). The 7th cig
+    // lifts the 7-day average enough that tomorrow rounds back up to today's 6
+    // (36) — the taper pauses, and this is the smoke that paused it.
+    const before = [...hist, smoke(today, 6)];
+    const after = [...before, smoke(today, 1)];
+    const r = budgetHoldOnLog(before, after, today, I, b10, []);
+    expect(r).toEqual({ held: true, budget: 36, wouldHaveBeen: 33 });
+    // wouldHaveBeen is not a magic number: it is exactly tomorrow's budget as it
+    // stood before this cigarette — the drop the user was about to get.
+    expect(r.wouldHaveBeen).toBe(tomorrowBudgetSixths(before, today, I, b10, []));
+  });
+
+  it('stays silent when a plan (not intake) is what holds the budget', () => {
+    // Same relapse, but a plan has already pulled the ceiling to 2½ cigs — the
+    // plan is the binding constraint, it ignores intake, so nothing the user
+    // smokes moves the budget and there is no paused taper to announce.
+    const before = [...hist, smoke(today, 6)];
+    const after = [...before, smoke(today, 1)];
+    const r = budgetHoldOnLog(before, after, today, I, b10, [plan(I, 6, 18)]);
+    expect(r.held).toBe(false);
+  });
+
+  it('stays silent when the smoke is not enough to hold the step-down (taper still happens)', () => {
+    // A step-down to 5½ (33) is due tomorrow, but a single over-budget cigarette
+    // on a light day does not lift the average enough to cancel it — the budget
+    // still drops. No pause, so nothing to announce: this pins the `after` clause
+    // (before < budget alone would wrongly fire).
+    const before = smokeDaily(I + 1, 1, 3);
+    const fToday = I + 2;
+    const after = [...before, smoke(fToday, 1)];
+    expect(tomorrowBudgetSixths(before, fToday, I, b10, [])).toBeLessThan(
+      budgetSixths(after, fToday, I, b10, []),
+    );
+    expect(budgetHoldOnLog(before, after, fToday, I, b10, []).held).toBe(false);
+  });
+
+  it('stays silent when no step-down was due (a normal flat day)', () => {
+    // Steady 10/day parks the budget at 9 cigs with nothing scheduled to drop;
+    // an over-budget smoke keeps it flat, but flat was never a broken promise.
+    const flat = smokeDaily(I + 1, 6, 10);
+    const fToday = I + 7;
+    const r = budgetHoldOnLog(flat, [...flat, smoke(fToday, 1)], fToday, I, b10, []);
+    expect(r.held).toBe(false);
   });
 });
 

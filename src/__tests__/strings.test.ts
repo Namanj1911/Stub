@@ -36,7 +36,7 @@
 // These assert the *property* — every line reachable, none dominant — which is
 // what actually protects the copy.
 
-import { budgetNudgeCopy, milestonePushCopy } from '../strings';
+import { budgetHoldCopy, budgetNudgeCopy, milestonePushCopy } from '../strings';
 import { INSTALL_KEY as I, atLocalHour } from './fixtures';
 
 // Realistic seeds, in the exact shape notificationPlan builds them:
@@ -165,5 +165,45 @@ describe('milestonePushCopy', () => {
 
   it('titles a streak with its own length', () => {
     expect(milestonePushCopy('streak-14', 'x')!.title).toBe('14 days under budget');
+  });
+});
+
+describe('budgetHoldCopy — the budget-holding sheet', () => {
+  it('is deterministic on the budget pair — one stall, one wording', () => {
+    const first = budgetHoldCopy(36, 33);
+    for (let i = 0; i < 5; i++) expect(budgetHoldCopy(36, 33)).toEqual(first);
+  });
+
+  it('names both the level it holds at and the step it held off', () => {
+    // 6/day held, would have eased to 5½ — both must appear so the user can
+    // see exactly what paused.
+    const { body } = budgetHoldCopy(36, 33);
+    expect(body).toContain('6 a day');
+    expect(body).toContain('5½ a day');
+  });
+
+  it('renders whole/fraction counts as English, never a bare plural', () => {
+    expect(budgetHoldCopy(6, 3).body).toContain('1 a day'); // exactly one
+    expect(budgetHoldCopy(6, 3).body).toContain('½ of one a day'); // sub-cigarette
+    expect(budgetHoldCopy(6, 3).body).not.toContain('1s a day');
+  });
+
+  it('reaches every line in its pool across the budget range', () => {
+    // Each template carries a distinctive phrase; sweeping real (held, would)
+    // pairs must exercise all three, or a line is dead copy no user ever sees.
+    const markers = ['averaged higher', 'on hold', 'was set to drop'];
+    const seen = new Set<string>();
+    for (let budget = 6; budget <= 60; budget += 3) {
+      const body = budgetHoldCopy(budget, budget - 3).body;
+      for (const m of markers) if (body.includes(m)) seen.add(m);
+    }
+    expect(seen.size).toBe(markers.length);
+  });
+
+  it('always offers the way out — the taper resumes when the average falls', () => {
+    // §10: state the pause, never scold it. Every line must point at the exit.
+    for (let budget = 6; budget <= 60; budget += 3) {
+      expect(budgetHoldCopy(budget, budget - 3).body.toLowerCase()).toMatch(/average|pace/);
+    }
   });
 });

@@ -309,6 +309,38 @@ export function tomorrowBudgetSixths(
   return Math.min(today, planned != null ? Math.min(adaptive, planned) : adaptive);
 }
 
+// Did the cigarette just logged HOLD the budget flat that would otherwise have
+// stepped down tomorrow? This is the honest "your taper paused, and this is
+// why" signal (BACKLOG: budget-holding notice). The user's mental model is
+// "the budget follows my 7-day average down"; when the average stops falling
+// the budget stops falling, and without a word for it the flat number reads as
+// a broken promise. This names the moment instead.
+//
+// Today's budget does not depend on today's smokes — budgetSeries scores day k
+// off the 7 days *before* k — so `budget` is the same whether measured before
+// or after the log; only tomorrow's prediction moves. `wouldHaveBeen` is what
+// tomorrow's budget was going to be before this cigarette: strictly lower than
+// today when a step-down was due, which is the whole precondition.
+//
+// Note it fires ONLY when the adaptive ceiling is the binding constraint. A
+// plan-driven descent ignores intake (plannedBudgetFor doesn't read entries),
+// so `after` stays pinned to the plan value rather than snapping back up to
+// today's — `held` is false and the notice correctly stays silent. The
+// arithmetic scopes the signal for us; there is no separate plan guard.
+export function budgetHoldOnLog(
+  entriesBefore: Entry[],
+  entriesAfter: Entry[],
+  todayKey: number,
+  installDayKey: number,
+  baselineHistory: BaselineRecord[],
+  planHistory: PlanRecord[],
+): { held: boolean; budget: number; wouldHaveBeen: number } {
+  const budget = budgetSixths(entriesAfter, todayKey, installDayKey, baselineHistory, planHistory);
+  const before = tomorrowBudgetSixths(entriesBefore, todayKey, installDayKey, baselineHistory, planHistory);
+  const after = tomorrowBudgetSixths(entriesAfter, todayKey, installDayKey, baselineHistory, planHistory);
+  return { held: before < budget && after === budget, budget, wouldHaveBeen: before };
+}
+
 export function weeksToQuit(budget: number, pace: Pace): number {
   return Math.ceil(budget / PACE_RATE[pace]);
 }

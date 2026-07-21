@@ -59,6 +59,15 @@ export function GoalScreen() {
     year: 'numeric',
   });
 
+  // Is the budget currently *holding* — paused where it is because the 7-day
+  // average stopped falling? The budget-holding sheet announced this at log
+  // time; the screen sustains it so the flat number stays explained after the
+  // sheet is dismissed. Sourced from the SAME stored value the sheet fired on
+  // (store.budgetHoldNoticedAt) rather than a second predicate that could
+  // disagree with it: the budget only descends between re-anchors, so the level
+  // we announced still matching today's budget means we are still in that stall.
+  const holding = data.budgetHoldNoticedAt != null && data.budgetHoldNoticedAt === budget;
+
   // glide path: weekly budgets to zero, max 8 bars, final bar "zero"
   const nBars = Math.min(8, weeks + 1);
   const glide = Array.from({ length: nBars }, (_, i) => {
@@ -67,7 +76,16 @@ export function GoalScreen() {
       label: i === 0 ? 'now' : 'w' + i,
       val: v === 0 ? 'zero' : (v / 6).toFixed(1),
       h: Math.max(3, (v / budget) * 100),
-      color: i === 0 ? color.accent500 : v === 0 ? color.accent300 : color.neutral800,
+      // the "now" bar goes neutral while holding — a paused taper shouldn't wear
+      // the accent that reads as "on the move"
+      color:
+        i === 0
+          ? holding
+            ? color.neutral500
+            : color.accent500
+          : v === 0
+            ? color.accent300
+            : color.neutral800,
     };
   });
 
@@ -351,6 +369,32 @@ export function GoalScreen() {
           Based on your last 7 days ({(avg7 / 6).toFixed(1)}/day), stepping down {frac(rate)} a
           week gets you to zero in {weeks} weeks. No cold turkey, no drama.
         </Text>
+
+        {/* holding badge — sustains the budget-holding sheet's message so the
+            paused taper stays explained once the sheet is gone (§10: no scold,
+            just the fact and the way out) */}
+        {holding && (
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 8,
+              alignSelf: 'flex-start',
+              marginTop: 14,
+              paddingVertical: 6,
+              paddingHorizontal: 10,
+              borderRadius: radius.pill,
+              backgroundColor: 'rgba(233, 233, 237, 0.08)',
+              borderWidth: 1,
+              borderColor: color.divider,
+            }}
+          >
+            <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: color.neutral400 }} />
+            <Text style={{ fontFamily: font.medium, fontSize: 12, color: color.neutral300 }}>
+              Holding at {frac(budget)}/day — steps down again once your 7-day average falls
+            </Text>
+          </View>
+        )}
 
         {/* glide path */}
         <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 6, height: 100, marginTop: 18 }}>

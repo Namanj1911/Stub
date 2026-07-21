@@ -19,6 +19,7 @@ import { AppProvider } from './src/AppContext';
 import { RootStackParamList, TabParamList } from './src/navigation';
 import { useNotificationSync, useNotificationTaps } from './src/notifications';
 import { BackfillScreen } from './src/screens/BackfillScreen';
+import { BudgetHoldSheet } from './src/screens/BudgetHoldSheet';
 import { GoalScreen } from './src/screens/GoalScreen';
 import { HealthScreen } from './src/screens/HealthScreen';
 import { LogScreen } from './src/screens/LogScreen';
@@ -168,6 +169,12 @@ export default function App() {
             </NavigationContainer>
           </SafeAreaView>
         )}
+        {/* Rises over whatever tab the user logged from; a no-op until a
+            cigarette holds the budget flat that was about to step down. */}
+        <BudgetHoldSheet
+          notice={store.data.pendingHoldNotice ?? null}
+          onDismiss={store.dismissHoldNotice}
+        />
       </AppProvider>
     </SafeAreaProvider>
   );

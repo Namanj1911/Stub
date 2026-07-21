@@ -630,6 +630,39 @@ export function budgetNudgeCopy(
   return { title: 'Budget check', body: pick(NUDGE_LINES, seed)(left, fmtHour(fireAt)) };
 }
 
+// The budget-holding sheet (src/screens/BudgetHoldSheet). Fires once when a
+// cigarette holds the budget flat that was about to step down. The job is
+// clarity, not a roast: design §10 bans scolding on the budget, and the whole
+// point is to stop the flat number reading as a broken promise. So this states
+// cause → consequence → agency and leaves the judgement out — the one place the
+// app explains its own maths instead of needling.
+const HOLD_LINES: ((held: string, would: string) => string)[] = [
+  (held, would) =>
+    `Your last 7 days averaged higher, so tomorrow holds at ${held} instead of easing to ${would}. The budget follows that average down — ease back under and it starts falling again.`,
+  (held, would) =>
+    `The step down to ${would} is on hold: the budget tracks your 7-day pace, and lately that's flat. Tomorrow stays at ${held}. Bring the average down and the taper picks back up.`,
+  (held, would) =>
+    `Tomorrow was set to drop to ${would}. That last one held it at ${held} — the budget only falls when your 7-day average does. Nothing lost; it resumes the moment you dip back under.`,
+];
+
+export function budgetHoldCopy(
+  budgetSixths: number,
+  wouldHaveBeenSixths: number,
+): { title: string; body: string; cta: string } {
+  // frac() renders sixths as ⅓/½/1½; under a whole cigarette reads wrong with a
+  // plural, so phrase it the same way the budget nudge does.
+  const perDay = (s: number) =>
+    s === 6 ? '1 a day' : s < 6 ? `${frac(s)} of one a day` : `${frac(s)} a day`;
+  return {
+    title: "Your budget's holding",
+    body: pick(HOLD_LINES, `${budgetSixths}:${wouldHaveBeenSixths}`)(
+      perDay(budgetSixths),
+      perDay(wouldHaveBeenSixths),
+    ),
+    cta: 'Got it',
+  };
+}
+
 // S17 milestones + the milestone roasts (BACKLOG "Later", decided 2026-07-17).
 // Deliberately a short list — the backlog's word is "personal, not badge
 // spam". Each of these fires at most once, ever.
