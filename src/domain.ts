@@ -194,6 +194,18 @@ export function weekdayOfKey(key: number): number {
   return (key + 4) % 7;
 }
 
+// A Date sitting inside a day key (its 4am boundary), for rendering a key as a
+// calendar date. Inverts dayKey(): a key is `key` whole days from the epoch,
+// plus the 4-hour shift, minus the zone offset. Show a day key with this rather
+// than a raw timestamp — a smoke logged between midnight and 4am keys to the
+// previous evening, so `timestamp.toLocaleDateString()` would print the day
+// after the key it belongs to. 4am ± any DST wobble never crosses midnight, so
+// the rendered date is stable.
+export function dateOfKey(key: number): Date {
+  const offsetMinutes = new Date(key * 86_400_000).getTimezoneOffset();
+  return new Date(key * 86_400_000 + 4 * 3_600_000 + offsetMinutes * 60_000);
+}
+
 export function entriesForDay(entries: Entry[], key: number): Entry[] {
   return entries.filter((e) => dayKey(e.timestamp) === key);
 }

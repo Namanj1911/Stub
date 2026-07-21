@@ -13,6 +13,7 @@ import {
   baselineSixthsFor,
   budgetSixths,
   currentPlanRate,
+  dateOfKey,
   dayKey,
   frac,
   quitDateAtRate,
@@ -96,13 +97,15 @@ export function GoalScreen() {
   // forecast and becomes a record of arrival.
   const sf = smokeFree(entries, todayKey, profile.installDayKey, data.postZeroConfirmedFrom);
   const mode = goalMode(budget, sf);
-  // Smoke-free *since* is the day after the last cigarette: the first day
-  // with nothing in it. Dating it from the cigarette itself would credit the
-  // user with a day they spent smoking.
+  // Smoke-free *since* is the first clean day-key — the first day with nothing
+  // in it. Derive it from `runStartDayKey`, not `lastSmokeAt + 24h`: a cigarette
+  // logged between midnight and 4am keys to the previous evening, so shifting its
+  // timestamp forward a day lands a day *after* the first clean key. Reading the
+  // run's start key keeps this on the same day-boundary convention as the count.
   const smokeFreeSince =
-    sf.lastSmokeAt == null
+    sf.runStartDayKey == null
       ? null
-      : new Date(sf.lastSmokeAt + 86_400_000).toLocaleDateString('en-IN', {
+      : dateOfKey(sf.runStartDayKey).toLocaleDateString('en-IN', {
           day: 'numeric',
           month: 'long',
           year: 'numeric',
@@ -200,7 +203,11 @@ export function GoalScreen() {
       {/* ---------------------------------------------------------------- */}
       {mode === 'offer' && (
         <HeroCard>
-          <HeroLabel>{sf.streakDays} days clean</HeroLabel>
+          {/* completedZeroDays, not streakDays: eligibility counts whole lived
+              days (today in progress is excluded), and the offer copy says
+              "seven days". Printing the live streak here would head the card
+              with 8 above copy that says seven. */}
+          <HeroLabel>{sf.completedZeroDays} days clean</HeroLabel>
           <Text style={{ fontFamily: font.medium, fontSize: 26, color: color.text, marginTop: 4 }}>
             Ready to call it?
           </Text>
@@ -225,7 +232,7 @@ export function GoalScreen() {
               confirmPostZero(sf.runStartDayKey);
             }}
             accessibilityRole="button"
-            accessibilityLabel={`Confirm you are smoke-free after ${sf.streakDays} clean days`}
+            accessibilityLabel={`Confirm you are smoke-free after ${sf.completedZeroDays} clean days`}
             style={({ pressed }) => ({
               alignSelf: 'flex-start',
               borderRadius: radius.md,
