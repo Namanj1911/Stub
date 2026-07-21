@@ -109,9 +109,12 @@ export function copy(key: StringKey): string {
 // hear the same line as the first. States are checked severity-first; a
 // ⅓-shared log mixes in the "splitting the bill" pool as extra candidates.
 const LOG_TOASTS = {
-  // first log of the day, budget still comfortable
+  // first log of the day, budget still comfortable.
+  // Same ceiling-not-quota rule as NUDGE_LINES: no line in any pool here may
+  // read as an invitation to spend what's left. Roast the spending, cheer the
+  // not-spending, never presume the remainder gets smoked.
   firstOfDay: [
-    "Day's open. Let's see if today's the day you embarrass the budget.",
+    "Day's open. The budget would love to be ignored today.",
     'First one logged. The scoreboard is watching now.',
     "And we're off. Slow start is a strategy — keep it.",
     'Logged. The day had a perfect record for a while there.',
@@ -126,7 +129,7 @@ const LOG_TOASTS = {
   // one-ish cigarette left in the budget
   oneLeft: [
     'Logged. That leaves basically fumes for the rest of the day.',
-    'One-ish left. Choose its moment wisely.',
+    'One-ish left. No law says it has to get used.',
     'Logged. The budget is down to its last life.',
     "That's the second-to-last call. Make the next one count — or don't have it.",
   ],
@@ -619,11 +622,19 @@ export function setupReaction(countPerDay: number): string {
 // because their seeds differ, not because time passed between two reads of
 // the same one.
 
+// TONE RULE for this pool (owner, 2026-07-22): the budget is a ceiling, not
+// a quota. This push fires at 80% spent, so every line is about a remainder —
+// and a remainder is dangerously easy to phrase as an allocation waiting to
+// be finished. "1½ to go" and "the day is not over" both landed on a real
+// lock screen reading as a reminder to smoke what was left — exactly
+// backwards. Every line here must frame the remainder as something to
+// stretch or keep, or say outright that unspent is the win. When in doubt:
+// would this line make sense printed on a ration book? Then it's fine.
 const NUDGE_LINES: ((left: string, when: string) => string)[] = [
-  (left, when) => `${left} left, and it's only ${when}.`,
+  (left, when) => `${left} left, and it's only ${when}. Make it last.`,
   (left, when) => `It's ${when}. You've got ${left} to last the evening.`,
-  (left) => `${left} left in the budget. The day is not over.`,
-  (left, when) => `${when}, ${left} to go. Pace yourself or don't — we'll log it either way.`,
+  (left) => `${left} left. That's a ceiling, not a to-do list.`,
+  (left, when) => `${when}, with ${left} in reserve. Whatever's still there tonight, you won.`,
 ];
 
 // FNV-1a over the seed (with Math.imul), then murmur3's finalizer. Any stable

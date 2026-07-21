@@ -145,6 +145,19 @@ describe('push copy reaches its whole pool', () => {
   });
 });
 
+describe('nudge copy never reads as a quota (owner report 2026-07-22)', () => {
+  // The budget is a ceiling, not an allocation to finish. "1½ to go" and
+  // "the day is not over" both landed on a real lock screen as a nudge TO
+  // smoke the remainder. This sweeps every line in the pool for the framings
+  // that caused it; the full rule lives on NUDGE_LINES in strings.ts.
+  it('no reachable line uses completion framing', () => {
+    for (const { seed, fireAt } of nudgeSeeds(200)) {
+      const body = budgetNudgeCopy(9, fireAt, seed).body.toLowerCase();
+      expect(body).not.toMatch(/to go|not over|pace yourself/);
+    }
+  });
+});
+
 describe('nudge copy renders the remaining count as English', () => {
   const fireAt = atLocalHour(I, 15, 45);
   const seed = `nudge-${I}:${fireAt}`;
