@@ -13,6 +13,8 @@
 import {
   budgetSeries,
   budgetSixths,
+  currentPlanRate,
+  planHistoryWithRate,
   plannedBudgetFor,
   recentDailyAverageSixths,
   tomorrowBudgetSixths,
@@ -234,5 +236,48 @@ describe('tomorrowBudgetSixths', () => {
       const t = tomorrowBudgetSixths(soFar, today, I, b10, [plan(I, 6, 60)]);
       expect(t).toBeLessThanOrEqual(budgetSixths(soFar, today, I, b10, [plan(I, 6, 60)]));
     }
+  });
+});
+
+// The effective-dated plan write, and the guard that finding #7 is about: a
+// fresh record re-anchors startBudget to today's budget, so re-selecting the
+// rate already in force must not write one — otherwise browsing the pace chips
+// (or re-confirming the same target date) restarts sub-half-cig progress and
+// delays the taper by up to ~1.75 days.
+describe('planHistoryWithRate — the effective-dated plan write', () => {
+  const seeded = [plan(I, 6, 60)]; // steady from install, anchored at 10/day
+
+  it('re-selecting the rate in force is a no-op (same reference, finding #7)', () => {
+    // currentPlanRate(seeded) === 6, so asking for 6 again must change nothing.
+    // The SAME array back is the store's signal to skip the write entirely.
+    const out = planHistoryWithRate(seeded, 6, I + 5, [], I, b10);
+    expect(out).toBe(seeded);
+    expect(currentPlanRate(out)).toBe(6);
+  });
+
+  it('a genuine rate change appends a record anchored at TODAY, keeping history', () => {
+    const today = I + 5;
+    const out = planHistoryWithRate(seeded, 12, today, [], I, b10);
+    expect(out).not.toBe(seeded);
+    expect(out).toHaveLength(2);
+    expect(out[0]).toEqual(plan(I, 6, 60)); // past record kept, its rate frozen
+    const latest = out[out.length - 1];
+    expect(latest.fromDayKey).toBe(today);
+    expect(latest.rate).toBe(12);
+    // Anchored at where the budget actually is today, not the old start budget:
+    // the same re-seed budgetSixths reports for `today` under the kept history.
+    expect(latest.startBudget).toBe(budgetSixths([], today, I, b10, seeded));
+  });
+
+  it('a same-day rate change collapses (last write wins, no pile-up)', () => {
+    const today = I + 5;
+    const withToday = planHistoryWithRate(seeded, 12, today, [], I, b10); // adds I+5
+    expect(withToday).toHaveLength(2);
+    // Changing the rate again the same day replaces today's record, not stacks.
+    const changed = planHistoryWithRate(withToday, 3, today, [], I, b10);
+    expect(changed).toHaveLength(2);
+    const latest = changed[changed.length - 1];
+    expect(latest.fromDayKey).toBe(today);
+    expect(latest.rate).toBe(3);
   });
 });
