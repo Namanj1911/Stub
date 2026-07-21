@@ -196,7 +196,7 @@ refs re-checked against main 2026-07-20 after the taper-restart merge.
   What a device still can't rule out: nothing was observed in a real OS queue,
   so the claim "a pending notification no longer rewrites itself" rests on the
   planner probe rather than on a phone.
-- [ ] **Re-tapping an already-selected pace preset re-anchors the plan**
+- [x] **Re-tapping an already-selected pace preset re-anchors the plan**
   *(low/medium, but it silently costs the user taper progress)*. The pace
   chips call `setPace` unconditionally (`src/screens/ProfileScreen.tsx:233`,
   no `if (selected) return` guard), and `setPace` → `setPlanRate` always
@@ -209,8 +209,10 @@ refs re-checked against main 2026-07-20 after the taper-restart merge.
   Note the store migration has the same visible effect once per update, where
   it is deliberate — `migrate()` anchors the seeded plan at that day rather
   than rewriting history — so the fix must not "correct" that too.
-  *(finding #7)*
-- [ ] **Money projects from `profile.pace`, not the canonical rate** *(low/
+  *(finding #7)* — **done** (`ee68226`, merged): same-rate re-tap is guarded
+  in `planHistoryWithRate` (returns the same array reference, store skips the
+  write).
+- [x] **Money projects from `profile.pace`, not the canonical rate** *(low/
   medium, latent today)*. The plan round made the rate canonical; Goal,
   Profile and Health follow it, but `MoneyScreen` still uses
   `PACE_RATE[profile.pace]` / `weeksToQuit(budget, profile.pace)` /
@@ -220,6 +222,17 @@ refs re-checked against main 2026-07-20 after the taper-restart merge.
   its by-quit-day savings will disagree with Goal's, and the taper-restart
   work has now added a second writer of plan records. Switch to
   `currentPlanRate` + the rate-based helpers. *(finding #4)*
+  — **done 2026-07-21** (`fix/money-canonical-rate`): Money now reads
+  `currentPlanRate(planHistory)` and the `…AtRate` helpers. Behaviour is
+  byte-identical for preset users (when `rate === PACE_RATE[pace]` and
+  budget > 0, `weeksToQuitAtRate` reduces to `weeksToQuit`) — it only diverges
+  once a non-preset rate exists, which is the fix. **The catch:**
+  `weeksToQuitAtRate` floors at 1 where the old `weeksToQuit` returned 0 at
+  budget 0, so a naive swap would have promised a post-zero user a spare week
+  of baseline savings and a quit day a week out. Guarded the zero case
+  (`budget > 0 ? … : 0` / `new Date(now)`) — Goal hides its whole plan card at
+  zero for exactly this reason; Money's projections aren't gated, so the guard
+  lives at the call site.
 - [ ] **The 7-day post-zero flip counts the partial install day as clean**
   *(low)*. `smokeFree()` runs from `installDayKey` (`src/postzero.ts:66`), so
   the install day — nearly always partial — counts as one of the seven lived
@@ -242,7 +255,7 @@ refs re-checked against main 2026-07-20 after the taper-restart merge.
   includes today in progress — so the card typically reads "8 days clean"
   above copy saying "Seven days with nothing logged". Print
   `completedZeroDays`. *(finding #6)*
-- [ ] **Tomorrow card doesn't say it's conditional** *(low, UX)*.
+- [x] **Tomorrow card doesn't say it's conditional** *(low, UX)*.
   `tomorrowBudgetSixths` is arithmetically correct — verified same window,
   same rounding, same min as the real next-day chain step
   (`src/domain.ts:243-263`) — but it predicts *assuming no more smokes
@@ -251,7 +264,8 @@ refs re-checked against main 2026-07-20 after the taper-restart merge.
   device 2026-07-19→20: "tomorrow 4.5" became an actual 5. The maths is fine;
   the problem is that a number which visibly climbs back up reads as a broken
   promise. Either label it ("if you stop now: 4.5") or floor the display at
-  the last value shown that day. *(finding #8)*
+  the last value shown that day. *(finding #8)* — **done** (`9067200`, merged):
+  labelled conditional.
 
 ### Not bugs, but recorded (finding #11)
 

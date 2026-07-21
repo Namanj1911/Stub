@@ -9,12 +9,12 @@ import { ScrollView, Text, View } from 'react-native';
 import Svg, { Defs, Ellipse, RadialGradient, Stop } from 'react-native-svg';
 import { DATASET_AS_OF, brandInfo } from '../brands';
 import {
-  PACE_RATE,
   budgetSixths,
   computeSavings,
+  currentPlanRate,
   dayKey,
-  quitDate,
-  weeksToQuit,
+  quitDateAtRate,
+  weeksToQuitAtRate,
 } from '../domain';
 import { copy, moneyTemptation } from '../strings';
 import { useApp, useProfile } from '../AppContext';
@@ -61,13 +61,20 @@ export function MoneyScreen() {
   // projections: budget tapers weekly from here to zero. The budget's
   // pre-install fallback is the onboarding baseline, not today's.
   const budget = budgetSixths(entries, todayKey, profile.installDayKey, profile.baselineHistory, profile.planHistory);
-  const rate = PACE_RATE[profile.pace];
-  const weeks = weeksToQuit(budget, profile.pace);
+  // the plan's rate is canonical (§11.2), not the pace label — Goal, Profile
+  // and Health all read it, and the taper-restart work added a second writer
+  // of plan records, so a non-preset rate now really can exist.
+  const rate = currentPlanRate(profile.planHistory);
+  // At budget 0 the taper is already done: no weeks left to project and quit
+  // day is today. `weeksToQuitAtRate` floors at 1 (Goal hides its plan card
+  // for the same reason), so guard the zero case rather than promise a week of
+  // savings and a quit date to a user who has already arrived.
+  const weeks = budget > 0 ? weeksToQuitAtRate(budget, rate) : 0;
   let byQuitDay = saved;
   for (let w = 0; w < weeks; w++) {
     byQuitDay += (baseline - Math.max(0, budget - rate * w)) * perSixth * 7;
   }
-  const quitDay = quitDate(budget, profile.pace, now).toLocaleDateString('en-IN', {
+  const quitDay = (budget > 0 ? quitDateAtRate(budget, rate, now) : new Date(now)).toLocaleDateString('en-IN', {
     day: 'numeric',
     month: 'short',
   });
