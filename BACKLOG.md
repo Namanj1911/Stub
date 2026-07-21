@@ -103,7 +103,7 @@ without discussion.
   previewing**, since the previewed budget is a lie held in local state and
   writing a plan record would have re-anchored a live taper off a state the
   owner was not in.
-- [ ] **The restart is only discoverable on Profile.** Fallout from the
+- [x] **The restart is only discoverable on Profile.** Fallout from the
   fix above, deliberately left open. A relapsed user still reads "past the
   taper" on Log and "the taper is done" on Goal until they happen to open
   Profile and find the card — so the one screen that now tells the truth is the
@@ -113,6 +113,27 @@ without discussion.
   — it already owns the taper's tense), and copy that flags the contradiction
   without nagging someone who has slipped. Same bar as the restart copy: state
   it, don't scold.
+  — **done 2026-07-21** (`fix/goal-relapse-signpost`). Chose Goal, the steered
+  surface. A relapsed user at zero can only land in Goal's `arrived` mode (not
+  `active`, not `eligible`, budget ≤ 0), where the hero otherwise narrated a
+  finish line they'd already left ("the plan did its part, go be boring"). That
+  hero now splits: gated on the **same** `recentDailyAverageSixths > 0`
+  predicate the Profile restart card uses, so Goal and Profile agree by
+  construction — Goal points at the card exactly when the card exists, and a
+  genuine quitter (measured smoking 0) keeps the plain arrival card untouched.
+  The signpost **points** rather than hosts: a tappable "Start a new taper on
+  Profile →" that pushes Profile, keeping the control single-sited exactly as
+  the #10 decision intended (like Goal's "change quit date" link). Copy held to
+  the restart bar — state the mismatch, don't scold, don't frame it as starting
+  over.
+  A Log bottom-sheet (modeled on the budget-hold sheet) was considered and
+  rejected: its trigger would be the relapse *log* itself, the one moment §9.2
+  and `relapseNote()` deliberately keep quiet, and `recentDailyAverageSixths`
+  counts today via `max()`, so it would fire a modal on cigarette #1 of a slip.
+  A standing card the user meets when they next open Goal absorbs that
+  eagerness; a modal scolds by timing. Log's own "past the taper" caption is
+  left as a separate, quieter follow-up (a tappable pointer, no modal) if the
+  Goal card alone proves too easy to miss on device.
 
 ## Bugs — code review 2026-07-20 (18→20 Jul work)
 
@@ -266,7 +287,7 @@ refs re-checked against main 2026-07-20 after the taper-restart merge.
   clean. Interacts with finding #6 (still open): #6 will switch Goal's offer
   headline from `streakDays` to `completedZeroDays`, which is the consumer that
   actually needs the precise count.
-- [ ] **Post-zero date/count nits on Goal** *(low, two small ones)*.
+- [x] **Post-zero date/count nits on Goal** *(low, two small ones)*.
   *(a)* "Smoke-free since" can be off by one day: it shows the calendar date
   of `lastSmokeAt + 24h` (`src/screens/GoalScreen.tsx:84-91`), so a last
   cigarette logged between midnight and 4am — which day-keys to the previous
@@ -277,6 +298,12 @@ refs re-checked against main 2026-07-20 after the taper-restart merge.
   includes today in progress — so the card typically reads "8 days clean"
   above copy saying "Seven days with nothing logged". Print
   `completedZeroDays`. *(finding #6)*
+  — **done 2026-07-20** (`fix/goal-postzero-date-count`, commit `1b6e025`),
+  device-checked 2026-07-21. *(a)* now derives the since-date from
+  `runStartDayKey` via a new `domain.dateOfKey` (renders a key on its own 4am
+  boundary); *(b)* prints `completedZeroDays` in the headline and a11y label.
+  Two new `dateOfKey` domain tests, mutation-verified. Merged to main alongside
+  the #10 signpost follow-up.
 - [x] **Tomorrow card doesn't say it's conditional** *(low, UX)*.
   `tomorrowBudgetSixths` is arithmetically correct — verified same window,
   same rounding, same min as the real next-day chain step

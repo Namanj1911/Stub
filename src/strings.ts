@@ -37,6 +37,18 @@ const TABLE = {
     "The taper ran to zero, but you've been smoking since — so the budget stopped meaning anything. Start a new one and it'll pick up from what you're actually smoking now, not from a number you gave us months ago.",
   taperRestartCta: 'Start a new taper',
   taperRestartDone: 'New taper started — budget picks up from here.',
+  // Goal's signpost to the restart. The #10 fix put the restart control on
+  // Profile only, which left the one screen still telling the truth as the one
+  // a relapsed user has no reason to open: Goal's `arrived` hero was narrating
+  // "the plan did its part, go be boring" at someone smoking 20 a day. This
+  // pair flags the contradiction on Goal and points at the control — it does
+  // not host it (the button stays single-sited on Profile, like "change quit
+  // date" links there rather than editing inline). Same bar as taperRestart*:
+  // state the mismatch, don't scold, and don't frame it as starting over.
+  taperRestartGoalLabel: 'Your plan',
+  taperRestartGoalNote:
+    "The taper ran to zero, but you've been smoking since — so the budget stopped meaning anything.",
+  taperRestartGoalCta: 'Start a new taper on Profile',
   backfilled: 'Bar night, huh. Logged — stats recomputed.',
   backfillZero: 'Add zero? Bold strategy. Tap an amount first.',
   moneyBehind:

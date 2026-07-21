@@ -15,12 +15,13 @@ import {
   budgetSeries,
   budgetSixths,
   currentPlanRate,
+  dateOfKey,
   planHistoryWithRate,
   plannedBudgetFor,
   recentDailyAverageSixths,
   tomorrowBudgetSixths,
 } from '../domain';
-import { INSTALL_KEY as I, baseline, dayKey, plan, smoke, smokeDaily } from './fixtures';
+import { INSTALL_KEY as I, atLocalHour, baseline, dayKey, plan, smoke, smokeDaily } from './fixtures';
 
 const b10 = [baseline(10)];
 
@@ -337,5 +338,34 @@ describe('planHistoryWithRate — the effective-dated plan write', () => {
     const latest = changed[changed.length - 1];
     expect(latest.fromDayKey).toBe(today);
     expect(latest.rate).toBe(3);
+  });
+});
+
+describe('dateOfKey — a day key as its calendar date (#6)', () => {
+  it('round-trips: the returned Date falls inside the key it names', () => {
+    for (const k of [I, I + 1, I + 200, I + 365]) {
+      expect(dayKey(dateOfKey(k).getTime())).toBe(k);
+    }
+  });
+
+  it('dates the clean run by its start key, not by lastSmoke + 24h (the off-by-one)', () => {
+    // A cigarette at 2am belongs to the PREVIOUS evening's key — dayKey() shifts
+    // back 4h before bucketing. So this smoke sits on key I even though its wall
+    // clock reads the next calendar morning.
+    const lastSmoke = atLocalHour(I, 26); // 2am the morning after key I's date
+    expect(dayKey(lastSmoke)).toBe(I);
+
+    // "Smoke-free since" is the first clean day: key I+1. Its calendar date is
+    // what the hero should show.
+    const correct = dateOfKey(I + 1);
+    expect(dayKey(correct.getTime())).toBe(I + 1);
+
+    // The old logic rendered `new Date(lastSmoke + 24h)` — and because the 2am
+    // smoke already reads as the next calendar day, that lands a full day PAST
+    // the first clean key. Compared as whole calendar days (DST-safe: IST has
+    // none, but this guards the assertion against month wrap regardless).
+    const naive = new Date(lastSmoke + 86_400_000);
+    const cal = (d: Date) => Date.UTC(d.getFullYear(), d.getMonth(), d.getDate());
+    expect(cal(naive) - cal(correct)).toBe(86_400_000);
   });
 });

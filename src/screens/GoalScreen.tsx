@@ -13,9 +13,11 @@ import {
   baselineSixthsFor,
   budgetSixths,
   currentPlanRate,
+  dateOfKey,
   dayKey,
   frac,
   quitDateAtRate,
+  recentDailyAverageSixths,
   trailing7Totals,
   weeksToQuitAtRate,
 } from '../domain';
@@ -29,7 +31,7 @@ import {
 } from '../health';
 import { Medal } from '../Medal';
 import { ZERO_DAYS_TO_FLIP, goalMode, smokeFree } from '../postzero';
-import { arrivedCopy, postZeroOfferCopy, smokeFreeCopy } from '../strings';
+import { arrivedCopy, copy, postZeroOfferCopy, smokeFreeCopy } from '../strings';
 import { haptic } from '../haptics';
 import { ProfileButton } from '../ProfileButton';
 import { useNav } from '../navigation';
@@ -96,13 +98,25 @@ export function GoalScreen() {
   // forecast and becomes a record of arrival.
   const sf = smokeFree(entries, todayKey, profile.installDayKey, data.postZeroConfirmedFrom);
   const mode = goalMode(budget, sf);
-  // Smoke-free *since* is the day after the last cigarette: the first day
-  // with nothing in it. Dating it from the cigarette itself would credit the
-  // user with a day they spent smoking.
+  // The #10 follow-up: a relapsed user at zero can only land in `arrived`
+  // (not `active`, not `eligible`, budget <= 0), where the hero otherwise
+  // narrates arrival at a finish line they've already left. Same predicate the
+  // Profile restart card is gated on — budget zero AND measured recent smoking
+  // disagrees — so a genuine quitter keeps the plain arrival card and is never
+  // pointed back at a taper they've finished. The control itself stays on
+  // Profile; this only signposts it.
+  const smokingAgain =
+    mode === 'arrived' &&
+    recentDailyAverageSixths(entries, todayKey, profile.installDayKey) > 0;
+  // Smoke-free *since* is the first clean day-key — the first day with nothing
+  // in it. Derive it from `runStartDayKey`, not `lastSmokeAt + 24h`: a cigarette
+  // logged between midnight and 4am keys to the previous evening, so shifting its
+  // timestamp forward a day lands a day *after* the first clean key. Reading the
+  // run's start key keeps this on the same day-boundary convention as the count.
   const smokeFreeSince =
-    sf.lastSmokeAt == null
+    sf.runStartDayKey == null
       ? null
-      : new Date(sf.lastSmokeAt + 86_400_000).toLocaleDateString('en-IN', {
+      : dateOfKey(sf.runStartDayKey).toLocaleDateString('en-IN', {
           day: 'numeric',
           month: 'long',
           year: 'numeric',
@@ -200,7 +214,11 @@ export function GoalScreen() {
       {/* ---------------------------------------------------------------- */}
       {mode === 'offer' && (
         <HeroCard>
-          <HeroLabel>{sf.streakDays} days clean</HeroLabel>
+          {/* completedZeroDays, not streakDays: eligibility counts whole lived
+              days (today in progress is excluded), and the offer copy says
+              "seven days". Printing the live streak here would head the card
+              with 8 above copy that says seven. */}
+          <HeroLabel>{sf.completedZeroDays} days clean</HeroLabel>
           <Text style={{ fontFamily: font.medium, fontSize: 26, color: color.text, marginTop: 4 }}>
             Ready to call it?
           </Text>
@@ -225,7 +243,7 @@ export function GoalScreen() {
               confirmPostZero(sf.runStartDayKey);
             }}
             accessibilityRole="button"
-            accessibilityLabel={`Confirm you are smoke-free after ${sf.streakDays} clean days`}
+            accessibilityLabel={`Confirm you are smoke-free after ${sf.completedZeroDays} clean days`}
             style={({ pressed }) => ({
               alignSelf: 'flex-start',
               borderRadius: radius.md,
@@ -257,9 +275,56 @@ export function GoalScreen() {
       )}
 
       {/* ---------------------------------------------------------------- */}
+      {/* relapsed at zero (#10 follow-up) — budget is zero but the logs say */}
+      {/* they're smoking again. Goal owns the taper's tense, so it flags the */}
+      {/* contradiction and points at the restart control on Profile rather   */}
+      {/* than narrating a finish line they've already left.                  */}
+      {/* ---------------------------------------------------------------- */}
+      {smokingAgain && (
+        <HeroCard>
+          <HeroLabel>{copy('taperRestartGoalLabel')}</HeroLabel>
+          <Text style={{ fontFamily: font.medium, fontSize: 26, color: color.text, marginTop: 4 }}>
+            Zero
+          </Text>
+          <Text
+            style={{
+              fontFamily: font.regular,
+              fontSize: 13,
+              color: color.accent200,
+              lineHeight: 19,
+              marginTop: 10,
+              opacity: 0.9,
+            }}
+          >
+            {copy('taperRestartGoalNote')}
+          </Text>
+          <Pressable
+            onPress={() => nav.navigate('Profile')}
+            accessibilityRole="button"
+            accessibilityLabel={copy('taperRestartGoalCta')}
+            style={({ pressed }) => ({
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              borderTopWidth: 1,
+              borderTopColor: 'rgba(233, 233, 237, 0.12)',
+              marginTop: 18,
+              paddingTop: 14,
+              opacity: pressed ? 0.6 : 1,
+            })}
+          >
+            <Text style={{ fontFamily: font.medium, fontSize: 14, color: color.accent200 }}>
+              {copy('taperRestartGoalCta')}
+            </Text>
+            <Text style={{ fontFamily: font.regular, fontSize: 15, color: color.accent300 }}>→</Text>
+          </Pressable>
+        </HeroCard>
+      )}
+
+      {/* ---------------------------------------------------------------- */}
       {/* arrived (§12) — budget is zero, the seven days aren't lived yet    */}
       {/* ---------------------------------------------------------------- */}
-      {mode === 'arrived' && (
+      {mode === 'arrived' && !smokingAgain && (
         <HeroCard>
           <HeroLabel>Budget</HeroLabel>
           <Text style={{ fontFamily: font.medium, fontSize: 26, color: color.text, marginTop: 4 }}>
