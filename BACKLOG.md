@@ -134,6 +134,19 @@ without discussion.
   eagerness; a modal scolds by timing. Log's own "past the taper" caption is
   left as a separate, quieter follow-up (a tappable pointer, no modal) if the
   Goal card alone proves too easy to miss on device.
+- [ ] **Log still says "past the taper" to a relapsed user.** The quieter half
+  of the discoverability item above, split out deliberately. Once the budget is
+  zero, Log's caption retires the budget framing to `taperDone` ("past the
+  taper" · "on the record") — correct for a genuine finisher, wrong for someone
+  logging cigarettes again, who lives on Log and may never open Goal to meet the
+  new signpost. Same gate as the Goal card (`recentDailyAverageSixths > 0` at
+  zero, the Profile predicate) so all three surfaces agree. **No modal** — a
+  bottom-sheet was rejected above for firing at the relapse-log moment §9.2
+  keeps quiet; this is a tappable caption pointer to the Profile restart, or at
+  most a swap of the caption copy. Wants a design call on the copy before
+  building: state the mismatch on the highest-traffic screen without turning
+  every slip-log into a nag. Low priority — the Goal card is the primary fix;
+  build this only if device use shows Goal alone is too easy to miss.
 
 ## Bugs — code review 2026-07-20 (18→20 Jul work)
 
