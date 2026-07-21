@@ -125,6 +125,15 @@ a number that visibly climbs back up reads as a broken promise. Either label
 it ("if you stop now: 4.5") or floor the display at the last shown value for
 the day.
 
+## 9. (no finding — numbering gap)
+
+There is no finding #9. Findings #1–#8 were the original 2026-07-18→20 review;
+#10 (the zero-budget one-way door) was appended when it surfaced while fixing
+#3 and skipped #9 in the numbering. #10 and #11 are now referenced by number
+from BACKLOG.md and the review memory, so the gap is kept deliberately rather
+than renumbered — closing it would silently break those cross-references. Left
+here so nobody hunts for a #9 that never existed.
+
 ## 10. Zero budget is a one-way door with no way back  — HIGH, needs a decision
 
 Found 2026-07-20 while fixing #3, by probing the real budget maths rather

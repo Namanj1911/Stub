@@ -71,12 +71,21 @@ export function smokeFree(
   const runStartDayKey = run > 0 ? todayKey - run + 1 : null;
 
   const todayClean = totalSixths(entriesForDay(entries, todayKey)) === 0;
-  // `run` counts today when today is still clean, but today isn't *lived*
-  // yet — the day boundary is 4am, so a clean evening can still end in a
-  // cigarette. The flip counts only whole days; today shows as progress
-  // toward the next one. This is the §12 "hasn't lived it yet" guard applied
-  // at day granularity rather than week.
-  const completedZeroDays = todayClean ? Math.max(0, run - 1) : 0;
+  // A run has two partial days at its ends, and neither is *lived*. Today is
+  // partial because the 4am boundary means a clean evening can still end in a
+  // cigarette. The install day is partial because the user installed mid-day —
+  // a "clean" install day is usually "installed at 11pm", not "smoked nothing"
+  // (the same reasoning notificationPlan.countCleanDays applies by running from
+  // installDayKey + 1). The flip counts only whole days, so both ends drop out:
+  // `run - 1` sheds today, and one more sheds the install day when the run
+  // reaches back to it. This is the §12 "hasn't lived it yet" guard applied at
+  // day granularity. (`streakDays`/`bestDays` remain the loose live-run display
+  // and may still include a partial boundary day; `completedZeroDays` is the
+  // precise lived count, and is what eligibility and the offer copy use.)
+  const runIncludesInstallDay = runStartDayKey === installDayKey;
+  const completedZeroDays = todayClean
+    ? Math.max(0, run - 1 - (runIncludesInstallDay ? 1 : 0))
+    : 0;
 
   const timestamps = entries.map((e) => e.timestamp);
   const lastSmokeAt = timestamps.length ? Math.max(...timestamps) : null;

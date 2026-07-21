@@ -233,7 +233,7 @@ refs re-checked against main 2026-07-20 after the taper-restart merge.
   (`budget > 0 ? … : 0` / `new Date(now)`) — Goal hides its whole plan card at
   zero for exactly this reason; Money's projections aren't gated, so the guard
   lives at the call site.
-- [ ] **The 7-day post-zero flip counts the partial install day as clean**
+- [x] **The 7-day post-zero flip counts the partial install day as clean**
   *(low)*. `smokeFree()` runs from `installDayKey` (`src/postzero.ts:66`), so
   the install day — nearly always partial — counts as one of the seven lived
   zero days. `countCleanDays` in the same round excludes it for exactly this
@@ -244,6 +244,28 @@ refs re-checked against main 2026-07-20 after the taper-restart merge.
   bug rather than a trust one — but two modules applying the same silent-day
   reasoning differently is how the next bug gets written. Run should probably
   start at `installDayKey + 1`. *(finding #5)*
+  — **done 2026-07-21** (`fix/postzero-install-day`). Chose the **surgical**
+  form over the literal "start the loop at `installDayKey + 1`": the loop still
+  runs from `installDayKey`, and only `completedZeroDays` sheds the install day
+  (`run - 1 - (runStartDayKey === installDayKey ? 1 : 0)`), symmetric with the
+  `run - 1` that already sheds today. Both are partial boundary days; neither is
+  lived. Rationale for not touching the loop: the loop also feeds
+  `streakDays`/`bestDays`/`runStartDayKey`, which drive Goal's visible "X days
+  clean" hero and the post-zero consent key — starting at `+1` would have
+  lowered the hero by one and turned `smokeFree([], I, I).runStartDayKey` from
+  `I` to `null`, breaking an approved test for no gain to the actual bug. Both
+  forms fix eligibility *identically* (the 11pm-installer is now offered at
+  `I+8`, not `I+7`); the surgical one just leaves the loose live-run display
+  numbers alone. `streakDays`/`bestDays` stay the loose live-run display (may
+  include a partial boundary day); `completedZeroDays` is the precise lived
+  count, and is what eligibility and the offer copy read. The finding #5
+  characterization test was flipped to approval (its own instruction) and a
+  second test pins the invariant "the install day contributes zero lived days
+  whether or not it had a smoke" — mutation-verified (drop the adjustment and
+  the never-logged user over-counts 7→8, both assertions go red). 90 tests, tsc
+  clean. Interacts with finding #6 (still open): #6 will switch Goal's offer
+  headline from `streakDays` to `completedZeroDays`, which is the consumer that
+  actually needs the precise count.
 - [ ] **Post-zero date/count nits on Goal** *(low, two small ones)*.
   *(a)* "Smoke-free since" can be off by one day: it shows the calendar date
   of `lastSmokeAt + 24h` (`src/screens/GoalScreen.tsx:84-91`), so a last
@@ -307,12 +329,19 @@ refs re-checked against main 2026-07-20 after the taper-restart merge.
   say so in a comment and both name the finding, so the open bug is visible in
   the suite instead of only in this file. When #5 lands, flip the expectations
   rather than deleting the test.
-- [ ] **Stale rationale comment in `store.ts`** (~line 355): `ackMilestone`
+- [x] **Stale rationale comment in `store.ts`** (~line 355): `ackMilestone`
   says "the earned set is derived from longest-gap-ever, which never shrinks",
   which stopped being true when the long horizon began relocking on relapse
   (`src/health.ts:239-246`). The behaviour is correct — rank comparison
   handles it — but the comment is now wrong about *why*, which is the kind
   that survives longest. Cheap; fold into whatever next touches the file.
+  — **done 2026-07-21** (`fix/postzero-install-day`, folded in alongside #5).
+  Corrected the `ackMilestone` comment to say what actually keeps it monotonic:
+  the setter just stores the id (deduped), and the high-water-mark guard lives
+  at the callers (`milestoneRank(earned) > rank(acked)` in Health/Goal), not in
+  a never-shrinking earned set. Fixed the same stale "longest-gap-ever" framing
+  in the `ackedMilestoneId` type comment (~line 57) while there. Comment-only,
+  no behaviour change.
 - **Process slip, for the record:** `feat/postzero-confirm` was merged without
   the on-device check the repo rules require (`b4ed451`), the one deliberate
   exception so far. Its offer card was still unverified on device as of this
