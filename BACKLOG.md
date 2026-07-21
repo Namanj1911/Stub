@@ -287,7 +287,7 @@ refs re-checked against main 2026-07-20 after the taper-restart merge.
   clean. Interacts with finding #6 (still open): #6 will switch Goal's offer
   headline from `streakDays` to `completedZeroDays`, which is the consumer that
   actually needs the precise count.
-- [ ] **Post-zero date/count nits on Goal** *(low, two small ones)*.
+- [x] **Post-zero date/count nits on Goal** *(low, two small ones)*.
   *(a)* "Smoke-free since" can be off by one day: it shows the calendar date
   of `lastSmokeAt + 24h` (`src/screens/GoalScreen.tsx:84-91`), so a last
   cigarette logged between midnight and 4am — which day-keys to the previous
@@ -298,6 +298,12 @@ refs re-checked against main 2026-07-20 after the taper-restart merge.
   includes today in progress — so the card typically reads "8 days clean"
   above copy saying "Seven days with nothing logged". Print
   `completedZeroDays`. *(finding #6)*
+  — **done 2026-07-20** (`fix/goal-postzero-date-count`, commit `1b6e025`),
+  device-checked 2026-07-21. *(a)* now derives the since-date from
+  `runStartDayKey` via a new `domain.dateOfKey` (renders a key on its own 4am
+  boundary); *(b)* prints `completedZeroDays` in the headline and a11y label.
+  Two new `dateOfKey` domain tests, mutation-verified. Merged to main alongside
+  the #10 signpost follow-up.
 - [x] **Tomorrow card doesn't say it's conditional** *(low, UX)*.
   `tomorrowBudgetSixths` is arithmetically correct — verified same window,
   same rounding, same min as the real next-day chain step
