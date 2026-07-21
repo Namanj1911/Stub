@@ -10,6 +10,7 @@ import {
   fmtSince,
   fmtTime,
   frac,
+  recentDailyAverageSixths,
   tomorrowBudgetSixths,
   totalSixths,
 } from '../domain';
@@ -70,6 +71,16 @@ export function LogScreen() {
   // rendering 0/0. Covers `arrived` and `offer` as well as confirmed post-zero
   // — the budget is gone in all three, whether or not the user has said so.
   const atZero = budget <= 0;
+  // The #10 follow-up's quieter half: once the budget hits zero the caption
+  // retires the budget framing to "past the taper", which is right for a genuine
+  // finisher but wrong for someone logging cigarettes again — and Log is where
+  // they live, so they may never open Goal to meet its signpost. Same predicate
+  // Goal and the Profile restart card gate on (budget zero AND measured recent
+  // smoking disagrees), so all three surfaces agree by construction and a
+  // genuine quitter keeps the plain "past the taper" caption untouched. This
+  // points at the control on Profile; it never hosts it.
+  const smokingAgain =
+    atZero && recentDailyAverageSixths(entries, todayKey, profile.installDayKey) > 0;
   // tomorrow's budget (S11) lives here rather than on Goal — it's an
   // operational number, and Goal is the narrative screen
   // (design/HEALTH_TIMELINE.md §13). A caption under it is always visible: the
@@ -160,26 +171,47 @@ export function LogScreen() {
         >
           {frac(total)}
         </Text>
-        <Text style={{ fontFamily: font.regular, fontSize: 13, color: color.neutral500, marginTop: 2 }}>
-          {atZero ? copy('taperDone') : `of a ${frac(budget)} budget`} ·{' '}
-          <Text
-            style={{
-              color: atZero
-                ? total === 0
-                  ? color.neutral400
-                  : color.accent300
-                : left > 0
-                  ? color.neutral400
-                  : color.accent300,
-            }}
+        {smokingAgain ? (
+          // Signpost, not the control: the whole caption is the pointer, so the
+          // hit target is the line and tapping anywhere on it reaches Profile —
+          // same "points rather than hosts" pattern as Goal's card and its
+          // "change" link. The lead stays neutral (the mismatch, stated), the
+          // CTA takes the accent and the arrow (the door).
+          <Pressable
+            onPress={() => nav.navigate('Profile')}
+            accessibilityRole="button"
+            accessibilityLabel={`${copy('taperStaleLead')}. ${copy('taperStaleCta')} on Profile`}
+            style={({ pressed }) => ({ alignSelf: 'flex-start', opacity: pressed ? 0.6 : 1 })}
           >
-            {atZero
-              ? copy(total === 0 ? 'taperDoneClean' : 'taperDoneLogged')
-              : left > 0
-                ? `${frac(left)} left`
-                : copy('budgetTorched')}
+            <Text style={{ fontFamily: font.regular, fontSize: 13, color: color.neutral500, marginTop: 2 }}>
+              {copy('taperStaleLead')} ·{' '}
+              <Text style={{ color: color.accent300 }}>
+                {copy('taperStaleCta')} →
+              </Text>
+            </Text>
+          </Pressable>
+        ) : (
+          <Text style={{ fontFamily: font.regular, fontSize: 13, color: color.neutral500, marginTop: 2 }}>
+            {atZero ? copy('taperDone') : `of a ${frac(budget)} budget`} ·{' '}
+            <Text
+              style={{
+                color: atZero
+                  ? total === 0
+                    ? color.neutral400
+                    : color.accent300
+                  : left > 0
+                    ? color.neutral400
+                    : color.accent300,
+              }}
+            >
+              {atZero
+                ? copy(total === 0 ? 'taperDoneClean' : 'taperDoneLogged')
+                : left > 0
+                  ? `${frac(left)} left`
+                  : copy('budgetTorched')}
+            </Text>
           </Text>
-        </Text>
+        )}
 
         {/* meter — caps at 100% (S4). Retires at zero: `total / budget` is
             0/0 there, which lays out as NaN%, and a bar measuring spend
