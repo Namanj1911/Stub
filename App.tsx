@@ -12,6 +12,7 @@ import {
 import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { StatusBar } from 'expo-status-bar';
+import * as Sentry from '@sentry/react-native';
 import React from 'react';
 import { View } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
@@ -31,6 +32,19 @@ import { SosScreen } from './src/screens/SosScreen';
 import { StatsScreen } from './src/screens/StatsScreen';
 import { useAppData } from './src/store';
 import { color, font } from './src/theme';
+
+// Crash reporting (GO_LIVE.md §6). Inert until a DSN is supplied via
+// EXPO_PUBLIC_SENTRY_DSN — no Sentry project yet means no init, no network, no
+// change to the "Data Not Collected" privacy label. When it does turn on,
+// sendDefaultPii stays false so crash data is never linked to a person: an 18+
+// health app's crash telemetry must stay anonymous.
+const sentryDsn = process.env.EXPO_PUBLIC_SENTRY_DSN;
+if (sentryDsn) {
+  Sentry.init({
+    dsn: sentryDsn,
+    sendDefaultPii: false,
+  });
+}
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createMaterialTopTabNavigator<TabParamList>();
@@ -117,7 +131,7 @@ function Tabs() {
   );
 }
 
-export default function App() {
+function App() {
   const [fontsLoaded] = useFonts({ Inter_400Regular, Inter_500Medium, Inter_700Bold });
   const store = useAppData();
 
@@ -179,3 +193,8 @@ export default function App() {
     </SafeAreaProvider>
   );
 }
+
+// Sentry.wrap adds the error boundary / profiler, but only once init has run.
+// Wrapping without a DSN logs an "App Start Span could not be finished" warning
+// on every launch, so stay a plain passthrough until Sentry is actually on.
+export default sentryDsn ? Sentry.wrap(App) : App;
