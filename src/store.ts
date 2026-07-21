@@ -25,8 +25,13 @@ import {
   type AnnouncedMilestone,
   type NotifPrefs,
 } from './notificationPlan';
+import { cleanName } from './strings';
 
 export type Profile = {
+  // First name / nickname, used sparingly to personalize copy. Optional by
+  // design: skipping it in setup is a first-class path, and every line that
+  // can carry a name has a nameless twin. Local-only, like everything else.
+  name?: string;
   // countPerDay / pricePerStick mirror the last history record (kept in sync
   // by the mutators) so screens can read "current" without a lookup.
   countPerDay: number;
@@ -188,6 +193,7 @@ export function useAppData() {
 
   const completeSetup = useCallback(
     (input: {
+      name?: string;
       countPerDay: number;
       pace: Pace;
       brandId?: string;
@@ -200,6 +206,7 @@ export function useAppData() {
         priceDatasetVersion: DATASET_VERSION,
         profile: {
           ...input,
+          name: cleanName(input.name),
           installDayKey,
           baselineHistory: [{ fromDayKey: installDayKey, countPerDay: input.countPerDay }],
           priceHistory: [
@@ -215,6 +222,17 @@ export function useAppData() {
           ],
         },
       }));
+    },
+    [update],
+  );
+
+  // Name edits take effect immediately — nothing derives from the name, so
+  // unlike baseline/brand/plan there is no history to keep honest.
+  const setName = useCallback(
+    (name: string | undefined) => {
+      update((d) =>
+        d.profile ? { ...d, profile: { ...d.profile, name: cleanName(name) } } : d,
+      );
     },
     [update],
   );
@@ -492,6 +510,7 @@ export function useAppData() {
     data,
     loaded,
     completeSetup,
+    setName,
     addEntry,
     dismissHoldNotice,
     undoLast,

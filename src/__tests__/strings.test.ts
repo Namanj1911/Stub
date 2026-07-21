@@ -36,7 +36,13 @@
 // These assert the *property* — every line reachable, none dominant — which is
 // what actually protects the copy.
 
-import { budgetHoldCopy, budgetNudgeCopy, milestonePushCopy } from '../strings';
+import {
+  budgetHoldCopy,
+  budgetNudgeCopy,
+  cleanName,
+  milestonePushCopy,
+  sosResult,
+} from '../strings';
 import { INSTALL_KEY as I, atLocalHour } from './fixtures';
 
 // Realistic seeds, in the exact shape notificationPlan builds them:
@@ -165,6 +171,76 @@ describe('milestonePushCopy', () => {
 
   it('titles a streak with its own length', () => {
     expect(milestonePushCopy('streak-14', 'x')!.title).toBe('14 days under budget');
+  });
+});
+
+describe('personalization (owner decision 2026-07-22)', () => {
+  const NAMED_IDS = ['first-under-budget', 'first-clean-day', 'quit-day', 'streak-7', 'streak-30'];
+  const NAMELESS_IDS = ['streak-3', 'streak-14'];
+  const bodiesFor = (id: string, name?: string) => {
+    const out: string[] = [];
+    for (let n = 0; n < 300; n++) {
+      out.push(milestonePushCopy(id, `${id}:${atLocalHour(I + n, 9)}`, name)!.body);
+    }
+    return out;
+  };
+
+  it('stays deterministic with a name — same seed, same line', () => {
+    const seed = `quit-day:${atLocalHour(I, 9)}`;
+    const first = milestonePushCopy('quit-day', seed, 'Naman');
+    for (let i = 0; i < 50; i++) {
+      expect(milestonePushCopy('quit-day', seed, 'Naman')).toEqual(first);
+    }
+  });
+
+  it('a named user hears their name in some pushes of each named pool — never all', () => {
+    for (const id of NAMED_IDS) {
+      const withName = bodiesFor(id, 'Naman').filter((b) => b.includes('Naman')).length;
+      expect(withName).toBeGreaterThan(0);
+      expect(withName).toBeLessThan(300);
+    }
+  });
+
+  it('streaks 3 and 14 stay nameless — sparseness is the feature', () => {
+    for (const id of NAMELESS_IDS) {
+      expect(bodiesFor(id, 'Naman').some((b) => b.includes('Naman'))).toBe(false);
+    }
+  });
+
+  it('no name never renders a hole or a placeholder', () => {
+    for (const id of [...NAMED_IDS, ...NAMELESS_IDS]) {
+      for (const body of bodiesFor(id, undefined)) {
+        expect(body).not.toContain('undefined');
+        expect(body).not.toContain(', .');
+      }
+    }
+  });
+
+  it('the name never shares a body with an explicit smoking word (lock screens are public)', () => {
+    for (const id of NAMED_IDS) {
+      for (const body of bodiesFor(id, 'Naman')) {
+        if (body.includes('Naman')) {
+          expect(body.toLowerCase()).not.toMatch(/smok|cigarette|lung/);
+        }
+      }
+    }
+  });
+
+  it('sosResult puts the name on the scoreboard, and falls back to You', () => {
+    expect(sosResult('survived', 4, 'Naman').title).toBe('Craving: 0. Naman: 4.');
+    expect(sosResult('survived', 4).title).toBe('Craving: 0. You: 4.');
+    // A slip is never personalized — the name is for wins only.
+    expect(sosResult('smoked', 4, 'Naman').title).toBe('Logged. No drama.');
+  });
+
+  it('cleanName trims, caps at 20, and turns empty into undefined', () => {
+    expect(cleanName('  Naman ')).toBe('Naman');
+    expect(cleanName('   ')).toBeUndefined();
+    expect(cleanName('')).toBeUndefined();
+    expect(cleanName(undefined)).toBeUndefined();
+    expect(cleanName('A'.repeat(30))).toHaveLength(20);
+    // The cap can expose trailing whitespace — it must be re-trimmed, not kept.
+    expect(cleanName(`${'A'.repeat(19)} B`)).toBe('A'.repeat(19));
   });
 });
 

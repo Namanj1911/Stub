@@ -430,7 +430,10 @@ function ResultView({
   weeklySurvived: number;
   onDone: () => void;
 }) {
-  const { title, body } = sosResult(outcome, weeklySurvived);
+  // The survived scoreboard prints the user's name if they gave one —
+  // "Craving: 0. Naman: 4." is the personal beat this screen earns.
+  const name = useApp().data.profile?.name;
+  const { title, body } = sosResult(outcome, weeklySurvived, name);
   return (
     <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 14, paddingHorizontal: 10 }}>
       <Text style={{ fontFamily: font.medium, fontSize: 28, color: color.text, textAlign: 'center' }}>
