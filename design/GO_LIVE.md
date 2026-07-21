@@ -268,9 +268,9 @@ Ordered by hurt-if-ignored; statuses updated.
    URL-cited source (ITC Feb-2026 revision, distributor lists,
    quick-commerce), every nicotine/tar figure honestly carries
    `study`/`proxy`/`estimate` confidence and the `~` softness prefix. No
-   dangling source refs. See `design/BRANDS_DATA_PLAN.md`. (Optional
-   follow-up, not a gate: no automated test guards the dataset invariants —
-   the resolve-every-source check was done by hand.)
+   dangling source refs. See `design/BRANDS_DATA_PLAN.md`. Guarded by
+   `src/__tests__/brands.test.ts` (11 assertions, mutation-checked) so the
+   invariants can't silently regress.
 2. ☐ **Single-device data with no backup** — decision stands: ship v1
    explicitly single-device (listing copy says so; onboarding nudges an
    occasional export). Two softeners discovered since: iOS device backups
