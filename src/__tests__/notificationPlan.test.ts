@@ -98,11 +98,13 @@ describe('budget nudge — thresholds', () => {
   });
 
   it('says how much is left, not how much was smoked', () => {
-    // Budget 54, spent 48 → 6 sixths = one whole cigarette left.
+    // Budget 54, spent 48 → 6 sixths = one whole cigarette left, rendered as
+    // a bare "1" — the unit never appears on a lock screen (tone rule 5).
     const data = appData({ entries: crossingAt(15) });
     const nudge = find(planNotifications(data, atLocalHour(DAY, 15, 10)), `nudge-${DAY}`)!;
     expect(nudge.title).toBe('Budget check');
-    expect(nudge.body).toContain('1 cigarette');
+    expect(nudge.body).toMatch(/\b1\b/);
+    expect(nudge.body.toLowerCase()).not.toContain('cigarette');
   });
 });
 

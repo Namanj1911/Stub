@@ -1,7 +1,31 @@
 // All user-facing feedback copy lives in this one table (NFR7). The app
 // speaks in one voice — roast — by product decision (gentle mode removed).
+//
+// PERSONALIZATION RULE (owner decision 2026-07-22). The profile may carry a
+// first name, and a handful of lines use it. Where it is allowed to appear:
+//
+//   - Celebration beats only: the plan-ready card, the SOS survived result,
+//     milestone celebrations, the post-zero mode flip, and the celebratory
+//     pushes (milestones/streaks). Never in a roast — "budget torched,
+//     Naman" turns a roast about the budget into a callout of the person —
+//     and never in the budget nudge.
+//   - In pushes, never in the same line as an explicit smoking word. A lock
+//     screen showing a name next to "smoker" tells everyone who glances at
+//     the phone something that is nobody's business (tone rule 3 below).
+//   - Sparsely: one variant per pool, so a named user hears their name
+//     sometimes and a skipped name changes nothing. Every named line has a
+//     nameless twin — no template ever renders around a hole.
 
 import { frac } from './domain';
+
+// One rule for the name wherever it enters (setup or Profile edit): trimmed,
+// capped so it can't break a title layout, and empty means "no name" — never
+// an empty string a template would render around. Lives here rather than in
+// store.ts so the pure copy module owns the whole personalization contract.
+export function cleanName(name: string | undefined): string | undefined {
+  const trimmed = name?.trim().slice(0, 20).trim();
+  return trimmed || undefined;
+}
 
 const TABLE = {
   undone: 'Undone. It never happened.',
@@ -85,9 +109,12 @@ export function copy(key: StringKey): string {
 // hear the same line as the first. States are checked severity-first; a
 // ⅓-shared log mixes in the "splitting the bill" pool as extra candidates.
 const LOG_TOASTS = {
-  // first log of the day, budget still comfortable
+  // first log of the day, budget still comfortable.
+  // Same ceiling-not-quota rule as NUDGE_LINES: no line in any pool here may
+  // read as an invitation to spend what's left. Roast the spending, cheer the
+  // not-spending, never presume the remainder gets smoked.
   firstOfDay: [
-    "Day's open. Let's see if today's the day you embarrass the budget.",
+    "Day's open. The budget would love to be ignored today.",
     'First one logged. The scoreboard is watching now.',
     "And we're off. Slow start is a strategy — keep it.",
     'Logged. The day had a perfect record for a while there.',
@@ -102,7 +129,7 @@ const LOG_TOASTS = {
   // one-ish cigarette left in the budget
   oneLeft: [
     'Logged. That leaves basically fumes for the rest of the day.',
-    'One-ish left. Choose its moment wisely.',
+    'One-ish left. No law says it has to get used.',
     'Logged. The budget is down to its last life.',
     "That's the second-to-last call. Make the next one count — or don't have it.",
   ],
@@ -199,10 +226,13 @@ export function pickPrompts(): { early: string; mid: string; late: string } {
 export function sosResult(
   outcome: 'survived' | 'smoked',
   weeklySurvived: number,
+  name?: string,
 ): { title: string; body: string } {
   if (outcome === 'survived') {
+    // The scoreboard reads best with the user's actual name on it — this is
+    // the one place personalization is the whole joke, not a garnish.
     return {
-      title: `Craving: 0. You: ${weeklySurvived}.`,
+      title: `Craving: 0. ${name ?? 'You'}: ${weeklySurvived}.`,
       body: `That's ${weeklySurvived} outlasted this week. The craving is embarrassed for itself.`,
     };
   }
@@ -406,17 +436,20 @@ export const healthBehind =
 // Milestone celebration (§9). In-app only this phase — no push until the dev
 // build — so it has to feel earned when the user opens the app and finds it
 // waiting. Rolled per launch like everything else here.
-const MILESTONE_CELEBRATIONS = [
-  'Earned. Your body did the work; you just stayed out of its way.',
-  'That one is yours now. It does not un-happen.',
-  'Milestone cleared. Quietly impressive, which is the best kind.',
-  'Logged in the good column for once.',
+// One named variant per the personalization rule up top; the named line's
+// nameless twin is the original wording, so a skipped name changes nothing.
+const MILESTONE_CELEBRATIONS: ((name?: string) => string)[] = [
+  () => 'Earned. Your body did the work; you just stayed out of its way.',
+  (n) =>
+    n ? `That one is yours now, ${n}. It does not un-happen.` : 'That one is yours now. It does not un-happen.',
+  () => 'Milestone cleared. Quietly impressive, which is the best kind.',
+  () => 'Logged in the good column for once.',
 ];
 
 const CELEBRATION_ROLL = Math.floor(Math.random() * MILESTONE_CELEBRATIONS.length);
 
-export function milestoneCelebration(): string {
-  return MILESTONE_CELEBRATIONS[CELEBRATION_ROLL];
+export function milestoneCelebration(name?: string): string {
+  return MILESTONE_CELEBRATIONS[CELEBRATION_ROLL](name);
 }
 
 // ---------------------------------------------------------------------------
@@ -453,24 +486,30 @@ export function arrivedCopy(): string {
   return ARRIVED_LINES[ARRIVED_ROLL];
 }
 
-const SMOKE_FREE_LINES: Record<'fresh' | 'building' | 'record', string[]> = {
+// Pools are functions for the one named variant in 'fresh' — the mode flip is
+// the biggest moment the app has, and the one place here a name earns its
+// keep. The rest stay nameless on purpose (see the personalization rule).
+const SMOKE_FREE_LINES: Record<'fresh' | 'building' | 'record', ((name?: string) => string)[]> = {
   // just flipped — the mode is new
   fresh: [
-    'Seven days clean. The app has changed its job description.',
-    'You are out of the taper and into the part nobody warned you about: normal.',
-    'Mode switched. You are not quitting any more — you quit.',
+    () => 'Seven days clean. The app has changed its job description.',
+    () => 'You are out of the taper and into the part nobody warned you about: normal.',
+    (n) =>
+      n
+        ? `Mode switched, ${n}. You are not quitting any more — you quit.`
+        : 'Mode switched. You are not quitting any more — you quit.',
   ],
   // running, short of the personal best
   building: [
-    'The counter is doing its favourite thing: going up.',
-    'Still clean. Past you is somewhere back there, impressed.',
-    'Nothing to ration, nothing to spend. Just days.',
+    () => 'The counter is doing its favourite thing: going up.',
+    () => 'Still clean. Past you is somewhere back there, impressed.',
+    () => 'Nothing to ration, nothing to spend. Just days.',
   ],
   // at the personal best
   record: [
-    'Longest you have ever gone. The record is yours to keep breaking.',
-    'New territory, one boring day at a time.',
-    'This is the furthest you have been. Keep walking.',
+    () => 'Longest you have ever gone. The record is yours to keep breaking.',
+    () => 'New territory, one boring day at a time.',
+    () => 'This is the furthest you have been. Keep walking.',
   ],
 };
 
@@ -496,10 +535,10 @@ export function postZeroOfferCopy(): string {
 
 const SMOKE_FREE_ROLL = Math.random();
 
-export function smokeFreeCopy(streakDays: number, bestDays: number): string {
+export function smokeFreeCopy(streakDays: number, bestDays: number, name?: string): string {
   const state = streakDays <= 8 ? 'fresh' : streakDays >= bestDays ? 'record' : 'building';
   const pool = SMOKE_FREE_LINES[state];
-  return pool[Math.floor(SMOKE_FREE_ROLL * pool.length)];
+  return pool[Math.floor(SMOKE_FREE_ROLL * pool.length)](name);
 }
 
 // A relapse, logged. Honest, unbothered, and over in one line — the app
@@ -569,6 +608,13 @@ export function setupReaction(countPerDay: number): string {
 //    that" is fine in-app and would be genuinely embarrassing on a lock
 //    screen next to the user's name. Roast the budget, not the smoker.
 // 4. Two lines, max. iOS truncates a collapsed banner hard.
+// 5. No explicit smoking vocabulary anywhere in push copy — no "cigarette",
+//    "smoke/smoker/smoke-free", "lungs" (owner, 2026-07-22). Rule 3's
+//    sharper half: a banner that names smoking outs the user to anyone who
+//    glances at the phone. Imply, never name — counts go bare ("1½ left"),
+//    and to a bystander that could be coffees or screen-time hours. In-app
+//    copy is exempt; that screen is in the user's own hand. Guarded by a
+//    swept test in strings.test.ts.
 //
 // Picked deterministically from the notification's own identity, not rolled.
 // The in-app pools roll freely because nothing re-reads them; a scheduled
@@ -583,11 +629,19 @@ export function setupReaction(countPerDay: number): string {
 // because their seeds differ, not because time passed between two reads of
 // the same one.
 
+// TONE RULE for this pool (owner, 2026-07-22): the budget is a ceiling, not
+// a quota. This push fires at 80% spent, so every line is about a remainder —
+// and a remainder is dangerously easy to phrase as an allocation waiting to
+// be finished. "1½ to go" and "the day is not over" both landed on a real
+// lock screen reading as a reminder to smoke what was left — exactly
+// backwards. Every line here must frame the remainder as something to
+// stretch or keep, or say outright that unspent is the win. When in doubt:
+// would this line make sense printed on a ration book? Then it's fine.
 const NUDGE_LINES: ((left: string, when: string) => string)[] = [
-  (left, when) => `${left} left, and it's only ${when}.`,
+  (left, when) => `${left} left, and it's only ${when}. Make it last.`,
   (left, when) => `It's ${when}. You've got ${left} to last the evening.`,
-  (left) => `${left} left in the budget. The day is not over.`,
-  (left, when) => `${when}, ${left} to go. Pace yourself or don't — we'll log it either way.`,
+  (left) => `${left} left. That's a ceiling, not a to-do list.`,
+  (left, when) => `${when}, with ${left} in reserve. Whatever's still there tonight, you won.`,
 ];
 
 // FNV-1a over the seed (with Math.imul), then murmur3's finalizer. Any stable
@@ -642,14 +696,10 @@ export function budgetNudgeCopy(
   fireAt: number,
   seed: string,
 ): { title: string; body: string } {
-  // frac() renders sixths as ⅓/½/1½ etc. A bare fraction reads wrong with a
-  // plural noun ("½ cigarettes"), so anything under a whole one gets "a".
-  const left =
-    remainingSixths === 6
-      ? '1 cigarette'
-      : remainingSixths < 6
-        ? `${frac(remainingSixths)} of a cigarette`
-        : `${frac(remainingSixths)} cigarettes`;
+  // Deliberately no noun on the count (tone rule 5): "1½ left" is the
+  // privacy. The user knows the unit — the app counts in sticks everywhere —
+  // and nobody reading over their shoulder gets to know it too.
+  const left = frac(remainingSixths);
   return { title: 'Budget check', body: pick(NUDGE_LINES, seed)(left, fmtHour(fireAt)) };
 }
 
@@ -693,66 +743,91 @@ export function budgetHoldCopy(
 // The praise is real; the roast is the chaser. Getting that order wrong
 // (roast first) reads as sarcasm about the achievement itself, which is the
 // one thing a milestone push must not do.
-const MILESTONE_PUSH: Record<string, { title: string; lines: string[] }> = {
+// Lines are functions of the (optional) name so one variant per pool can be
+// personal — celebratory pushes are the only pushes allowed a name at all,
+// and per the rule up top the name never shares a line with a smoking word:
+// a lock screen is a public place. The named line's nameless twin is the
+// original wording, so an anonymous user's pools are unchanged.
+const MILESTONE_PUSH: Record<string, { title: string; lines: ((name?: string) => string)[] }> = {
   'first-under-budget': {
     title: 'First day under budget',
     lines: [
-      'You finished a day inside the number. Once is an accident — do it again.',
-      "That's one day the budget didn't lose. Only one, mind you.",
-      'Under budget, first time. The bar is on the floor and you cleared it — good.',
+      (n) =>
+        n
+          ? `You finished a day inside the number, ${n}. Once is an accident — do it again.`
+          : 'You finished a day inside the number. Once is an accident — do it again.',
+      () => "That's one day the budget didn't lose. Only one, mind you.",
+      () => 'Under budget, first time. The bar is on the floor and you cleared it — good.',
     ],
   },
   'first-clean-day': {
-    title: 'A smoke-free day',
+    title: 'A clean day',
     lines: [
-      'A whole day, nothing logged. Your lungs would like this in writing.',
-      "Zero. Not 'nearly zero' — zero. That one goes on the record.",
-      'Nothing logged all day. Suspicious. Excellent, but suspicious.',
+      () => 'A whole day, nothing logged. This is the kind of empty we like.',
+      (n) =>
+        n
+          ? `Zero. Not 'nearly zero' — zero, ${n}. That one goes on the record.`
+          : "Zero. Not 'nearly zero' — zero. That one goes on the record.",
+      () => 'Nothing logged all day. Suspicious. Excellent, but suspicious.',
     ],
   },
   'quit-day': {
     title: 'The budget hit zero',
     lines: [
-      'Your plan has run out of cigarettes to give you. That was the whole point.',
-      "Budget: zero. The taper is done — now it's just you and the habit.",
-      'Zero budget from here. Everything after this is yours to keep.',
+      () => 'Your plan has run out of allowance to give you. That was the whole point.',
+      () => "Budget: zero. The taper is done — now it's just you and the habit.",
+      (n) =>
+        n
+          ? `Zero budget from here, ${n}. Everything after this is yours to keep.`
+          : 'Zero budget from here. Everything after this is yours to keep.',
     ],
   },
 };
 
-const STREAK_PUSH: Record<number, string[]> = {
+// Named variants only at 7 and 30 — hearing your name at every threshold is
+// exactly the overdoing the owner ruled out.
+const STREAK_PUSH: Record<number, ((name?: string) => string)[]> = {
   3: [
-    'Three days under budget. Long enough to stop being luck.',
-    "Three straight. That's a pattern forming, whether you meant it or not.",
+    () => 'Three days under budget. Long enough to stop being luck.',
+    () => "Three straight. That's a pattern forming, whether you meant it or not.",
   ],
   7: [
-    'A full week under budget. The budget has stopped arguing.',
-    'Seven days straight. Statistically, you are now a different smoker.',
+    (n) =>
+      n
+        ? `A full week under budget, ${n}. The budget has stopped arguing.`
+        : 'A full week under budget. The budget has stopped arguing.',
+    () => 'Seven days straight. Statistically, you are now a different person.',
   ],
   14: [
-    'Two weeks under budget. This is just how you smoke now, apparently.',
-    'Fourteen days. The streak is starting to look like a personality trait.',
+    () => 'Two weeks under budget. This is just how you operate now, apparently.',
+    () => 'Fourteen days. The streak is starting to look like a personality trait.',
   ],
   30: [
-    'Thirty days under budget. At some point we have to admit this is deliberate.',
-    'A month straight. The app is running out of ways to be surprised.',
+    (n) =>
+      n
+        ? `Thirty days under budget, ${n}. At some point we have to admit this is deliberate.`
+        : 'Thirty days under budget. At some point we have to admit this is deliberate.',
+    () => 'A month straight. The app is running out of ways to be surprised.',
   ],
 };
 
 // `seed` should carry the fire time as well as the id, so a streak that is
 // broken and later re-earned reads differently the second time — same
-// milestone, genuinely different occasion.
+// milestone, genuinely different occasion. The name is NOT part of the seed:
+// it's stable per user, so the same push keeps the same wording across
+// reconciles whether or not a name is set.
 export function milestonePushCopy(
   id: string,
   seed: string,
+  name?: string,
 ): { title: string; body: string } | null {
   const streak = id.match(/^streak-(\d+)$/);
   if (streak) {
     const n = Number(streak[1]);
     const pool = STREAK_PUSH[n];
     if (!pool) return null;
-    return { title: `${n} days under budget`, body: pick(pool, seed) };
+    return { title: `${n} days under budget`, body: pick(pool, seed)(name) };
   }
   const m = MILESTONE_PUSH[id];
-  return m ? { title: m.title, body: pick(m.lines, seed) } : null;
+  return m ? { title: m.title, body: pick(m.lines, seed)(name) } : null;
 }

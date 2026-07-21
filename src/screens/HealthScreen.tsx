@@ -293,7 +293,7 @@ export function HealthScreen() {
               marginTop: 10,
             }}
           >
-            {milestoneCelebration()}
+            {milestoneCelebration(profile.name)}
           </Text>
         </Animated.View>
       )}

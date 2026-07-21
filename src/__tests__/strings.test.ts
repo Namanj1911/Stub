@@ -36,7 +36,13 @@
 // These assert the *property* — every line reachable, none dominant — which is
 // what actually protects the copy.
 
-import { budgetHoldCopy, budgetNudgeCopy, milestonePushCopy } from '../strings';
+import {
+  budgetHoldCopy,
+  budgetNudgeCopy,
+  cleanName,
+  milestonePushCopy,
+  sosResult,
+} from '../strings';
 import { INSTALL_KEY as I, atLocalHour } from './fixtures';
 
 // Realistic seeds, in the exact shape notificationPlan builds them:
@@ -139,21 +145,36 @@ describe('push copy reaches its whole pool', () => {
   });
 });
 
-describe('nudge copy renders the remaining count as English', () => {
+describe('nudge copy never reads as a quota (owner report 2026-07-22)', () => {
+  // The budget is a ceiling, not an allocation to finish. "1½ to go" and
+  // "the day is not over" both landed on a real lock screen as a nudge TO
+  // smoke the remainder. This sweeps every line in the pool for the framings
+  // that caused it; the full rule lives on NUDGE_LINES in strings.ts.
+  it('no reachable line uses completion framing', () => {
+    for (const { seed, fireAt } of nudgeSeeds(200)) {
+      const body = budgetNudgeCopy(9, fireAt, seed).body.toLowerCase();
+      expect(body).not.toMatch(/to go|not over|pace yourself/);
+    }
+  });
+});
+
+describe('nudge copy renders the remaining count bare (tone rule 5)', () => {
   const fireAt = atLocalHour(I, 15, 45);
   const seed = `nudge-${I}:${fireAt}`;
 
-  it('says "1 cigarette", never "1 cigarettes"', () => {
-    expect(budgetNudgeCopy(6, fireAt, seed).body).toContain('1 cigarette');
-    expect(budgetNudgeCopy(6, fireAt, seed).body).not.toContain('1 cigarettes');
+  // The unit is deliberately absent: "1½ left" tells the user everything and
+  // a shoulder-surfer nothing. The vocabulary sweep below enforces the ban;
+  // these pin the rendering across the whole/fraction/mixed shapes.
+  it('renders a whole cigarette as a bare 1', () => {
+    expect(budgetNudgeCopy(6, fireAt, seed).body).toMatch(/\b1\b/);
   });
 
-  it('reads a bare fraction as "½ of a cigarette"', () => {
-    expect(budgetNudgeCopy(3, fireAt, seed).body).toContain('½ of a cigarette');
+  it('renders a bare fraction as ½', () => {
+    expect(budgetNudgeCopy(3, fireAt, seed).body).toContain('½');
   });
 
-  it('pluralises above a whole one', () => {
-    expect(budgetNudgeCopy(9, fireAt, seed).body).toContain('1½ cigarettes');
+  it('renders a mixed count as 1½', () => {
+    expect(budgetNudgeCopy(9, fireAt, seed).body).toContain('1½');
   });
 });
 
@@ -165,6 +186,86 @@ describe('milestonePushCopy', () => {
 
   it('titles a streak with its own length', () => {
     expect(milestonePushCopy('streak-14', 'x')!.title).toBe('14 days under budget');
+  });
+});
+
+describe('personalization (owner decision 2026-07-22)', () => {
+  const NAMED_IDS = ['first-under-budget', 'first-clean-day', 'quit-day', 'streak-7', 'streak-30'];
+  const NAMELESS_IDS = ['streak-3', 'streak-14'];
+  const bodiesFor = (id: string, name?: string) => {
+    const out: string[] = [];
+    for (let n = 0; n < 300; n++) {
+      out.push(milestonePushCopy(id, `${id}:${atLocalHour(I + n, 9)}`, name)!.body);
+    }
+    return out;
+  };
+
+  it('stays deterministic with a name — same seed, same line', () => {
+    const seed = `quit-day:${atLocalHour(I, 9)}`;
+    const first = milestonePushCopy('quit-day', seed, 'Naman');
+    for (let i = 0; i < 50; i++) {
+      expect(milestonePushCopy('quit-day', seed, 'Naman')).toEqual(first);
+    }
+  });
+
+  it('a named user hears their name in some pushes of each named pool — never all', () => {
+    for (const id of NAMED_IDS) {
+      const withName = bodiesFor(id, 'Naman').filter((b) => b.includes('Naman')).length;
+      expect(withName).toBeGreaterThan(0);
+      expect(withName).toBeLessThan(300);
+    }
+  });
+
+  it('streaks 3 and 14 stay nameless — sparseness is the feature', () => {
+    for (const id of NAMELESS_IDS) {
+      expect(bodiesFor(id, 'Naman').some((b) => b.includes('Naman'))).toBe(false);
+    }
+  });
+
+  it('no name never renders a hole or a placeholder', () => {
+    for (const id of [...NAMED_IDS, ...NAMELESS_IDS]) {
+      for (const body of bodiesFor(id, undefined)) {
+        expect(body).not.toContain('undefined');
+        expect(body).not.toContain(', .');
+      }
+    }
+  });
+
+  it('no push title or body ever names smoking (tone rule 5 — lock screens are public)', () => {
+    // Blanket ban, upgraded 2026-07-22 from "not next to the name" to "not at
+    // all": every reachable line of every push, named or anonymous, plus the
+    // titles. In-app copy is exempt — this sweeps only what can land on a
+    // lock screen.
+    const BAN = /smok|cigarette|lung/;
+    for (const id of [...NAMED_IDS, ...NAMELESS_IDS]) {
+      for (const name of ['Naman', undefined]) {
+        expect(milestonePushCopy(id, 'x', name)!.title.toLowerCase()).not.toMatch(BAN);
+        for (const body of bodiesFor(id, name)) {
+          expect(body.toLowerCase()).not.toMatch(BAN);
+        }
+      }
+    }
+    for (const { seed, fireAt } of nudgeSeeds(200)) {
+      const { title, body } = budgetNudgeCopy(9, fireAt, seed);
+      expect(`${title} ${body}`.toLowerCase()).not.toMatch(BAN);
+    }
+  });
+
+  it('sosResult puts the name on the scoreboard, and falls back to You', () => {
+    expect(sosResult('survived', 4, 'Naman').title).toBe('Craving: 0. Naman: 4.');
+    expect(sosResult('survived', 4).title).toBe('Craving: 0. You: 4.');
+    // A slip is never personalized — the name is for wins only.
+    expect(sosResult('smoked', 4, 'Naman').title).toBe('Logged. No drama.');
+  });
+
+  it('cleanName trims, caps at 20, and turns empty into undefined', () => {
+    expect(cleanName('  Naman ')).toBe('Naman');
+    expect(cleanName('   ')).toBeUndefined();
+    expect(cleanName('')).toBeUndefined();
+    expect(cleanName(undefined)).toBeUndefined();
+    expect(cleanName('A'.repeat(30))).toHaveLength(20);
+    // The cap can expose trailing whitespace — it must be re-trimmed, not kept.
+    expect(cleanName(`${'A'.repeat(19)} B`)).toBe('A'.repeat(19));
   });
 });
 

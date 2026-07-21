@@ -173,7 +173,7 @@ export function GoalScreen() {
               opacity: 0.9,
             }}
           >
-            {smokeFreeCopy(sf.streakDays, sf.bestDays)}
+            {smokeFreeCopy(sf.streakDays, sf.bestDays, profile.name)}
           </Text>
           <View
             style={{

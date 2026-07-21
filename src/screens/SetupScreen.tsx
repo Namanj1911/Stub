@@ -1,7 +1,8 @@
 // Onboarding — S13, per the 2a mockup minus the price step (BACKLOG P1:
-// price derives from the brand's MRP, never typed): count/day, brand,
+// price derives from the brand's MRP, never typed): name, count/day, brand,
 // triggers, pace, then the plan-ready card. Only the count is non-skippable;
-// every step has a sane default so Continue always works.
+// every step has a sane default so Continue always works — for the name step
+// the default is simply no name (strings.ts personalization rule).
 
 import React, { useState } from 'react';
 import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
@@ -35,15 +36,19 @@ const TRIGGERS = [
 ];
 
 const NEXT_HINT = [
+  'Next: your daily count',
   'Next: your usual brand',
   'Next: your trigger times',
   'Next: your quitting pace',
   'Last one — then your plan',
 ];
 
+const STEPS = 5;
+
 export function SetupScreen() {
   const { completeSetup } = useApp();
   const [step, setStep] = useState(0);
+  const [name, setName] = useState('');
   const [count, setCount] = useState(9);
   // null = "something else" — priced at the dataset average, name optional,
   // refinable later from the nicotine list
@@ -70,7 +75,8 @@ export function SetupScreen() {
     : defaultBrands;
 
   const price = picked?.price ?? BRAND_AVERAGES.price;
-  const done = step >= 4;
+  const trimmedName = name.trim();
+  const done = step >= STEPS;
   const monthly = Math.round(count * price * 30).toLocaleString('en-IN');
   const weeksTo = (p: Pace) => Math.ceil(count / (PACE_RATE[p] / 6));
   const quitDay = new Date(Date.now() + weeksTo(pace) * 7 * 86_400_000).toLocaleDateString(
@@ -90,7 +96,7 @@ export function SetupScreen() {
             stub<Text style={{ color: color.accent }}>.</Text>
           </Text>
           <Text style={{ fontFamily: font.regular, fontSize: 12, color: color.neutral500 }}>
-            {done ? 'done' : `${step + 1} of 4`}
+            {done ? 'done' : `${step + 1} of ${STEPS}`}
           </Text>
         </View>
         <View
@@ -104,7 +110,7 @@ export function SetupScreen() {
         >
           <View
             style={{
-              width: `${done ? 100 : (step + 1) * 25}%`,
+              width: `${done ? 100 : ((step + 1) * 100) / STEPS}%`,
               height: 3,
               backgroundColor: color.accent,
             }}
@@ -112,6 +118,46 @@ export function SetupScreen() {
         </View>
 
         {step === 0 && (
+          <>
+            <Title>What should{'\n'}we call you?</Title>
+            <Sub>
+              So the wins have a name on them. First name, nickname, whatever — or leave it
+              blank and stay anonymous. We won't take it personally.
+            </Sub>
+            <TextInput
+              value={name}
+              onChangeText={setName}
+              placeholder="Your name"
+              placeholderTextColor={color.neutral500}
+              accessibilityLabel="Your name, optional"
+              autoCorrect={false}
+              autoCapitalize="words"
+              maxLength={20}
+              returnKeyType="done"
+              style={{
+                backgroundColor: color.surface,
+                borderWidth: 1,
+                borderColor: color.neutral800,
+                borderRadius: radius.md,
+                paddingVertical: 14,
+                paddingHorizontal: 16,
+                fontFamily: font.regular,
+                fontSize: 16,
+                color: color.text,
+                marginTop: 28,
+              }}
+            />
+            <ReactionCard
+              text={
+                trimmedName
+                  ? `Noted, ${trimmedName}. You'll hear it back at the good moments — not the rough ones.`
+                  : 'Everything stays on this phone, name included. Nothing here has a server to leak from.'
+              }
+            />
+          </>
+        )}
+
+        {step === 1 && (
           <>
             <Title>How many a day,{'\n'}honestly?</Title>
             <Sub>
@@ -130,7 +176,7 @@ export function SetupScreen() {
           </>
         )}
 
-        {step === 1 && (
+        {step === 2 && (
           <>
             <Title>What's your{'\n'}usual?</Title>
             <Sub>
@@ -237,7 +283,7 @@ export function SetupScreen() {
           </>
         )}
 
-        {step === 2 && (
+        {step === 3 && (
           <>
             <Title>When do you{'\n'}usually light up?</Title>
             <Sub>Pick your triggers — we'll watch those windows and nudge you before they hit.</Sub>
@@ -277,7 +323,7 @@ export function SetupScreen() {
           </>
         )}
 
-        {step === 3 && (
+        {step === 4 && (
           <>
             <Title>How fast do you{'\n'}want out?</Title>
             <Sub>
@@ -333,7 +379,13 @@ export function SetupScreen() {
 
         {done && (
           <>
-            <Title>Your plan{'\n'}is ready.</Title>
+            {/* Vocative, not possessive ("Naman, your plan…" over "Naman's
+                plan…"): the whole flow talks TO the user in second person,
+                and this is the payoff of having asked their name four steps
+                ago. A possessive would suddenly go third person. */}
+            <Title>
+              {trimmedName ? `${trimmedName}, your plan\nis ready.` : 'Your plan\nis ready.'}
+            </Title>
             <View
               style={{
                 borderRadius: radius.lg,
@@ -375,6 +427,7 @@ export function SetupScreen() {
           onPress={() => {
             if (done) {
               completeSetup({
+                name: trimmedName || undefined,
                 countPerDay: count,
                 pace,
                 brandId: brandId ?? undefined,
@@ -395,7 +448,7 @@ export function SetupScreen() {
           })}
         >
           <Text style={{ fontFamily: font.medium, fontSize: 15, color: color.bg }}>
-            {done ? "Let's go" : step === 3 ? 'Build my plan' : 'Continue'}
+            {done ? "Let's go" : step === STEPS - 1 ? 'Build my plan' : 'Continue'}
           </Text>
         </Pressable>
         {!done && (

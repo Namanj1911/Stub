@@ -33,7 +33,8 @@ const PACE_LABEL: { id: Pace; name: string; rate: string }[] = [
 ];
 
 export function ProfileScreen() {
-  const { data, setCountPerDay, setPace, setNotifPref, resetAll, startNewTaper } = useApp();
+  const { data, setName, setCountPerDay, setPace, setNotifPref, resetAll, startNewTaper } =
+    useApp();
   const prefs = data.notifPrefs ?? DEFAULT_NOTIF_PREFS;
   const profile = useProfile();
   const nav = useNav();
@@ -84,6 +85,22 @@ export function ProfileScreen() {
     }).catch(() => {});
   };
 
+  // Alert.prompt is iOS-only, which is the only platform we ship — a whole
+  // screen for a one-word edit would be ceremony. Clearing the field goes
+  // back to anonymous; cleanName in the store handles trim/cap/empty.
+  const editName = () => {
+    Alert.prompt(
+      'Your name',
+      "What should we call you? Leave it empty to stay anonymous.",
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Save', onPress: (text?: string) => setName(text) },
+      ],
+      'plain-text',
+      profile.name ?? '',
+    );
+  };
+
   const confirmReset = () => {
     Alert.alert(copy('resetTitle'), copy('resetBody'), [
       { text: 'Keep my data', style: 'cancel' },
@@ -111,6 +128,35 @@ export function ProfileScreen() {
           profile<Text style={{ color: color.accent }}>.</Text>
         </Text>
       </View>
+
+      {/* name — display + edit (owner feature 2026-07-22) */}
+      <SectionLabel>You</SectionLabel>
+      <Pressable
+        onPress={editName}
+        accessibilityLabel="Change your name"
+        style={({ pressed }) => ({
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          backgroundColor: pressed ? color.accentTint10 : color.surface,
+          borderRadius: radius.md,
+          padding: 16,
+        })}
+      >
+        <View style={{ flex: 1 }}>
+          <Text style={{ fontFamily: font.medium, fontSize: 15, color: color.text }}>
+            {profile.name ?? 'Anonymous'}
+          </Text>
+          <Text style={{ fontFamily: font.regular, fontSize: 12, color: color.neutral500, marginTop: 3 }}>
+            {profile.name
+              ? 'Used at the good moments, never in the roasts'
+              : "No name on file — the app keeps things impersonal until you give it one"}
+          </Text>
+        </View>
+        <Text style={{ fontFamily: font.regular, fontSize: 13, color: color.accent300 }}>
+          change →
+        </Text>
+      </Pressable>
 
       {/* baseline (effective-dated) */}
       <SectionLabel>Your baseline</SectionLabel>

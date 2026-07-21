@@ -198,7 +198,9 @@ function planMilestones(
     // shunt an already-scheduled 9am push to the morning after. It also keeps
     // the copy seed stable across reconciles, since the seed carries fireAt.
     const fireAt = prior?.fireAt ?? nextMorning(now);
-    const copy = milestonePushCopy(id, `${id}:${fireAt}`);
+    // The name rides along but never joins the seed — it's stable per user,
+    // so copy stays a pure function of (id, fireAt, profile).
+    const copy = milestonePushCopy(id, `${id}:${fireAt}`, p.name);
     if (!copy) return;
     out.push({ id, fireAt, ...copy, screen, milestone: true });
   };

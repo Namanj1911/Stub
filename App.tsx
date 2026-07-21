@@ -12,6 +12,7 @@ import {
 import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { StatusBar } from 'expo-status-bar';
+import * as SplashScreen from 'expo-splash-screen';
 import * as Sentry from '@sentry/react-native';
 import React from 'react';
 import { View } from 'react-native';
@@ -30,6 +31,7 @@ import { ProfileScreen } from './src/screens/ProfileScreen';
 import { SetupScreen } from './src/screens/SetupScreen';
 import { SosScreen } from './src/screens/SosScreen';
 import { StatsScreen } from './src/screens/StatsScreen';
+import { WelcomeScreen } from './src/screens/WelcomeScreen';
 import { useAppData } from './src/store';
 import { color, font } from './src/theme';
 
@@ -45,6 +47,11 @@ if (sentryDsn) {
     sendDefaultPii: false,
   });
 }
+
+// Hold the native splash over the fonts+store load instead of the bare dark
+// View this used to flash — launch goes splash → first screen with no blank
+// frame. Failure is fine to swallow: worst case the splash just auto-hides.
+SplashScreen.preventAutoHideAsync().catch(() => {});
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createMaterialTopTabNavigator<TabParamList>();
@@ -149,9 +156,16 @@ function App() {
   }, []);
   useNotificationTaps(goToTab);
 
-  if (!fontsLoaded || !store.loaded) {
-    return <View style={{ flex: 1, backgroundColor: color.bg }} />;
-  }
+  // Session-only: once setup completes, profile != null gates instead. Not
+  // persisted on purpose — the only user who sees the welcome twice is one
+  // who killed the app mid-setup, and they've read one screen, not four.
+  const [welcomed, setWelcomed] = React.useState(false);
+
+  const ready = fontsLoaded && store.loaded;
+  React.useEffect(() => {
+    if (ready) SplashScreen.hideAsync().catch(() => {});
+  }, [ready]);
+  if (!ready) return null; // native splash is still covering the window
 
   return (
     <SafeAreaProvider>
@@ -159,7 +173,7 @@ function App() {
         <StatusBar style="light" />
         {store.data.profile == null ? (
           <SafeAreaView style={{ flex: 1, backgroundColor: color.bg }}>
-            <SetupScreen />
+            {welcomed ? <SetupScreen /> : <WelcomeScreen onBegin={() => setWelcomed(true)} />}
           </SafeAreaView>
         ) : (
           <SafeAreaView edges={['top', 'bottom']} style={{ flex: 1, backgroundColor: color.bg }}>
