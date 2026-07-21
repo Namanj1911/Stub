@@ -158,21 +158,23 @@ describe('nudge copy never reads as a quota (owner report 2026-07-22)', () => {
   });
 });
 
-describe('nudge copy renders the remaining count as English', () => {
+describe('nudge copy renders the remaining count bare (tone rule 5)', () => {
   const fireAt = atLocalHour(I, 15, 45);
   const seed = `nudge-${I}:${fireAt}`;
 
-  it('says "1 cigarette", never "1 cigarettes"', () => {
-    expect(budgetNudgeCopy(6, fireAt, seed).body).toContain('1 cigarette');
-    expect(budgetNudgeCopy(6, fireAt, seed).body).not.toContain('1 cigarettes');
+  // The unit is deliberately absent: "1½ left" tells the user everything and
+  // a shoulder-surfer nothing. The vocabulary sweep below enforces the ban;
+  // these pin the rendering across the whole/fraction/mixed shapes.
+  it('renders a whole cigarette as a bare 1', () => {
+    expect(budgetNudgeCopy(6, fireAt, seed).body).toMatch(/\b1\b/);
   });
 
-  it('reads a bare fraction as "½ of a cigarette"', () => {
-    expect(budgetNudgeCopy(3, fireAt, seed).body).toContain('½ of a cigarette');
+  it('renders a bare fraction as ½', () => {
+    expect(budgetNudgeCopy(3, fireAt, seed).body).toContain('½');
   });
 
-  it('pluralises above a whole one', () => {
-    expect(budgetNudgeCopy(9, fireAt, seed).body).toContain('1½ cigarettes');
+  it('renders a mixed count as 1½', () => {
+    expect(budgetNudgeCopy(9, fireAt, seed).body).toContain('1½');
   });
 });
 
@@ -229,13 +231,23 @@ describe('personalization (owner decision 2026-07-22)', () => {
     }
   });
 
-  it('the name never shares a body with an explicit smoking word (lock screens are public)', () => {
-    for (const id of NAMED_IDS) {
-      for (const body of bodiesFor(id, 'Naman')) {
-        if (body.includes('Naman')) {
-          expect(body.toLowerCase()).not.toMatch(/smok|cigarette|lung/);
+  it('no push title or body ever names smoking (tone rule 5 — lock screens are public)', () => {
+    // Blanket ban, upgraded 2026-07-22 from "not next to the name" to "not at
+    // all": every reachable line of every push, named or anonymous, plus the
+    // titles. In-app copy is exempt — this sweeps only what can land on a
+    // lock screen.
+    const BAN = /smok|cigarette|lung/;
+    for (const id of [...NAMED_IDS, ...NAMELESS_IDS]) {
+      for (const name of ['Naman', undefined]) {
+        expect(milestonePushCopy(id, 'x', name)!.title.toLowerCase()).not.toMatch(BAN);
+        for (const body of bodiesFor(id, name)) {
+          expect(body.toLowerCase()).not.toMatch(BAN);
         }
       }
+    }
+    for (const { seed, fireAt } of nudgeSeeds(200)) {
+      const { title, body } = budgetNudgeCopy(9, fireAt, seed);
+      expect(`${title} ${body}`.toLowerCase()).not.toMatch(BAN);
     }
   });
 

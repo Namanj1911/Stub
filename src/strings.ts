@@ -608,6 +608,13 @@ export function setupReaction(countPerDay: number): string {
 //    that" is fine in-app and would be genuinely embarrassing on a lock
 //    screen next to the user's name. Roast the budget, not the smoker.
 // 4. Two lines, max. iOS truncates a collapsed banner hard.
+// 5. No explicit smoking vocabulary anywhere in push copy — no "cigarette",
+//    "smoke/smoker/smoke-free", "lungs" (owner, 2026-07-22). Rule 3's
+//    sharper half: a banner that names smoking outs the user to anyone who
+//    glances at the phone. Imply, never name — counts go bare ("1½ left"),
+//    and to a bystander that could be coffees or screen-time hours. In-app
+//    copy is exempt; that screen is in the user's own hand. Guarded by a
+//    swept test in strings.test.ts.
 //
 // Picked deterministically from the notification's own identity, not rolled.
 // The in-app pools roll freely because nothing re-reads them; a scheduled
@@ -689,14 +696,10 @@ export function budgetNudgeCopy(
   fireAt: number,
   seed: string,
 ): { title: string; body: string } {
-  // frac() renders sixths as ⅓/½/1½ etc. A bare fraction reads wrong with a
-  // plural noun ("½ cigarettes"), so anything under a whole one gets "a".
-  const left =
-    remainingSixths === 6
-      ? '1 cigarette'
-      : remainingSixths < 6
-        ? `${frac(remainingSixths)} of a cigarette`
-        : `${frac(remainingSixths)} cigarettes`;
+  // Deliberately no noun on the count (tone rule 5): "1½ left" is the
+  // privacy. The user knows the unit — the app counts in sticks everywhere —
+  // and nobody reading over their shoulder gets to know it too.
+  const left = frac(remainingSixths);
   return { title: 'Budget check', body: pick(NUDGE_LINES, seed)(left, fmtHour(fireAt)) };
 }
 
@@ -758,9 +761,9 @@ const MILESTONE_PUSH: Record<string, { title: string; lines: ((name?: string) =>
     ],
   },
   'first-clean-day': {
-    title: 'A smoke-free day',
+    title: 'A clean day',
     lines: [
-      () => 'A whole day, nothing logged. Your lungs would like this in writing.',
+      () => 'A whole day, nothing logged. This is the kind of empty we like.',
       (n) =>
         n
           ? `Zero. Not 'nearly zero' — zero, ${n}. That one goes on the record.`
@@ -771,7 +774,7 @@ const MILESTONE_PUSH: Record<string, { title: string; lines: ((name?: string) =>
   'quit-day': {
     title: 'The budget hit zero',
     lines: [
-      () => 'Your plan has run out of cigarettes to give you. That was the whole point.',
+      () => 'Your plan has run out of allowance to give you. That was the whole point.',
       () => "Budget: zero. The taper is done — now it's just you and the habit.",
       (n) =>
         n
@@ -793,10 +796,10 @@ const STREAK_PUSH: Record<number, ((name?: string) => string)[]> = {
       n
         ? `A full week under budget, ${n}. The budget has stopped arguing.`
         : 'A full week under budget. The budget has stopped arguing.',
-    () => 'Seven days straight. Statistically, you are now a different smoker.',
+    () => 'Seven days straight. Statistically, you are now a different person.',
   ],
   14: [
-    () => 'Two weeks under budget. This is just how you smoke now, apparently.',
+    () => 'Two weeks under budget. This is just how you operate now, apparently.',
     () => 'Fourteen days. The streak is starting to look like a personality trait.',
   ],
   30: [
