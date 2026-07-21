@@ -719,7 +719,7 @@ deliberately **not** here — deferred until after beta + PMF, see Later.
         which is nonsense at 0m immediately after a log. No line in that pool
         may presume elapsed time; the reset stays quiet either way.
   - [x] 4. Post-zero mode — **built 2026-07-19** (`feat/post-zero`),
-        awaiting device check. `src/postzero.ts` owns one question ("which
+        **device-checked 2026-07-21.** `src/postzero.ts` owns one question ("which
         mode?") and the streak arithmetic; nothing is persisted, so the mode
         is derived from `entries` on every read and a relapse is honest by
         construction — there is no stored "you are quit now" flag that could
@@ -801,8 +801,15 @@ deliberately **not** here — deferred until after beta + PMF, see Later.
         that note wins and the button changes. Reaching the state needs seeded
         history, so mind the AsyncStorage clobbering trap in Issues. Owner to
         check on device and open a follow-up branch for anything found.
+        ↳ **Resolved on device 2026-07-21.** The offer card's layout and copy
+        in situ check out, and the gold confirm button reads as "you earned
+        this", not general emphasis — so the exception it was the first test of
+        holds: gold on a *milestone-earning* control is sanctioned, and the P3
+        "never on a control" note is now understood as "never on an *ordinary*
+        control". No follow-up branch needed. This clears the last piece of the
+        one deliberate un-device-checked merge.
   - [ ] 5. Timeline phase 2 (milestone pushes — needs the dev build)
-- [ ] **Post-zero mode** — the product story currently ends at the quit
+- [x] **Post-zero mode** — the product story currently ends at the quit
   date; for Smoke Free/Kwit, what comes after *is* the product. At zero,
   flip into a smoke-free companion: smoke-free streak, money saved keeps
   compounding, SOS stays, a relapse is logged honestly without resetting
@@ -810,6 +817,11 @@ deliberately **not** here — deferred until after beta + PMF, see Later.
   §10** (it shares most of its surface with the timeline's locked section);
   tracked as step 4 above. Still must ship before the first real cohort
   reaches its quit date, or we lose users at the moment the app succeeds.
+  — **done, device-checked 2026-07-21.** The three-tense Goal
+  (`tapering` → `arrived` → `postZero`), the derived-from-`entries` streak,
+  money that keeps compounding, and the honest relapse are all confirmed on
+  device. See the ⚠ at step 4 (silent-day offer card / gold confirm button)
+  for the one sub-piece whose device status is tracked separately.
 
 ## Later / needs discussion
 
