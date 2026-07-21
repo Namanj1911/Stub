@@ -298,6 +298,15 @@ export function tomorrowNudge(): string {
   return TOMORROW_NUDGES[TOMORROW_ROLL];
 }
 
+// Finding #8: tomorrow's number assumes no more smokes today. Because the
+// adaptive side of the budget tracks the trailing 7-day average (domain
+// budgetSeries), smoking more today raises that average and can lift tomorrow's
+// budget back up (capped at today's) — a number that visibly climbs reads as a
+// broken promise. This qualifier is a fixed functional label, not flavour, so
+// it isn't rolled: it states the condition the number is contingent on. Shown
+// while there's still headroom today; once ≥80% spent the nudge takes the slot.
+export const TOMORROW_IF = 'if you stop now';
+
 // ---------------------------------------------------------------------------
 // Health timeline (design/HEALTH_TIMELINE.md §8) — TONE RULE, read before
 // adding a line below:

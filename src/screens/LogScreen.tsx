@@ -18,7 +18,7 @@ import { haptic } from '../haptics';
 import { ProfileButton } from '../ProfileButton';
 import { useNav } from '../navigation';
 import { smokeFree } from '../postzero';
-import { copy, logToast, relapseNote, tomorrowNudge } from '../strings';
+import { copy, logToast, relapseNote, tomorrowNudge, TOMORROW_IF } from '../strings';
 import { color, font, radius } from '../theme';
 
 export function LogScreen() {
@@ -72,8 +72,9 @@ export function LogScreen() {
   const atZero = budget <= 0;
   // tomorrow's budget (S11) lives here rather than on Goal — it's an
   // operational number, and Goal is the narrative screen
-  // (design/HEALTH_TIMELINE.md §13). The caption is always visible; it only
-  // raises its voice once today is ≥80% spent.
+  // (design/HEALTH_TIMELINE.md §13). A caption under it is always visible: the
+  // plain "if you stop now" qualifier (finding #8 — the number is contingent
+  // on no more smokes today) until today is ≥80% spent, then the louder nudge.
   const tomorrow = tomorrowBudgetSixths(entries, todayKey, profile.installDayKey, profile.baselineHistory, profile.planHistory);
   const tomorrowLoud = total >= budget * 0.8;
   const tomorrowDrop = Math.max(0, budget - tomorrow);
@@ -228,7 +229,7 @@ export function LogScreen() {
           accessible
           accessibilityLabel={`Tomorrow's budget: ${frac(tomorrow)}${
             tomorrowDrop > 0 ? `, down ${frac(tomorrowDrop)} from today` : ''
-          }`}
+          }${tomorrowLoud ? '' : `, ${TOMORROW_IF}`}`}
         >
           <Text
             style={{
@@ -259,18 +260,20 @@ export function LogScreen() {
             </Text>
           </View>
         </View>
-        {tomorrowLoud && (
-          <Text
-            style={{
-              fontFamily: font.regular,
-              fontSize: 12,
-              color: color.neutral500,
-              marginTop: 5,
-            }}
-          >
-            {tomorrowNudge()}
-          </Text>
-        )}
+        {/* Always a caption here (finding #8): the plain qualifier while
+            there's headroom left today, escalating to the nudge once ≥80%
+            spent. Keeping the slot filled means tomorrow's number is never
+            shown bare — it always says what it's contingent on. */}
+        <Text
+          style={{
+            fontFamily: font.regular,
+            fontSize: 12,
+            color: color.neutral500,
+            marginTop: 5,
+          }}
+        >
+          {tomorrowLoud ? tomorrowNudge() : TOMORROW_IF}
+        </Text>
         </>
         )}
 
