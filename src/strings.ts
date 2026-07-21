@@ -49,6 +49,17 @@ const TABLE = {
   taperRestartGoalNote:
     "The taper ran to zero, but you've been smoking since — so the budget stopped meaning anything.",
   taperRestartGoalCta: 'Start a new taper on Profile',
+  // Log's caption when the budget's zero but the logs disagree — the quietest
+  // twin of the Goal signpost (taperRestartGoal*). Log is the highest-traffic
+  // screen and a relapsed user lives here, but the slot is a 13px caption, not
+  // a card, so this states the mismatch in the fewest honest words and points at
+  // the single-sited control on Profile rather than hosting it. Leads on the
+  // *budget* going stale, never on the slip: recentDailyAverageSixths counts
+  // today via max(), so this can be true on cigarette #1 of a relapse — the
+  // moment §9.2 keeps quiet — and naming the smoking would scold by timing.
+  // Same gate as the Goal card, so all three surfaces agree by construction.
+  taperStaleLead: "this budget's out of date",
+  taperStaleCta: 'start a new taper',
   backfilled: 'Bar night, huh. Logged — stats recomputed.',
   backfillZero: 'Add zero? Bold strategy. Tap an amount first.',
   moneyBehind:

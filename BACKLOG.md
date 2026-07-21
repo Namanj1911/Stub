@@ -134,7 +134,7 @@ without discussion.
   eagerness; a modal scolds by timing. Log's own "past the taper" caption is
   left as a separate, quieter follow-up (a tappable pointer, no modal) if the
   Goal card alone proves too easy to miss on device.
-- [ ] **Log still says "past the taper" to a relapsed user.** The quieter half
+- [x] **Log still says "past the taper" to a relapsed user.** The quieter half
   of the discoverability item above, split out deliberately. Once the budget is
   zero, Log's caption retires the budget framing to `taperDone` ("past the
   taper" · "on the record") — correct for a genuine finisher, wrong for someone
@@ -147,6 +147,22 @@ without discussion.
   building: state the mismatch on the highest-traffic screen without turning
   every slip-log into a nag. Low priority — the Goal card is the primary fix;
   build this only if device use shows Goal alone is too easy to miss.
+  — **done 2026-07-21** (`fix/log-relapse-signpost`), device-checked. Chose the
+  tappable-pointer form over a copy-only swap: when `smokingAgain` (`atZero &&
+  recentDailyAverageSixths > 0` — the same gate Goal and the Profile card use, so
+  the three agree by construction) the whole caption becomes a Pressable pushing
+  to Profile — `this budget's out of date · start a new taper →`. It **points,
+  doesn't host**, exactly as the #10 decision kept the control single-sited.
+  Copy call settled first (`taperStaleLead`/`taperStaleCta`): the two rejected
+  variants both led with "past the taper", which is the framing that reads wrong
+  for a relapsed user; the chosen lead is the *budget* going stale, never the
+  slip — `recentDailyAverageSixths` counts today via `max()`, so the signpost can
+  be live on cigarette #1 of a relapse (the moment §9.2 keeps quiet), and naming
+  the smoking would scold by timing. A genuine finisher (measured smoking 0)
+  keeps the untouched "past the taper" caption. Display-only, so no new test —
+  the gate reuses the already-mutation-tested `recentDailyAverageSixths`; the
+  check was visual. Closes the #10 discoverability follow-up in full: Log, Goal
+  and Profile now all agree the moment the budget stops meaning anything.
 
 ## Bugs — code review 2026-07-20 (18→20 Jul work)
 
