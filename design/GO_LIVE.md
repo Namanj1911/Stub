@@ -262,11 +262,15 @@ The design is **local-first, cloud as opt-in backup** — login is a feature
 
 Ordered by hurt-if-ignored; statuses updated.
 
-1. ☐ **Placeholder nicotine/tar data in `src/brands.ts`** — fine for us, not
-   fine on a public listing showing "12.5 mg nic" as fact. Vetted dataset +
-   real printed-MRP sourcing must land **before external TestFlight**, or
-   the numbers ship with a much louder ~estimated treatment. Still the
-   biggest open gate.
+1. ✅ **Nicotine/tar/MRP data in `src/brands.ts`** — DONE (dataset BUILT
+   2026-07-18, `DATASET_VERSION` 2; re-verified 2026-07-22). 15 real brands
+   with per-field provenance: every MRP is `printed` confidence tied to a
+   URL-cited source (ITC Feb-2026 revision, distributor lists,
+   quick-commerce), every nicotine/tar figure honestly carries
+   `study`/`proxy`/`estimate` confidence and the `~` softness prefix. No
+   dangling source refs. See `design/BRANDS_DATA_PLAN.md`. (Optional
+   follow-up, not a gate: no automated test guards the dataset invariants —
+   the resolve-every-source check was done by hand.)
 2. ☐ **Single-device data with no backup** — decision stands: ship v1
    explicitly single-device (listing copy says so; onboarding nudges an
    occasional export). Two softeners discovered since: iOS device backups
@@ -297,7 +301,8 @@ their own design/discussion pass first.
 7. ☐ TestFlight internal (owner + a few friends) — first real-user feedback,
    via TestFlight's built-in feedback. ⚠ Optional in-app feedback row
    (§7.4) discussed/built here if wanted.
-8. ⚠ ☐ Vetted brands dataset + real MRPs (gates step 9, not step 7).
+8. ✅ Vetted brands dataset + real MRPs — done (BUILT 2026-07-18, re-verified
+   2026-07-22; §8.1).
 9. ☐ Copy audit (§8.4), screenshots, listing draft → TestFlight external.
 10. ☐ Decide App Store listing vs. staying on TestFlight based on beta
     signal.
