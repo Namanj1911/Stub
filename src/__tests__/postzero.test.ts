@@ -140,25 +140,37 @@ describe('goalMode', () => {
   });
 });
 
-describe('open finding #5 — the partial install day counts as clean', () => {
-  // CHARACTERIZATION, NOT APPROVAL. smokeFree() runs from installDayKey, so an
-  // install day — nearly always partial — is counted as one of the seven lived
-  // zero days, while countCleanDays in notificationPlan excludes it for
-  // exactly this reason. Backlog finding #5 proposes starting the run at
-  // installDayKey + 1.
-  //
-  // When that fix lands this test SHOULD fail. Flip the expectations rather
-  // than deleting it — the point is that the inconsistency is visible in the
-  // suite instead of living only in a backlog entry.
-  it('offers the flip a day early, counting the install evening as a lived day', () => {
-    // Someone who installs at 11pm and logs nothing: at today = I+7 the seven
-    // "lived" days are I … I+6, and I is the partial one. Starting the run at
-    // installDayKey + 1 would push eligibility to I+8.
-    const sf = smokeFree([], I + 7, I);
-    expect(sf.completedZeroDays).toBe(ZERO_DAYS_TO_FLIP);
-    expect(sf.eligible).toBe(true);
+describe('finding #5 — the partial install day is not a lived day', () => {
+  // FIXED (fix/postzero-install-day). completedZeroDays now sheds both partial
+  // boundary days: today (always) and the install day (when the run reaches
+  // back to it), matching the reasoning notificationPlan.countCleanDays already
+  // applied by running from installDayKey + 1. This was a characterization test
+  // encoding the old off-by-one; its expectations were flipped when the fix
+  // landed.
+  it('does not offer the flip until seven WHOLE days after install', () => {
+    // Someone who installs at 11pm and logs nothing. At today = I+7 the clean
+    // day-keys are I … I+7, but I is the partial install day and I+7 is today
+    // in progress — so only I+1 … I+6, six whole days, are lived. The offer
+    // must wait one more day.
+    const early = smokeFree([], I + 7, I);
+    expect(early.completedZeroDays).toBe(6);
+    expect(early.eligible).toBe(false);
 
-    // The day before, it is one short — so the gap really is exactly one day.
-    expect(smokeFree([], I + 6, I).eligible).toBe(false);
+    // One whole day later the seven lived days (I+1 … I+7) are in the bank.
+    const there = smokeFree([], I + 8, I);
+    expect(there.completedZeroDays).toBe(ZERO_DAYS_TO_FLIP);
+    expect(there.eligible).toBe(true);
+  });
+
+  it('counts the install day as zero lived days whether or not it had a smoke', () => {
+    // The whole point: the install day contributes nothing to the lived count
+    // either way, so a user clean since install and a user who smoked once on
+    // install day and then stopped reach the same completedZeroDays on the same
+    // day. (Removing the install-day adjustment breaks this equality — the
+    // never-logged user would over-count by one.)
+    const neverLogged = smokeFree([], I + 8, I);
+    const smokedOnInstall = smokeFree([smoke(I, 5)], I + 8, I);
+    expect(neverLogged.completedZeroDays).toBe(smokedOnInstall.completedZeroDays);
+    expect(neverLogged.completedZeroDays).toBe(ZERO_DAYS_TO_FLIP);
   });
 });

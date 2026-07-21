@@ -54,8 +54,9 @@ export type AppData = {
   priceDatasetVersion?: number;
   // Furthest health milestone the user has actually been shown celebrating
   // (design/HEALTH_TIMELINE.md §9). Everything else about milestones is
-  // derived from `entries` — the earned set is just "did the longest gap ever
-  // clear this?" — but *whether we've congratulated them yet* is genuinely
+  // derived from `entries` — short-horizon marks off longest-gap-ever, long
+  // ones off the *current* clean run (they relock on relapse, health.ts:228) —
+  // but *whether we've congratulated them yet* is genuinely
   // new state, and it has to survive a relaunch or phase 1 has no celebration
   // beat at all (§9.3: push doesn't exist until the dev build, so an
   // achievement must feel earned when you open the app and find it waiting).
@@ -430,9 +431,14 @@ export function useAppData() {
   );
 
   // Records that the user has seen the celebration for a milestone, so it
-  // fires once and then settles into earned state. Only ever moves forward:
-  // the earned set is derived from longest-gap-ever, which never shrinks
-  // (§9.1), so there is nothing to un-acknowledge.
+  // fires once and then settles into earned state. This setter just stores the
+  // id it's given (deduped) — it does NOT enforce forward-only on its own, and
+  // the old rationale that it couldn't regress ("earned set is longest-gap-ever,
+  // which never shrinks") stopped being true when the long horizon began
+  // relocking on relapse (health.ts:228-244). The high-water-mark guarantee
+  // lives at the callers: they gate on `milestoneRank(earned) > rank(acked)`
+  // before calling (HealthScreen/GoalScreen), so a relock never re-acked as new
+  // — see the milestoneRank note for why that guard exists.
   const ackMilestone = useCallback(
     (id: string) => {
       update((d) => (d.ackedMilestoneId === id ? d : { ...d, ackedMilestoneId: id }));
