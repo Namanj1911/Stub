@@ -33,9 +33,12 @@ export function WelcomeScreen({ onBegin }: { onBegin: () => void }) {
       </Text>
 
       <View style={{ flex: 1, justifyContent: 'center' }}>
-        <Text style={{ fontFamily: font.medium, fontSize: 34, lineHeight: 42, color: color.text }}>
-          You don't{'\n'}quit smoking.{'\n'}
-          <Text style={{ color: color.accent300 }}>You run out{'\n'}of cigarettes.</Text>
+        {/* The headline is a setup with a payoff: onboarding ends with the
+            plan card printing this exact date ("Last cigarette · 14 October").
+            Owner-picked 2026-07-22 over the mechanism-first draft. */}
+        <Text style={{ fontFamily: font.medium, fontSize: 32, lineHeight: 40, color: color.text }}>
+          Your last cigarette{'\n'}
+          <Text style={{ color: color.accent300 }}>already has a date.</Text>
         </Text>
         <Text
           style={{
