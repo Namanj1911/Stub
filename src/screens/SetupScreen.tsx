@@ -4,7 +4,7 @@
 // every step has a sane default so Continue always works — for the name step
 // the default is simply no name (strings.ts personalization rule).
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useState } from 'react';
 import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import Svg, { Defs, Ellipse, RadialGradient, Stop } from 'react-native-svg';
 import { useApp } from '../AppContext';
@@ -13,6 +13,7 @@ import { PACE_RATE, Pace } from '../domain';
 import { haptic } from '../haptics';
 import { setupReaction } from '../strings';
 import { color, font, radius } from '../theme';
+import { useHoldRepeat } from '../useHoldRepeat';
 
 const PACES: { id: Pace; name: string; rate: string; desc: string }[] = [
   { id: 'chill', name: 'Chill', rate: '−½ a week', desc: 'Barely feel it. Slow and certain.' },
@@ -577,37 +578,13 @@ function StepperButton({
   a11yLabel: string;
   onPress: () => void;
 }) {
-  // Hold-to-repeat: a tap fires once (immediate), holding starts repeating
-  // after a short delay so reaching a far number (a pack a day, 20) doesn't
-  // cost ~11 one-handed taps — the other half of the 2026-07-26 count-default
-  // fix. Haptic on the initial press only; a tick per repeat would be a buzz
-  // storm (haptics vocabulary rule: nothing per-tick). onPress uses functional
-  // setState, so repeated calls stay correct and clamp at the bounds.
-  const holdTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const repeatTimer = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  const stop = () => {
-    if (holdTimer.current) clearTimeout(holdTimer.current);
-    if (repeatTimer.current) clearInterval(repeatTimer.current);
-    holdTimer.current = null;
-    repeatTimer.current = null;
-  };
-
-  // clear timers if the button unmounts mid-hold (e.g. step advances)
-  useEffect(() => stop, []);
-
-  const start = () => {
-    haptic.select();
-    onPress();
-    holdTimer.current = setTimeout(() => {
-      repeatTimer.current = setInterval(onPress, 90);
-    }, 400);
-  };
-
+  // tap = one step, hold = repeat — see useHoldRepeat. The other half of the
+  // 2026-07-26 count-default fix, so a pack-a-day smoker isn't tapping +11.
+  const hold = useHoldRepeat(onPress);
   return (
     <Pressable
-      onPressIn={start}
-      onPressOut={stop}
+      onPressIn={hold.onPressIn}
+      onPressOut={hold.onPressOut}
       hitSlop={8}
       accessibilityRole="button"
       accessibilityLabel={a11yLabel}

@@ -25,6 +25,7 @@ import { DEFAULT_NOTIF_PREFS } from '../notificationPlan';
 import { sendPreviewNotifications } from '../notifications';
 import { copy } from '../strings';
 import { color, font, radius } from '../theme';
+import { useHoldRepeat } from '../useHoldRepeat';
 
 const PACE_LABEL: { id: Pace; name: string; rate: string }[] = [
   { id: 'chill', name: 'Chill', rate: '−½/wk' },
@@ -529,13 +530,17 @@ function RoundButton({
   onPress: () => void;
   accessibilityLabel: string;
 }) {
+  // tap = one step, hold = repeat (see useHoldRepeat) — parity with Setup's
+  // count stepper, so editing the baseline from a light to a heavy number (or
+  // back) isn't a dozen one-handed taps. onPress reads profile.countPerDay from
+  // this render's closure; the hook's onPress ref is what makes the hold ramp.
+  const hold = useHoldRepeat(onPress);
   return (
     <Pressable
-      onPress={() => {
-        haptic.select();
-        onPress();
-      }}
+      onPressIn={hold.onPressIn}
+      onPressOut={hold.onPressOut}
       hitSlop={8}
+      accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
       style={({ pressed }) => ({
         width: 44,
