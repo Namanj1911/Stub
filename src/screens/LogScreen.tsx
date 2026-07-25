@@ -331,9 +331,9 @@ export function LogScreen() {
           {LOG_HINT}
         </Text>
 
-        {/* undo (S2) + backfill entry point (S14) — icon + label so they read
+        {/* undo (S2) + backfill entry point (S14) — outlined chips so they read
             as actions and stay legible; secondary to the log buttons by design */}
-        <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 24, marginTop: 14 }}>
+        <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 16, marginTop: 14 }}>
           <FooterLink
             icon="rotate-ccw"
             label="undo last"
@@ -593,10 +593,12 @@ function LogButton({
 }
 
 // Secondary text actions under the log buttons (undo, backfill). Icon + label
-// at neutral400/13px — lifted from the old 12px/neutral500 underline that user
-// testing (2026-07-26) found too easy to miss, while staying clearly below the
-// primary log buttons. neutral400 clears AA as text; the icon does the
-// recognition work the underline used to.
+// at neutral400/13px in a subtle outlined chip — lifted from the old 12px/
+// neutral500 underline that user testing (2026-07-26) found too easy to miss,
+// while staying clearly below the primary (filled) log buttons: outline-only,
+// no fill. neutral400 clears AA as text; the neutral600 border is the
+// sanctioned outline-only value for the 3:1 non-text minimum (same as the SOS
+// done / backfill steppers from the a11y pass).
 function FooterLink({
   icon,
   label,
@@ -611,10 +613,19 @@ function FooterLink({
   return (
     <Pressable
       onPress={onPress}
-      hitSlop={10}
+      hitSlop={8}
       accessibilityRole="button"
       accessibilityLabel={a11yLabel}
-      style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}
+      style={({ pressed }) => ({
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 5,
+        paddingVertical: 6,
+        paddingHorizontal: 12,
+        borderWidth: 1,
+        borderColor: pressed ? color.accent : color.neutral600,
+        borderRadius: radius.md,
+      })}
     >
       <Feather name={icon} size={13} color={color.neutral400} />
       <Text style={{ fontFamily: font.regular, fontSize: 13, color: color.neutral400 }}>
