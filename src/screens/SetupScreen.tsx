@@ -4,7 +4,7 @@
 // every step has a sane default so Continue always works — for the name step
 // the default is simply no name (strings.ts personalization rule).
 
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import Svg, { Defs, Ellipse, RadialGradient, Stop } from 'react-native-svg';
 import { useApp } from '../AppContext';
@@ -49,7 +49,11 @@ export function SetupScreen() {
   const { completeSetup } = useApp();
   const [step, setStep] = useState(0);
   const [name, setName] = useState('');
-  const [count, setCount] = useState(9);
+  // 10 (round, mid-"average" band, ~India daily average) rather than 9: user
+  // testing (2026-07-26) found the old default left a light smoker tapping down
+  // and a pack-a-day smoker tapping up 11×. The default only helps the middle;
+  // hold-to-repeat on the stepper buttons is what fixes the far ends.
+  const [count, setCount] = useState(10);
   // null = "something else" — priced at the dataset average, name optional,
   // refinable later from the nicotine list
   const [brandId, setBrandId] = useState<string | null>(ONBOARDING_BRANDS[0].id);
@@ -573,12 +577,37 @@ function StepperButton({
   a11yLabel: string;
   onPress: () => void;
 }) {
+  // Hold-to-repeat: a tap fires once (immediate), holding starts repeating
+  // after a short delay so reaching a far number (a pack a day, 20) doesn't
+  // cost ~11 one-handed taps — the other half of the 2026-07-26 count-default
+  // fix. Haptic on the initial press only; a tick per repeat would be a buzz
+  // storm (haptics vocabulary rule: nothing per-tick). onPress uses functional
+  // setState, so repeated calls stay correct and clamp at the bounds.
+  const holdTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const repeatTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const stop = () => {
+    if (holdTimer.current) clearTimeout(holdTimer.current);
+    if (repeatTimer.current) clearInterval(repeatTimer.current);
+    holdTimer.current = null;
+    repeatTimer.current = null;
+  };
+
+  // clear timers if the button unmounts mid-hold (e.g. step advances)
+  useEffect(() => stop, []);
+
+  const start = () => {
+    haptic.select();
+    onPress();
+    holdTimer.current = setTimeout(() => {
+      repeatTimer.current = setInterval(onPress, 90);
+    }, 400);
+  };
+
   return (
     <Pressable
-      onPress={() => {
-        haptic.select();
-        onPress();
-      }}
+      onPressIn={start}
+      onPressOut={stop}
       hitSlop={8}
       accessibilityRole="button"
       accessibilityLabel={a11yLabel}
