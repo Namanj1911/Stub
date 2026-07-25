@@ -360,6 +360,15 @@ export function tomorrowNudge(): string {
 // while there's still headroom today; once ≥80% spent the nudge takes the slot.
 export const TOMORROW_IF = 'if you stop now';
 
+// Caption under the log buttons disambiguating the two fractional buttons —
+// user testing (2026-07-26) found "½" and especially "⅓ shared" read as
+// ambiguous cold ("a third of a cigarette, or one I shared?"), and the light
+// smoker said they'd never tap ⅓ because they couldn't tell what it did. Fixed
+// functional label, not flavour, so it isn't rolled; kept to one short line to
+// stay legible and not compete with the buttons above it. "1" is self-evident
+// and left out.
+export const LOG_HINT = '½ half-smoked · ⅓ a shared drag';
+
 // ---------------------------------------------------------------------------
 // Health timeline (design/HEALTH_TIMELINE.md §8) — TONE RULE, read before
 // adding a line below:

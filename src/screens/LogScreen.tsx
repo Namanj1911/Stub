@@ -19,7 +19,7 @@ import { haptic } from '../haptics';
 import { ProfileButton } from '../ProfileButton';
 import { useNav } from '../navigation';
 import { smokeFree } from '../postzero';
-import { copy, logToast, relapseNote, tomorrowNudge, TOMORROW_IF } from '../strings';
+import { copy, logToast, LOG_HINT, relapseNote, tomorrowNudge, TOMORROW_IF } from '../strings';
 import { color, font, radius } from '../theme';
 
 export function LogScreen() {
@@ -317,9 +317,27 @@ export function LogScreen() {
           <LogButton label="⅓ shared" a11yLabel="Log a third, shared" onPress={() => log(2)} />
         </View>
 
-        {/* undo (S2) + backfill entry point (S14) */}
-        <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 20, marginTop: 14 }}>
-          <Pressable
+        {/* what ½ / ⅓ mean — user testing found the fractional buttons cryptic
+            cold; a fixed one-line hint, quieter than the buttons above it */}
+        <Text
+          style={{
+            fontFamily: font.regular,
+            fontSize: 12,
+            color: color.neutral500,
+            textAlign: 'center',
+            marginTop: 8,
+          }}
+        >
+          {LOG_HINT}
+        </Text>
+
+        {/* undo (S2) + backfill entry point (S14) — icon + label so they read
+            as actions and stay legible; secondary to the log buttons by design */}
+        <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 24, marginTop: 14 }}>
+          <FooterLink
+            icon="rotate-ccw"
+            label="undo last"
+            a11yLabel="Undo last entry"
             onPress={() => {
               if (!entries.length) return;
               haptic.select();
@@ -327,38 +345,13 @@ export function LogScreen() {
               setEditingId(null);
               showToast(copy('undone'));
             }}
-            hitSlop={10}
-            accessibilityRole="button"
-            accessibilityLabel="Undo last entry"
-          >
-            <Text
-              style={{
-                fontFamily: font.regular,
-                fontSize: 12,
-                color: color.neutral500,
-                textDecorationLine: 'underline',
-              }}
-            >
-              undo last
-            </Text>
-          </Pressable>
-          <Pressable
+          />
+          <FooterLink
+            icon="plus-circle"
+            label="missed one?"
+            a11yLabel="Log a missed cigarette"
             onPress={() => nav.navigate('Backfill')}
-            hitSlop={10}
-            accessibilityRole="button"
-            accessibilityLabel="Log a missed cigarette"
-          >
-            <Text
-              style={{
-                fontFamily: font.regular,
-                fontSize: 12,
-                color: color.neutral500,
-                textDecorationLine: 'underline',
-              }}
-            >
-              missed one?
-            </Text>
-          </Pressable>
+          />
         </View>
 
         <Text
@@ -595,6 +588,38 @@ function LogButton({
       })}
     >
       <Text style={{ fontFamily: font.medium, fontSize: 16, color: color.text }}>{label}</Text>
+    </Pressable>
+  );
+}
+
+// Secondary text actions under the log buttons (undo, backfill). Icon + label
+// at neutral400/13px — lifted from the old 12px/neutral500 underline that user
+// testing (2026-07-26) found too easy to miss, while staying clearly below the
+// primary log buttons. neutral400 clears AA as text; the icon does the
+// recognition work the underline used to.
+function FooterLink({
+  icon,
+  label,
+  a11yLabel,
+  onPress,
+}: {
+  icon: 'rotate-ccw' | 'plus-circle';
+  label: string;
+  a11yLabel: string;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      hitSlop={10}
+      accessibilityRole="button"
+      accessibilityLabel={a11yLabel}
+      style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}
+    >
+      <Feather name={icon} size={13} color={color.neutral400} />
+      <Text style={{ fontFamily: font.regular, fontSize: 13, color: color.neutral400 }}>
+        {label}
+      </Text>
     </Pressable>
   );
 }
