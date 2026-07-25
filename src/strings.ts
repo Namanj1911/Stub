@@ -360,6 +360,17 @@ export function tomorrowNudge(): string {
 // while there's still headroom today; once ≥80% spent the nudge takes the slot.
 export const TOMORROW_IF = 'if you stop now';
 
+// Small caption under each log button. User testing (2026-07-26) found "½" and
+// especially "⅓ shared" ambiguous cold ("a third of a cigarette, or one I
+// shared?"); a single combined hint below the row read crowded and vague, so
+// each button carries its own one-word-ish descriptor and all three match.
+// Fixed functional labels, not flavour, so they aren't rolled.
+export const LOG_CAPTIONS = {
+  full: 'a whole one',
+  half: 'half-smoked',
+  third: 'a shared drag',
+};
+
 // ---------------------------------------------------------------------------
 // Health timeline (design/HEALTH_TIMELINE.md §8) — TONE RULE, read before
 // adding a line below:

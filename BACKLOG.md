@@ -598,6 +598,86 @@ are small, the other two are small-to-medium.
   severity-first selection, shared pool mixed in for ⅓ logs, no verbatim
   back-to-back repeats; device-tested.
 
+## UX — fresh-eyes user testing (2026-07-26)
+
+Two independent first-run walkthroughs by persona subagents given no docs
+(only the rendered UI): a light "not sure I want to quit" social smoker and
+a heavy pack-a-day smoker who has failed twice and isn't tech-savvy. Both
+scored the app 8/10 and both flagged the same handful of things, which is
+the signal worth acting on. Strengths to protect (do not regress in any fix
+below): the money hook, the non-shaming over-budget handling, the SOS
+scoreboard, and the roast-the-cigarette-not-the-user tone. Ordered by the
+owner's decisions in that feedback pass; agree the specifics before building,
+as with everything here. *(The over-budget "your lungs saw that" line was
+raised and **kept** — owner's call, this much roast is fine.)*
+
+- [ ] **Count/day stepper defaults to 9 and only steps by one.**
+  `useState(9)` (`src/screens/SetupScreen.tsx:52`) with +/- steppers only, no
+  direct entry (cap 40). Both testers hit it from opposite sides: the 5/day
+  smoker taps **down** four times and meanwhile the reaction card judges a
+  number that isn't theirs yet; the 20/day smoker taps **up** eleven times
+  one-handed to reach their real number. The default reads as chosen for a
+  heavier user than the "social smoker" copy elsewhere implies.
+  **Owner decision: find a better default to keep** (value TBD — pick one that
+  minimizes taps for the realistic middle of the range, and check the reaction
+  card copy reads sanely at whatever default we land on). Direct numeric entry
+  is a possible add-on but the ask here is the default.
+- [ ] **Log buttons "½" / "⅓ shared" aren't self-explanatory.** "1" is
+  obvious; "½" and especially **"⅓ shared"** (`src/screens/LogScreen.tsx:317`,
+  a shared drag) made both testers stop — "a third of a cigarette, or one I
+  shared?" — and the light smoker said they'd never tap it because they don't
+  know what it does. The a11y label ("Log a third, shared") is fine; the
+  *visible* affordance isn't. **Owner decision: add a hint** so the user knows
+  what the ½ and ⅓ buttons mean (e.g. a one-line caption/subtitle under the
+  row, or a first-run tooltip — decide the form before building; the edit
+  chips at `:405` use the same 1/½/⅓ vocabulary and may want the same hint).
+- [ ] **"undo last" / "missed one?" links are too easy to miss.** Both are
+  tiny 12px grey underlines (`src/screens/LogScreen.tsx:342`, `:359`); the
+  heavy smoker with poor eyesight nearly missed them, and "missed one?"
+  (backfill) is genuinely useful — the app's own honesty feature — so hiding
+  it undercuts the point. **Owner ask: make both more visible.** They are
+  secondary to the log buttons by design, so lift legibility (size/contrast/
+  affordance) without promoting them to primary actions.
+- [ ] **Small / low-contrast text in the places users most want to read.**
+  9px glide-path numbers on Goal (`src/screens/GoalScreen.tsx:468`, `:480`),
+  plus 10–12px grey captions and milestone text throughout — the heavy smoker
+  got the *shape* of the story (numbers marching down) but couldn't read the
+  numbers. Follow-up to the a11y pass (which bumped `neutral600`→`500` for
+  text contrast but did not revisit the small type sizes). Note this is a
+  legibility finding *inferred from style values*, not seen on a device — the
+  fix wants a real-device / dynamic-type confirm. **Backlog for now** (owner:
+  add to backlog).
+  - Related, same round: **Stats bar values are invisible until you tap a
+    bar** (`src/screens/StatsScreen.tsx:344`). This is the deliberate
+    tap-to-reveal from P2 (done 2026-07-16), but the heavy smoker read the
+    unlabeled bars as "half-broken" and only found the values by accident — a
+    non-techy user never discovers the interaction. Reconsider discoverability
+    (a hint, or show values by default at Week/Month scale) without recreating
+    the clutter the tap-to-reveal was introduced to solve.
+- [ ] **Tab + profile icons aren't recognizable on day one — redesign,
+  creatively.** The bottom-tab marks are abstract geometric shapes
+  (square/circle/diamond + coin, `App.tsx`) and the profile control is an
+  unlabeled ~24px person-mark speck (`src/ProfileButton.tsx` — it *has* an
+  a11y label "Open profile", so this is a visual-recognition problem, not
+  VoiceOver). Both testers read the tab **words**, not the icons, and the
+  heavy smoker didn't clock the profile speck as settings — yet pace, brand,
+  export and reset all live behind it. **Owner ask: make the icons better and
+  be creative** — icons that carry meaning at a glance while staying in the
+  Nocturne visual language. (Tab labels stay; the icons should earn their
+  place alongside them.)
+- [ ] **No on-ramp for the not-yet-committed user.** The whole flow assumes
+  the user has already decided to quit — "Your last cigarette already has a
+  date" (`src/screens/WelcomeScreen.tsx:39`), a budget "heading for zero", a
+  pace-to-zero picker. The light "not sure I want to quit" smoker flagged this
+  as the biggest philosophical bounce risk: there's no "just track for now"
+  entry point, so a curious-but-uncommitted user has nowhere to stand. **Owner
+  decision: write a design plan first** (own file), then action — this is a
+  product/positioning question (does a track-only mode dilute the "number
+  heading for zero" promise, or widen the top of the funnel?), not a quick
+  patch. Interacts with the quit-date-picker reasoning in Later ("presets give
+  the user a way out") and the "reduce onus on the user" principle. Plan file
+  to be created before any build.
+
 ## P3 — growth (from competition analysis, 2026-07-17)
 
 Gaps vs the segment leaders (Smoke Free, Kwit, QuitNow, QuitSure, Smoke Less
