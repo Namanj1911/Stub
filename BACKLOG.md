@@ -611,7 +611,7 @@ owner's decisions in that feedback pass; agree the specifics before building,
 as with everything here. *(The over-budget "your lungs saw that" line was
 raised and **kept** — owner's call, this much roast is fine.)*
 
-- [ ] **Count/day stepper defaults to 9 and only steps by one.**
+- [x] **Count/day stepper defaults to 9 and only steps by one.**
   `useState(9)` (`src/screens/SetupScreen.tsx:52`) with +/- steppers only, no
   direct entry (cap 40). Both testers hit it from opposite sides: the 5/day
   smoker taps **down** four times and meanwhile the reaction card judges a
@@ -622,6 +622,23 @@ raised and **kept** — owner's call, this much roast is fine.)*
   minimizes taps for the realistic middle of the range, and check the reaction
   card copy reads sanely at whatever default we land on). Direct numeric entry
   is a possible add-on but the ask here is the default.
+  — **done 2026-07-26** (`feat/count-default-hold-repeat`), device-checked.
+  The default alone can't fix the finding — whatever single number you pick,
+  the far end still taps a lot — so this shipped **both** halves (owner chose
+  the fuller fix over a bare default change): default **9 → 10** (round,
+  mid-"average" `setupReaction` band 6–12, ~India daily average, so the
+  reaction copy reads sanely on first paint), **plus hold-to-repeat** on the
+  stepper buttons — a tap is one step, holding ramps after 400ms at ~11/s, so
+  reaching 20 (or dropping to 5) is a brief hold, no keyboard. Extracted a
+  shared `useHoldRepeat` (`src/useHoldRepeat.ts`) and applied it to **both**
+  Setup's count stepper and — surfaced by owner mid-review — Profile's baseline
+  (count/day) buttons, which had the same problem. The hook keeps `onPress` in
+  a ref refreshed each render: load-bearing for Profile, whose `onPress` reads
+  `profile.countPerDay` from the render closure (Setup uses functional
+  setState), so a captured closure would set the same number every tick instead
+  of ramping. Haptic on the initial press only (a tick per repeat is a buzz
+  storm — haptics vocabulary rule). Direct numeric entry stays a possible
+  future add-on; hold-to-repeat covered the tap-count problem without it.
 - [x] **Log buttons "½" / "⅓ shared" aren't self-explanatory.** "1" is
   obvious; "½" and especially **"⅓ shared"** (`src/screens/LogScreen.tsx:317`,
   a shared drag) made both testers stop — "a third of a cigarette, or one I
