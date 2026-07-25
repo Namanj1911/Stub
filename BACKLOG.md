@@ -622,7 +622,7 @@ raised and **kept** — owner's call, this much roast is fine.)*
   minimizes taps for the realistic middle of the range, and check the reaction
   card copy reads sanely at whatever default we land on). Direct numeric entry
   is a possible add-on but the ask here is the default.
-- [ ] **Log buttons "½" / "⅓ shared" aren't self-explanatory.** "1" is
+- [x] **Log buttons "½" / "⅓ shared" aren't self-explanatory.** "1" is
   obvious; "½" and especially **"⅓ shared"** (`src/screens/LogScreen.tsx:317`,
   a shared drag) made both testers stop — "a third of a cigarette, or one I
   shared?" — and the light smoker said they'd never tap it because they don't
@@ -631,13 +631,33 @@ raised and **kept** — owner's call, this much roast is fine.)*
   what the ½ and ⅓ buttons mean (e.g. a one-line caption/subtitle under the
   row, or a first-run tooltip — decide the form before building; the edit
   chips at `:405` use the same 1/½/⅓ vocabulary and may want the same hint).
-- [ ] **"undo last" / "missed one?" links are too easy to miss.** Both are
+  — **done 2026-07-26** (`feat/log-hint-and-links`), device-checked. Iterated
+  once on device: a first cut put a single combined caption under the row
+  (`½ half-smoked · ⅓ a shared drag`), which read crowded and vague, so the
+  form changed to a **per-button caption** — each of the three buttons (1 / ½
+  / ⅓) now carries its own small line below the box so they match and each is
+  unambiguous (a whole one / half-smoked / a shared drag). The `⅓` label drops
+  "shared" since the caption carries it. Copy lives in `LOG_CAPTIONS`
+  (`src/strings.ts`) per the copy rule — fixed functional labels, not rolled.
+  The edit chips at `:405` were left as-is (they're a correction affordance, in
+  context once an entry exists — not the first-encounter surface the finding
+  was about).
+- [x] **"undo last" / "missed one?" links are too easy to miss.** Both are
   tiny 12px grey underlines (`src/screens/LogScreen.tsx:342`, `:359`); the
   heavy smoker with poor eyesight nearly missed them, and "missed one?"
   (backfill) is genuinely useful — the app's own honesty feature — so hiding
   it undercuts the point. **Owner ask: make both more visible.** They are
   secondary to the log buttons by design, so lift legibility (size/contrast/
   affordance) without promoting them to primary actions.
+  — **done 2026-07-26** (`feat/log-hint-and-links`), device-checked. Replaced
+  the 12px/`neutral500` underlines with a `FooterLink` chip: **icon + 13px/
+  `neutral400` label in a subtle outlined box** (Feather `rotate-ccw` / `plus-
+  circle`). Owner asked to box + separate them without making them prominent,
+  so the chips are **outline-only, no fill** — deliberately below the *filled*
+  log buttons — with a `neutral600` border (the sanctioned outline-only value
+  for the 3:1 non-text minimum, same as the SOS-done / backfill steppers from
+  the a11y pass); border goes accent on press. Row gap tightened so the two
+  read as a deliberate pair rather than drifting to the edges.
 - [ ] **Small / low-contrast text in the places users most want to read.**
   9px glide-path numbers on Goal (`src/screens/GoalScreen.tsx:468`, `:480`),
   plus 10–12px grey captions and milestone text throughout — the heavy smoker
