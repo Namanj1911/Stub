@@ -121,7 +121,12 @@ export function ProfileScreen() {
       contentContainerStyle={{ padding: 22, paddingTop: 16, paddingBottom: 40 }}
     >
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-        <Pressable onPress={() => nav.goBack()} hitSlop={12} accessibilityLabel="Back">
+        <Pressable
+          onPress={() => nav.goBack()}
+          hitSlop={12}
+          accessibilityRole="button"
+          accessibilityLabel="Back"
+        >
           <Text style={{ fontSize: 18, color: color.neutral500 }}>←</Text>
         </Pressable>
         <Text style={{ fontFamily: font.medium, fontSize: 20, color: color.text }}>
@@ -133,6 +138,7 @@ export function ProfileScreen() {
       <SectionLabel>You</SectionLabel>
       <Pressable
         onPress={editName}
+        accessibilityRole="button"
         accessibilityLabel="Change your name"
         style={({ pressed }) => ({
           flexDirection: 'row',
@@ -198,6 +204,7 @@ export function ProfileScreen() {
       <SectionLabel>Your cigarette</SectionLabel>
       <Pressable
         onPress={() => nav.navigate('Nicotine')}
+        accessibilityRole="button"
         accessibilityLabel="Change your brand"
         style={({ pressed }) => ({
           flexDirection: 'row',
@@ -389,6 +396,7 @@ export function ProfileScreen() {
       <SectionLabel>Your data</SectionLabel>
       <Pressable
         onPress={exportData}
+        accessibilityRole="button"
         accessibilityLabel="Export my data"
         style={({ pressed }) => ({
           backgroundColor: pressed ? color.accentTint10 : color.surface,
@@ -407,6 +415,7 @@ export function ProfileScreen() {
           rest, waking to full red only under the finger */}
       <Pressable
         onPress={confirmReset}
+        accessibilityRole="button"
         accessibilityLabel="Reset all data"
         style={({ pressed }) => ({
           borderWidth: 1,

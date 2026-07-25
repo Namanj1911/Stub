@@ -20,6 +20,7 @@ import {
   plannedBudgetFor,
   recentDailyAverageSixths,
   tomorrowBudgetSixths,
+  weekdayOfKey,
 } from '../domain';
 import { INSTALL_KEY as I, atLocalHour, baseline, dayKey, plan, smoke, smokeDaily } from './fixtures';
 
@@ -367,5 +368,50 @@ describe('dateOfKey — a day key as its calendar date (#6)', () => {
     const naive = new Date(lastSmoke + 86_400_000);
     const cal = (d: Date) => Date.UTC(d.getFullYear(), d.getMonth(), d.getDate());
     expect(cal(naive) - cal(correct)).toBe(86_400_000);
+  });
+});
+
+// dayKey is the bucket every day-scoped number hangs off (heatmap, streaks,
+// Money, health clock). These assertions are all *relative* — orderings and
+// monotonicity — so they hold in whatever zone the suite runs in, and the
+// year-long sweep drags the run across the ambient zone's DST transitions if it
+// has any. Empirically verified 2026-07-25 to also hold under Asia/Kolkata (no
+// DST) and America/Los_Angeles (DST), the two zones that matter for launch +
+// the traveling-user case.
+//
+// KNOWN LIMITATION, deliberately not fixed for v1 (GO_LIVE §10 register): dayKey
+// applies the *device's current* offset to every timestamp, past and present.
+// So the same absolute instant buckets to different keys after the user changes
+// zones — travel re-shuffles historical daily totals near midnight. Harmless for
+// the single-zone launch market (IST, no DST); a real fix means recording each
+// entry's local day at log time, which is a store-schema migration that belongs
+// with the multi-device/sync project, not v1.
+describe('dayKey — the 4am day boundary (NFR3)', () => {
+  it('rolls the key at 4:00am local, not midnight', () => {
+    // atLocalHour's `hour` is wall-clock in [4, 28): hour 4 is the key's 4am
+    // start, hour 24 is midnight, hour 27 is 3am — all still the same key. Zone
+    // independent because it is built from the key, not a calendar date.
+    const noon = atLocalHour(I, 12);
+    expect(dayKey(atLocalHour(I, 25))).toBe(dayKey(noon)); // 1am — still key I
+    expect(dayKey(atLocalHour(I, 27, 59))).toBe(dayKey(noon)); // 3:59am — last minute of key I
+    expect(dayKey(atLocalHour(I + 1, 4))).toBe(dayKey(noon) + 1); // 4:00am — first minute of I+1
+  });
+
+  it('never runs backwards as time moves forward (monotonic across a year, DST included)', () => {
+    let prev = -Infinity;
+    // 37-minute steps: coprime-ish with the hour so samples land all over the
+    // clock, including on top of any 2–3am DST shift in the ambient zone.
+    for (let t = atLocalHour(I, 4); t < atLocalHour(I + 365, 4); t += 37 * 60_000) {
+      const k = dayKey(t);
+      expect(k).toBeGreaterThanOrEqual(prev);
+      prev = k;
+    }
+  });
+
+  it('weekdayOfKey agrees with the calendar weekday of a daytime instant', () => {
+    for (const offset of [0, 1, 90, 200, 364]) {
+      const noon = atLocalHour(I + offset, 12); // midday: same calendar day as the key
+      expect(weekdayOfKey(dayKey(noon))).toBe(new Date(noon).getDay());
+    }
   });
 });

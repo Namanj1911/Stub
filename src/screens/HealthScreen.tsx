@@ -201,7 +201,12 @@ export function HealthScreen() {
       contentContainerStyle={{ padding: 22, paddingTop: 16, paddingBottom: 40 }}
     >
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-        <Pressable onPress={() => nav.goBack()} hitSlop={12} accessibilityLabel="Back">
+        <Pressable
+          onPress={() => nav.goBack()}
+          hitSlop={12}
+          accessibilityRole="button"
+          accessibilityLabel="Back"
+        >
           <Text style={{ fontSize: 18, color: color.neutral500 }}>←</Text>
         </Pressable>
         <Text style={{ fontFamily: font.medium, fontSize: 20, color: color.text }}>
@@ -479,6 +484,7 @@ export function HealthScreen() {
         Milestones from {MILESTONE_SOURCE.publisher},{' '}
         <Text
           style={{ color: color.accent300 }}
+          accessibilityRole="link"
           onPress={() => Linking.openURL(MILESTONE_SOURCE.url).catch(() => {})}
         >
           {MILESTONE_SOURCE.title}

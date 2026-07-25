@@ -105,7 +105,12 @@ export function NicotineScreen() {
       keyboardShouldPersistTaps="handled"
     >
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-        <Pressable onPress={() => nav.goBack()} hitSlop={12} accessibilityLabel="Back">
+        <Pressable
+          onPress={() => nav.goBack()}
+          hitSlop={12}
+          accessibilityRole="button"
+          accessibilityLabel="Back"
+        >
           <Text style={{ fontSize: 18, color: color.neutral500 }}>←</Text>
         </Pressable>
         <Text style={{ fontFamily: font.medium, fontSize: 20, color: color.text }}>
@@ -291,6 +296,7 @@ function BrandRow({
   return (
     <Pressable
       onPress={onPress}
+      accessibilityRole="button"
       accessibilityLabel={yours ? `${name}, your brand` : `Switch to ${name}`}
       style={({ pressed }) => ({
         flexDirection: 'row',
