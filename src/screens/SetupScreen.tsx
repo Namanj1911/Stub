@@ -13,6 +13,7 @@ import { PACE_RATE, Pace } from '../domain';
 import { haptic } from '../haptics';
 import { setupReaction } from '../strings';
 import { color, font, radius } from '../theme';
+import { useHoldRepeat } from '../useHoldRepeat';
 
 const PACES: { id: Pace; name: string; rate: string; desc: string }[] = [
   { id: 'chill', name: 'Chill', rate: '−½ a week', desc: 'Barely feel it. Slow and certain.' },
@@ -49,7 +50,11 @@ export function SetupScreen() {
   const { completeSetup } = useApp();
   const [step, setStep] = useState(0);
   const [name, setName] = useState('');
-  const [count, setCount] = useState(9);
+  // 10 (round, mid-"average" band, ~India daily average) rather than 9: user
+  // testing (2026-07-26) found the old default left a light smoker tapping down
+  // and a pack-a-day smoker tapping up 11×. The default only helps the middle;
+  // hold-to-repeat on the stepper buttons is what fixes the far ends.
+  const [count, setCount] = useState(10);
   // null = "something else" — priced at the dataset average, name optional,
   // refinable later from the nicotine list
   const [brandId, setBrandId] = useState<string | null>(ONBOARDING_BRANDS[0].id);
@@ -573,12 +578,13 @@ function StepperButton({
   a11yLabel: string;
   onPress: () => void;
 }) {
+  // tap = one step, hold = repeat — see useHoldRepeat. The other half of the
+  // 2026-07-26 count-default fix, so a pack-a-day smoker isn't tapping +11.
+  const hold = useHoldRepeat(onPress);
   return (
     <Pressable
-      onPress={() => {
-        haptic.select();
-        onPress();
-      }}
+      onPressIn={hold.onPressIn}
+      onPressOut={hold.onPressOut}
       hitSlop={8}
       accessibilityRole="button"
       accessibilityLabel={a11yLabel}
