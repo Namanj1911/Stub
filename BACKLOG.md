@@ -675,15 +675,26 @@ raised and **kept** — owner's call, this much roast is fine.)*
   for the 3:1 non-text minimum, same as the SOS-done / backfill steppers from
   the a11y pass); border goes accent on press. Row gap tightened so the two
   read as a deliberate pair rather than drifting to the edges.
-- [ ] **Small / low-contrast text in the places users most want to read.**
+- [x] **Small / low-contrast text in the places users most want to read.**
   9px glide-path numbers on Goal (`src/screens/GoalScreen.tsx:468`, `:480`),
   plus 10–12px grey captions and milestone text throughout — the heavy smoker
   got the *shape* of the story (numbers marching down) but couldn't read the
   numbers. Follow-up to the a11y pass (which bumped `neutral600`→`500` for
   text contrast but did not revisit the small type sizes). Note this is a
   legibility finding *inferred from style values*, not seen on a device — the
-  fix wants a real-device / dynamic-type confirm. **Backlog for now** (owner:
-  add to backlog).
+  fix wants a real-device / dynamic-type confirm.
+  — **done 2026-07-26** (`feat/legibility-bump`), device-checked. Owner chose
+  the **surgical** scope over a blanket min-size floor or Dynamic Type: raise
+  only the info-bearing text, keep the size-driven hierarchy the theme is built
+  on. Goal glide-path **values 9→12px** (with `numberOfLines={1}` so a 2-digit
+  budget like "40.0" can't wrap in an 8-bar week) and **labels 9→11px** (kept a
+  step under the value); glide row height 100→120 so the larger type doesn't
+  clip the tallest bar. The rest of the "captions/milestone text throughout"
+  was **deliberately left alone** on inspection — already 12–14px reading
+  content, uppercase tracked *kickers* where 10px is idiomatic, or fine-print
+  citations/disclaimers/legends whose contrast the a11y pass already fixed;
+  bumping them flattens hierarchy for no legibility gain. Display-only, no new
+  test.
   - Related, same round: **Stats bar values are invisible until you tap a
     bar** (`src/screens/StatsScreen.tsx:344`). This is the deliberate
     tap-to-reveal from P2 (done 2026-07-16), but the heavy smoker read the
@@ -691,6 +702,11 @@ raised and **kept** — owner's call, this much roast is fine.)*
     non-techy user never discovers the interaction. Reconsider discoverability
     (a hint, or show values by default at Week/Month scale) without recreating
     the clutter the tap-to-reveal was introduced to solve.
+    — **done** in the same branch. Owner chose **show values by default at
+    Week/Month** (4 and 7 wide bars leave room) and **keep tap-to-reveal on
+    Day** (five time-of-day buckets read cleaner unlabelled). `BarChart` takes a
+    `revealOnTap` prop (`range === 'day'`); tap still highlights on every range.
+    No layout jump — the value text was already reserved in layout at opacity 0.
 - [ ] **Tab + profile icons aren't recognizable on day one — redesign,
   creatively.** The bottom-tab marks are abstract geometric shapes
   (square/circle/diamond + coin, `App.tsx`) and the profile control is an
