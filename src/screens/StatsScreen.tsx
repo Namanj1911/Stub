@@ -228,7 +228,7 @@ export function StatsScreen() {
         {chartTitle}
       </Text>
       {/* key by range so switching Day/Week/Month clears the selection */}
-      <BarChart bars={bars} key={range} />
+      <BarChart bars={bars} revealOnTap={range === 'day'} key={range} />
 
       {/* tiles (S6) — the set adapts to the selected range */}
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 24 }}>
@@ -319,8 +319,11 @@ function Ring({ fraction }: { fraction: number }) {
 }
 
 // Values reveal on touch (Apple Fitness pattern): tap a bar to see its
-// number and highlight it; tap again to dismiss.
-function BarChart({ bars }: { bars: Bar[] }) {
+// number and highlight it; tap again to dismiss. Day keeps that (five
+// time-of-day buckets read cleaner unlabelled); Week/Month show their values
+// up front (4–7 wide bars leave room), so a non-techy user never reads the
+// bars as "half-broken" for want of a number. Tap still highlights either way.
+function BarChart({ bars, revealOnTap }: { bars: Bar[]; revealOnTap: boolean }) {
   const [selected, setSelected] = useState<number | null>(null);
   return (
     <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 8, height: 140 }}>
@@ -340,14 +343,15 @@ function BarChart({ bars }: { bars: Bar[] }) {
             accessibilityState={{ selected: on }}
             style={{ flex: 1, alignItems: 'center', height: '100%', justifyContent: 'flex-end' }}
           >
-            {/* kept in layout at opacity 0 so bars don't jump when revealed */}
+            {/* Day: kept in layout at opacity 0 so bars don't jump when
+                revealed. Week/Month: shown up front. */}
             <Text
               style={{
                 fontFamily: font.medium,
                 fontSize: 11,
                 color: color.accent300,
                 marginBottom: 4,
-                opacity: on ? 1 : 0,
+                opacity: revealOnTap ? (on ? 1 : 0) : 1,
               }}
             >
               {b.val}
