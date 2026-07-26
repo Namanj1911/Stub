@@ -84,7 +84,6 @@ const TABLE = {
   // Same gate as the Goal card, so all three surfaces agree by construction.
   taperStaleLead: "this budget's out of date",
   taperStaleCta: 'start a new taper',
-  backfilled: 'Bar night, huh. Logged — stats recomputed.',
   backfillZero: 'Add zero? Bold strategy. Tap an amount first.',
   moneyBehind:
     "You're smoking above your baseline, so this is costing you extra. Goa is drifting further away, just so you know.",
@@ -370,6 +369,24 @@ export const LOG_CAPTIONS = {
   half: 'half-smoked',
   third: 'a shared drag',
 };
+
+// Backfill confirmation toast, one per time-of-day bucket (BackfillScreen's
+// BUCKETS). Owner report 2026-07-26: the old copy was a single line, "Bar
+// night, huh." — a joke that only lands on the Night bucket but fired for a
+// morning or afternoon backfill too. The roast now matches the slot the user
+// actually picked; the "Logged — stats recomputed." half is the functional
+// part and stays on every line. Keyed by the same ids BUCKETS uses, so the
+// screen passes bucketId straight through.
+const BACKFILL_TOASTS: Record<'morning' | 'afternoon' | 'evening' | 'night', string> = {
+  morning: 'Morning one already? Logged — stats recomputed.',
+  afternoon: 'Afternoon slump got you. Logged — stats recomputed.',
+  evening: 'Evening wind-down, huh. Logged — stats recomputed.',
+  night: 'Bar night, huh. Logged — stats recomputed.',
+};
+
+export function backfillToast(bucketId: 'morning' | 'afternoon' | 'evening' | 'night'): string {
+  return BACKFILL_TOASTS[bucketId];
+}
 
 // ---------------------------------------------------------------------------
 // Health timeline (design/HEALTH_TIMELINE.md §8) — TONE RULE, read before

@@ -37,6 +37,7 @@
 // what actually protects the copy.
 
 import {
+  backfillToast,
   budgetHoldCopy,
   budgetNudgeCopy,
   cleanName,
@@ -266,6 +267,32 @@ describe('personalization (owner decision 2026-07-22)', () => {
     expect(cleanName('A'.repeat(30))).toHaveLength(20);
     // The cap can expose trailing whitespace — it must be re-trimmed, not kept.
     expect(cleanName(`${'A'.repeat(19)} B`)).toBe('A'.repeat(19));
+  });
+});
+
+describe('backfillToast — one roast per bucket (owner report 2026-07-26)', () => {
+  const BUCKETS = ['morning', 'afternoon', 'evening', 'night'] as const;
+
+  it('always confirms the write, whatever the bucket', () => {
+    // The "Logged — stats recomputed." half is functional, not flavour: it's
+    // the confirmation the user needs. Every bucket keeps it.
+    for (const b of BUCKETS) {
+      expect(backfillToast(b)).toContain('Logged — stats recomputed.');
+    }
+  });
+
+  it('confines "Bar night" to the Night bucket', () => {
+    // The bug: this line fired for every bucket, so a 9am backfill was greeted
+    // with "Bar night, huh." It belongs to Night alone.
+    expect(backfillToast('night')).toContain('Bar night');
+    for (const b of ['morning', 'afternoon', 'evening'] as const) {
+      expect(backfillToast(b)).not.toContain('Bar night');
+    }
+  });
+
+  it('gives each bucket its own line — no shared copy', () => {
+    const lines = new Set(BUCKETS.map(backfillToast));
+    expect(lines.size).toBe(BUCKETS.length);
   });
 });
 
