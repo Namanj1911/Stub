@@ -9,7 +9,7 @@ import { useApp } from '../AppContext';
 import { frac } from '../domain';
 import { haptic } from '../haptics';
 import { useNav } from '../navigation';
-import { copy } from '../strings';
+import { backfillToast, copy } from '../strings';
 import { color, font, radius } from '../theme';
 
 const BUCKETS = [
@@ -52,8 +52,9 @@ export function BackfillScreen() {
     haptic.logged();
     addEntry(total, Math.min(ts, Date.now()), true);
     setTotal(0);
-    // confirm in place (prototype 2b behavior) — user backs out when done
-    setToast(copy('backfilled'));
+    // confirm in place (prototype 2b behavior) — user backs out when done.
+    // Roast matches the bucket they picked; "Bar night" is Night-only now.
+    setToast(backfillToast(bucketId));
     if (toastTimer.current) clearTimeout(toastTimer.current);
     toastTimer.current = setTimeout(() => setToast(''), 3500);
   };
