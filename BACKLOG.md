@@ -707,7 +707,7 @@ raised and **kept** — owner's call, this much roast is fine.)*
     Day** (five time-of-day buckets read cleaner unlabelled). `BarChart` takes a
     `revealOnTap` prop (`range === 'day'`); tap still highlights on every range.
     No layout jump — the value text was already reserved in layout at opacity 0.
-- [ ] **Tab + profile icons aren't recognizable on day one — redesign,
+- [x] **Tab + profile icons aren't recognizable on day one — redesign,
   creatively.** The bottom-tab marks are abstract geometric shapes
   (square/circle/diamond + coin, `App.tsx`) and the profile control is an
   unlabeled ~24px person-mark speck (`src/ProfileButton.tsx` — it *has* an
@@ -718,6 +718,21 @@ raised and **kept** — owner's call, this much roast is fine.)*
   be creative** — icons that carry meaning at a glance while staying in the
   Nocturne visual language. (Tab labels stay; the icons should earn their
   place alongside them.)
+  — **done 2026-07-26** (`feat/tab-profile-icons`), device-checked. Direction:
+  **functional line icons** in Feather (already the app's line-icon family, see
+  LogScreen) so each mark depicts its tab's job — **Stats** bar-chart, **Goal**
+  target, **Money** a ₹ coin (outlined disc + rupee glyph; a generic `$` reads
+  as foreign for an INR app, and Feather has no rupee). Inactive tint lifted
+  `neutral700→neutral500` to match the label tone and stay legible.
+  **Log** got the bolder "be creative" treatment the owner picked over a plain
+  pencil: a **custom brand cigarette** (`CigaretteIcon`, distilled from
+  `assets/icon.svg` — stick + filter band + the signature ember, which **lights
+  warm `#e8956b` on select** and stays monochrome grey when inactive, so tapping
+  Log visibly lights it). Chosen on device against the pencil via a temporary
+  `LOG_ICON` flag, now removed. **Profile control:** the dim `neutral500`
+  person-speck → a **settings gear** at 22px in `neutral300` (bigger + brighter),
+  so it reads as "where the settings live" (pace/brand/export/reset); a11y label
+  now "Open profile and settings". Display-only, no new test.
 - [ ] **No on-ramp for the not-yet-committed user.** The whole flow assumes
   the user has already decided to quit — "Your last cigarette already has a
   date" (`src/screens/WelcomeScreen.tsx:39`), a budget "heading for zero", a
