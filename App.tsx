@@ -14,8 +14,10 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import * as Sentry from '@sentry/react-native';
+import { Feather } from '@expo/vector-icons';
 import React from 'react';
-import { View } from 'react-native';
+import { Text, View } from 'react-native';
+import Svg, { Circle, Line, Rect } from 'react-native-svg';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { AppProvider } from './src/AppContext';
 import { RootStackParamList, TabParamList } from './src/navigation';
@@ -72,25 +74,51 @@ const navTheme = {
   },
 };
 
-// Tab icons per the 1a mockup: 20px geometric marks, 1.5px border —
-// square (Log), circle (Stats), diamond (Goal); Money extends the family
-// with a coin (circle + center dot).
-function TabIcon({ shape, focused }: { shape: 'square' | 'circle' | 'diamond' | 'coin'; focused: boolean }) {
-  const stroke = focused ? color.accent : color.neutral700;
-  const base = {
-    width: 20,
-    height: 20,
-    borderWidth: 1.5,
-    borderColor: stroke,
-  } as const;
-  if (shape === 'square') return <View style={{ ...base, borderRadius: 6 }} />;
-  if (shape === 'circle') return <View style={{ ...base, borderRadius: 10 }} />;
-  if (shape === 'diamond') {
-    return <View style={{ ...base, borderRadius: 6, transform: [{ rotate: '45deg' }, { scale: 0.85 }] }} />;
-  }
+// Tab icons (redesigned 2026-07-26, fresh-eyes UX finding #5). The old
+// square/circle/diamond/coin geometric marks read as decoration, not
+// navigation — both testers used the labels and never the icons. Each icon now
+// depicts its tab's job in a thin outline: a brand cigarette (custom, see
+// CigaretteIcon) for the Log tab, then Feather glyphs (already the app's
+// line-icon family, see LogScreen) — bar chart = stats, target = the quit goal,
+// a ₹ coin = money. Inactive lifted neutral700→neutral500 to match the label
+// tone and stay legible. Labels stay; the icons now earn their place beside them.
+// The brand-forward Log mark: a horizontal cigarette distilled from the app
+// icon (assets/icon.svg) — a stick, a filter band, and the signature lit ember.
+// The ember lights warm (#e8956b, the brand's ember) when the tab is selected;
+// otherwise the whole mark matches the monochrome Feather set. Drawn at a 24
+// viewBox, so it sits at the same visual weight as the other icons.
+function CigaretteIcon({ focused }: { focused: boolean }) {
+  const c = focused ? color.accent : color.neutral500;
+  const ember = focused ? '#e8956b' : c; // brand ember — "still lit" on select
   return (
-    <View style={{ ...base, borderRadius: 10, alignItems: 'center', justifyContent: 'center' }}>
-      <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: stroke }} />
+    <Svg width={23} height={23} viewBox="0 0 24 24">
+      <Rect x={6.5} y={9.5} width={13} height={5.5} rx={2} stroke={c} strokeWidth={1.8} fill="none" />
+      <Line x1={15.5} y1={9.5} x2={15.5} y2={15} stroke={c} strokeWidth={1.8} />
+      <Circle cx={3.6} cy={12.25} r={2} fill={ember} />
+    </Svg>
+  );
+}
+
+function TabIcon({ name, focused }: { name: 'log' | 'stats' | 'goal' | 'money'; focused: boolean }) {
+  const c = focused ? color.accent : color.neutral500;
+  if (name === 'log') return <CigaretteIcon focused={focused} />;
+  if (name === 'stats') return <Feather name="bar-chart-2" size={21} color={c} />;
+  if (name === 'goal') return <Feather name="target" size={21} color={c} />;
+  // Money — Feather has no rupee, so a coin: an outlined disc with a ₹ glyph.
+  // Localized and unmistakable as money; a generic $ reads as foreign here.
+  return (
+    <View
+      style={{
+        width: 21,
+        height: 21,
+        borderRadius: 10.5,
+        borderWidth: 1.5,
+        borderColor: c,
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+    >
+      <Text style={{ fontFamily: font.medium, fontSize: 11, lineHeight: 13, color: c }}>₹</Text>
     </View>
   );
 }
@@ -117,22 +145,22 @@ function Tabs() {
       <Tab.Screen
         name="Log"
         component={LogScreen}
-        options={{ tabBarIcon: ({ focused }) => <TabIcon shape="square" focused={focused} /> }}
+        options={{ tabBarIcon: ({ focused }) => <TabIcon name="log" focused={focused} /> }}
       />
       <Tab.Screen
         name="Stats"
         component={StatsScreen}
-        options={{ tabBarIcon: ({ focused }) => <TabIcon shape="circle" focused={focused} /> }}
+        options={{ tabBarIcon: ({ focused }) => <TabIcon name="stats" focused={focused} /> }}
       />
       <Tab.Screen
         name="Goal"
         component={GoalScreen}
-        options={{ tabBarIcon: ({ focused }) => <TabIcon shape="diamond" focused={focused} /> }}
+        options={{ tabBarIcon: ({ focused }) => <TabIcon name="goal" focused={focused} /> }}
       />
       <Tab.Screen
         name="Money"
         component={MoneyScreen}
-        options={{ tabBarIcon: ({ focused }) => <TabIcon shape="coin" focused={focused} /> }}
+        options={{ tabBarIcon: ({ focused }) => <TabIcon name="money" focused={focused} /> }}
       />
     </Tab.Navigator>
   );
