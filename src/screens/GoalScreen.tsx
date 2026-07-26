@@ -461,11 +461,16 @@ export function GoalScreen() {
           </View>
         )}
 
-        {/* glide path */}
-        <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 6, height: 100, marginTop: 18 }}>
+        {/* glide path — the value is the point of this chart (the "numbers
+            marching down"), so it carries readable weight; label stays a step
+            smaller for hierarchy. Row height grown to fit the larger type. */}
+        <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 6, height: 120, marginTop: 18 }}>
           {glide.map((b, i) => (
             <View key={i} style={{ flex: 1, alignItems: 'center', height: '100%', justifyContent: 'flex-end' }}>
-              <Text style={{ fontFamily: font.regular, fontSize: 9, color: color.accent300, marginBottom: 3 }}>
+              <Text
+                numberOfLines={1}
+                style={{ fontFamily: font.regular, fontSize: 12, color: color.accent300, marginBottom: 3 }}
+              >
                 {b.val}
               </Text>
               <View
@@ -477,7 +482,7 @@ export function GoalScreen() {
                   backgroundColor: b.color,
                 }}
               />
-              <Text style={{ fontFamily: font.regular, fontSize: 9, color: color.accent400, marginTop: 4 }}>
+              <Text style={{ fontFamily: font.regular, fontSize: 11, color: color.accent400, marginTop: 4 }}>
                 {b.label}
               </Text>
             </View>
