@@ -88,6 +88,8 @@ const TABLE = {
   taperStaleLead: "this budget's out of date",
   taperStaleCta: 'start a new taper',
   backfillZero: 'Add zero? Bold strategy. Tap an amount first.',
+  // Under Backfill's day picker when a greyed-out day is showing (R6).
+  backfillPreInstall: "Days from before you installed Stub aren't counted, so there's nothing to add there.",
   // Money before any whole day has been counted (install day and the day
   // after). ₹0 with no explanation reads as a verdict; this says why.
   moneyNotYet:
