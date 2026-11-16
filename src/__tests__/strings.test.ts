@@ -42,6 +42,8 @@ import {
   budgetNudgeCopy,
   cleanName,
   milestonePushCopy,
+  sosAmountNote,
+  sosDonePushCopy,
   sosResult,
 } from '../strings';
 import { INSTALL_KEY as I, atLocalHour } from './fixtures';
@@ -250,6 +252,24 @@ describe('personalization (owner decision 2026-07-22)', () => {
       const { title, body } = budgetNudgeCopy(9, fireAt, seed);
       expect(`${title} ${body}`.toLowerCase()).not.toMatch(BAN);
     }
+    // The SOS timer's push (R8). "craving" is banned here too: it says the
+    // same thing to anyone who can see the lock screen.
+    const sos = sosDonePushCopy();
+    expect(`${sos.title} ${sos.body}`.toLowerCase()).not.toMatch(/smok|cigarette|lung|crav/);
+  });
+
+  it('the SOS timer push claims nothing about how the five minutes went', () => {
+    // It is delivered whether or not the user held out, so it must be true
+    // either way — no "made it", "won", "outlasted".
+    const { title, body } = sosDonePushCopy();
+    expect(`${title} ${body}`.toLowerCase()).not.toMatch(/made it|won|win|outlast|beat|surviv/);
+  });
+
+  it('a slip logged with no budget left is not said to go against one (R8)', () => {
+    expect(sosAmountNote(true)).toContain('budget');
+    expect(sosAmountNote(false)).not.toContain('budget');
+    expect(sosResult('smoked', 0, undefined, true).body).toContain('budget');
+    expect(sosResult('smoked', 0, undefined, false).body).not.toContain('budget');
   });
 
   it('sosResult puts the name on the scoreboard, and falls back to You', () => {

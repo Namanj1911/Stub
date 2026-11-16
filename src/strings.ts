@@ -246,10 +246,31 @@ export function pickPrompts(): { early: string; mid: string; late: string } {
   };
 }
 
+// The line under "How much was it?". With the taper at zero there is no
+// budget for it to go against (R8, small item).
+export function sosAmountNote(hasBudget: boolean): string {
+  return hasBudget
+    ? "No judgement — it goes against today's budget."
+    : "No judgement — it goes on today's record.";
+}
+
+// The push for the end of the five minutes, for a user who left the app (R8).
+// One fixed line, and it claims nothing about how the five minutes went: the
+// app cannot know, and a "you made it" on the lock screen of someone who did
+// not would be the false claim every other push is built to avoid. No smoking
+// vocabulary either (tone rule 5) — "craving" included, a lock screen is public.
+export function sosDonePushCopy(): { title: string; body: string } {
+  return {
+    title: 'Five minutes are up',
+    body: 'The timer you started has finished. Come back and say how it went.',
+  };
+}
+
 export function sosResult(
   outcome: 'survived' | 'smoked',
   weeklySurvived: number,
   name?: string,
+  hasBudget = true,
 ): { title: string; body: string } {
   if (outcome === 'survived') {
     // The scoreboard reads best with the user's actual name on it — this is
@@ -261,7 +282,9 @@ export function sosResult(
   }
   return {
     title: 'Logged. No drama.',
-    body: "It happens. We logged it against today's budget — honesty is the whole point.",
+    body: hasBudget
+      ? "It happens. We logged it against today's budget — honesty is the whole point."
+      : "It happens. It's on the record — honesty is the whole point.",
   };
 }
 
