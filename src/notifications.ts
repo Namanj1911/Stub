@@ -106,6 +106,10 @@ export async function reconcile(
   const sig = signature(planned);
   if (sig === lastSignature) return null;
 
+  // Channel first: on Android 13+ the system permission prompt is not shown
+  // until the app has created at least one channel, so asking before this
+  // would be refused without the user ever seeing a prompt.
+  await ensureChannel();
   const granted = await ensurePermission(planned.length > 0);
   if (!granted) {
     // Nothing of ours can be pending if we were never granted, but a
@@ -115,7 +119,6 @@ export async function reconcile(
     return null;
   }
 
-  await ensureChannel();
   await Notifications.cancelAllScheduledNotificationsAsync();
   for (const n of planned) {
     await Notifications.scheduleNotificationAsync({
@@ -195,8 +198,8 @@ export function useNotificationSync(
 // __DEV__ is false in any release build, so this cannot ship.
 export async function sendPreviewNotifications(): Promise<boolean> {
   if (!__DEV__ || !supported) return false;
+  await ensureChannel(); // before the ask — see reconcile()
   if (!(await ensurePermission(true))) return false;
-  await ensureChannel();
   previewUntil = Date.now() + 45_000;
   lastSignature = null; // the real schedule gets rebuilt once the window closes
 
