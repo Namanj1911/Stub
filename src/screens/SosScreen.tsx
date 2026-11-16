@@ -7,10 +7,13 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Animated, Easing, Pressable, Text, View } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
-import { useApp } from '../AppContext';
+import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
+import { useApp, useNow, useProfile } from '../AppContext';
+import { budgetSixths, dayKey } from '../domain';
 import { haptic } from '../haptics';
 import { useNav } from '../navigation';
-import { pickPrompts, sosResult } from '../strings';
+import { cancelSosDone, scheduleSosDone } from '../notifications';
+import { pickPrompts, sosAmountNote, sosResult } from '../strings';
 import { color, font, radius } from '../theme';
 
 const TOTAL = 300; // seconds
@@ -33,13 +36,26 @@ const BREATH_SEGMENTS = [
 const BREATH_MAX = 132;
 const BREATH_MIN_SCALE = 0.55;
 
+const KEEP_AWAKE_TAG = 'sos';
+
 type Phase = 'idle' | 'on' | 'pickAmount' | 'result';
 type SosMode = 'prompts' | 'breathe';
 
 export function SosScreen() {
   const { data, addCraving, addEntry } = useApp();
   const cravings = data.cravings;
+  const profile = useProfile();
   const nav = useNav();
+  const now = useNow();
+  // At a zero budget "it goes against today's budget" has nothing to refer to.
+  const hasBudget =
+    budgetSixths(
+      data.entries,
+      dayKey(now),
+      profile.installDayKey,
+      profile.baselineHistory,
+      profile.planHistory,
+    ) > 0;
   const [phase, setPhase] = useState<Phase>('idle');
   const [left, setLeft] = useState(TOTAL);
   // prompts vs guided breathing; sticky within the screen so a re-run of the
@@ -59,11 +75,25 @@ export function SosScreen() {
   // one random prompt per stage, re-rolled each session
   const prompts = useRef(pickPrompts());
 
+  // Every way out of the countdown comes through here — made it, smoked it,
+  // back, unmount — so this is also where the end-of-timer push is taken back.
   const stopTimer = () => {
     if (timer.current) clearInterval(timer.current);
     timer.current = null;
+    cancelSosDone();
   };
   useEffect(() => stopTimer, []);
+
+  // The breathing guide asks the user to watch a circle without touching the
+  // phone, which is exactly when the screen dims and locks (R8). Held only
+  // while the countdown is on.
+  useEffect(() => {
+    if (phase !== 'on') return;
+    activateKeepAwakeAsync(KEEP_AWAKE_TAG).catch(() => {});
+    return () => {
+      deactivateKeepAwake(KEEP_AWAKE_TAG).catch(() => {});
+    };
+  }, [phase]);
 
   const finishSurvived = () => {
     stopTimer();
@@ -94,6 +124,8 @@ export function SosScreen() {
     setLeft(TOTAL);
     setPhase('on');
     stopTimer();
+    // for the user who leaves the app before the five minutes are over
+    scheduleSosDone(endAt.current);
     timer.current = setInterval(() => {
       const remaining = Math.max(0, Math.round((endAt.current - Date.now()) / 1000));
       if (remaining <= 0) {
@@ -296,7 +328,7 @@ export function SosScreen() {
             How much was it?
           </Text>
           <Text style={{ fontFamily: font.regular, fontSize: 13, color: color.neutral500 }}>
-            No judgement — it goes against today's budget.
+            {sosAmountNote(hasBudget)}
           </Text>
           <View style={{ flexDirection: 'row', gap: 8, marginTop: 14, alignSelf: 'stretch' }}>
             {([['1', 6, 'One cigarette'], ['½', 3, 'Half'], ['⅓ shared', 2, 'A third, shared']] as const).map(
@@ -349,6 +381,7 @@ export function SosScreen() {
         <ResultView
           outcome={outcome}
           weeklySurvived={weeklySurvived}
+          hasBudget={hasBudget}
           onDone={() => nav.goBack()}
         />
       )}
@@ -424,16 +457,18 @@ function BreathGuide() {
 function ResultView({
   outcome,
   weeklySurvived,
+  hasBudget,
   onDone,
 }: {
   outcome: 'survived' | 'smoked';
   weeklySurvived: number;
+  hasBudget: boolean;
   onDone: () => void;
 }) {
   // The survived scoreboard prints the user's name if they gave one —
   // "Craving: 0. Naman: 4." is the personal beat this screen earns.
   const name = useApp().data.profile?.name;
-  const { title, body } = sosResult(outcome, weeklySurvived, name);
+  const { title, body } = sosResult(outcome, weeklySurvived, name, hasBudget);
   return (
     <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 14, paddingHorizontal: 10 }}>
       <Text style={{ fontFamily: font.medium, fontSize: 28, color: color.text, textAlign: 'center' }}>

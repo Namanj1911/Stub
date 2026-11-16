@@ -25,7 +25,7 @@ import {
   type AnnouncedMilestone,
   type PlannedNotification,
 } from './notificationPlan';
-import { budgetNudgeCopy, milestonePushCopy } from './strings';
+import { budgetNudgeCopy, milestonePushCopy, sosDonePushCopy } from './strings';
 import type { AppData } from './store';
 
 // ---------------------------------------------------------------------------
@@ -34,16 +34,26 @@ import type { AppData } from './store';
 
 const supported = Platform.OS === 'ios' || Platform.OS === 'android';
 
+// The one notification reconcile() does not own — see "SOS timer" below.
+const SOS_ID = 'sos-timer';
+
 // Banners while the app is foregrounded: a nudge scheduled 45 minutes ago can
 // legitimately land while the user is staring at the Log screen, and silently
 // swallowing it would make the feature look broken during testing.
+//
+// The SOS timer's push is the exception. It exists for the user who left the
+// app; if it lands while the app is in front, they are on the SOS screen
+// watching the countdown reach zero and the result is already on screen.
 Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldPlaySound: false,
-    shouldSetBadge: false,
-    shouldShowBanner: true,
-    shouldShowList: true,
-  }),
+  handleNotification: async (notification) => {
+    const show = notification.request.identifier !== SOS_ID;
+    return {
+      shouldPlaySound: false,
+      shouldSetBadge: false,
+      shouldShowBanner: show,
+      shouldShowList: show,
+    };
+  },
 });
 
 let channelReady = false;
@@ -94,6 +104,18 @@ function signature(planned: PlannedNotification[]): string {
   return JSON.stringify(planned.map((n) => [n.id, n.fireAt, n.title, n.body]));
 }
 
+// Clears reconcile's own schedule. Not cancelAll: the SOS timer's push is
+// scheduled from the SOS screen, and returning to the app mid-countdown runs
+// a foreground reconcile that would otherwise eat it.
+async function cancelPlanned() {
+  const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+  for (const n of scheduled) {
+    if (n.identifier !== SOS_ID) {
+      await Notifications.cancelScheduledNotificationAsync(n.identifier);
+    }
+  }
+}
+
 // Returns the milestone bookkeeping to persist, or null when nothing changed.
 export async function reconcile(
   data: AppData,
@@ -114,12 +136,12 @@ export async function reconcile(
   if (!granted) {
     // Nothing of ours can be pending if we were never granted, but a
     // revoked permission mid-life leaves orphans. Cheap to be sure.
-    await Notifications.cancelAllScheduledNotificationsAsync().catch(() => {});
+    await cancelPlanned().catch(() => {});
     lastSignature = sig;
     return null;
   }
 
-  await Notifications.cancelAllScheduledNotificationsAsync();
+  await cancelPlanned();
   for (const n of planned) {
     await Notifications.scheduleNotificationAsync({
       content: {
@@ -186,6 +208,54 @@ export function useNotificationSync(
     });
     return () => sub.remove();
   }, []);
+}
+
+// ---------------------------------------------------------------------------
+// SOS timer (R8)
+// ---------------------------------------------------------------------------
+
+// A smoker in a craving often puts the phone down or leaves the app. Without
+// this the five minutes end in silence and the result only appears if they
+// happen to come back.
+//
+// Never asks for permission: the SOS screen is the worst possible moment for
+// a system prompt. If notifications are not already allowed, this does nothing.
+//
+// Schedule and cancel go through one chain so a quick restart of the timer
+// cannot have its fresh push cancelled by the previous run's late cancel.
+let sosChain: Promise<unknown> = Promise.resolve();
+
+export function scheduleSosDone(fireAt: number) {
+  if (!supported) return;
+  sosChain = sosChain
+    .then(async () => {
+      await Notifications.cancelScheduledNotificationAsync(SOS_ID).catch(() => {});
+      const { status } = await Notifications.getPermissionsAsync();
+      if (status !== 'granted') return;
+      await ensureChannel();
+      await Notifications.scheduleNotificationAsync({
+        identifier: SOS_ID,
+        content: { ...sosDonePushCopy(), data: { id: SOS_ID } },
+        trigger: {
+          type: Notifications.SchedulableTriggerInputTypes.DATE,
+          date: new Date(fireAt),
+          ...(Platform.OS === 'android' ? { channelId: 'default' } : {}),
+        },
+      });
+    })
+    .catch(() => {});
+}
+
+// Also clears one that was already delivered, so coming back to the app does
+// not leave "the timer has finished" sitting in the notification list.
+export function cancelSosDone() {
+  if (!supported) return;
+  sosChain = sosChain
+    .then(async () => {
+      await Notifications.cancelScheduledNotificationAsync(SOS_ID).catch(() => {});
+      await Notifications.dismissNotificationAsync(SOS_ID).catch(() => {});
+    })
+    .catch(() => {});
 }
 
 // Dev-only. The real triggers are a 45-minute wait and 9am tomorrow, so
