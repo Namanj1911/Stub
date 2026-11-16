@@ -74,15 +74,25 @@ function priceAtEndOfDay(history: PriceRecord[], key: number): number {
 
 // Money saved (S21): per day, (that day's baseline − actual) valued in ₹.
 // Smoked entries are valued at the price in effect when they were lit
-// (backfill-safe); avoided smokes at the day's ending price. Today counts
-// as it stands.
+// (backfill-safe); avoided smokes at the day's ending price.
+//
+// Only whole days the app watched are counted: from the day after install up
+// to yesterday (R7, 2026-11-16). Both ends used to be included and both made
+// the number false. The install day is partial — the user installs mid-day,
+// having smoked cigarettes the app never saw — so crediting its full baseline
+// showed "₹240 saved" one minute after setup. Today is partial the other way:
+// it credited a whole day's baseline at 4am and was then eaten down by every
+// cigarette logged. This is the same lived-days rule smokeFree() applies to
+// its streak. `days` is how many days the total covers; 0 means nothing has
+// been counted yet and the screen should say so rather than show ₹0 as a
+// verdict. `savedWeek` is the last 7 counted days.
 export function computeSavings(
   entries: Entry[],
   baselineHistory: BaselineRecord[],
   priceHistory: PriceRecord[],
   installDayKey: number,
   todayKey: number,
-): { saved: number; savedWeek: number } {
+): { saved: number; savedWeek: number; days: number } {
   // What was actually spent per day, in one pass over the entries — filtering
   // the whole array per day made this quadratic in days of use (R1).
   const cost = new Map<number, number>();
@@ -92,14 +102,14 @@ export function computeSavings(
   }
   let saved = 0;
   let savedWeek = 0;
-  for (let k = installDayKey; k <= todayKey; k++) {
+  for (let k = installDayKey + 1; k < todayKey; k++) {
     const counterfactualCost =
       (baselineSixthsFor(baselineHistory, k) * priceAtEndOfDay(priceHistory, k)) / 6;
     const daySaved = counterfactualCost - (cost.get(k) ?? 0);
     saved += daySaved;
-    if (k > todayKey - 7) savedWeek += daySaved;
+    if (k >= todayKey - 7) savedWeek += daySaved;
   }
-  return { saved, savedWeek };
+  return { saved, savedWeek, days: Math.max(0, todayKey - installDayKey - 1) };
 }
 
 // The budget the plan calls for on a given day: a straight line down from

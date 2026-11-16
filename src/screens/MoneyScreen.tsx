@@ -38,7 +38,7 @@ export function MoneyScreen() {
   const baseline = profile.countPerDay * 6; // current baseline, for projections
   const perSixth = price / 6;
 
-  const { saved, savedWeek } = computeSavings(
+  const { saved, savedWeek, days: countedDays } = computeSavings(
     entries,
     profile.baselineHistory,
     profile.priceHistory,
@@ -49,7 +49,7 @@ export function MoneyScreen() {
 
   // Goa flight goal
   const pct = Math.max(0, Math.min(100, (saved / GOA_FLIGHT) * 100));
-  const weeklyRate = daysIn >= 7 ? savedWeek : (saved / daysIn) * 7;
+  const weeklyRate = countedDays >= 7 ? savedWeek : countedDays > 0 ? (saved / countedDays) * 7 : 0;
   const weeksAway = saved >= GOA_FLIGHT ? 0 : weeklyRate > 0 ? Math.ceil((GOA_FLIGHT - saved) / weeklyRate) : null;
   const goaLine =
     weeksAway === 0
@@ -137,8 +137,13 @@ export function MoneyScreen() {
           {inrSigned(saved)}
         </Text>
         <Text style={{ fontFamily: font.regular, fontSize: 13, color: color.accent300, marginTop: 4 }}>
-          {inrSigned(savedWeek)} this week · {daysIn} day{daysIn === 1 ? '' : 's'} in
+          {inrSigned(savedWeek)} last 7 days · {daysIn} day{daysIn === 1 ? '' : 's'} in
         </Text>
+        {countedDays === 0 && (
+          <Text style={{ fontFamily: font.regular, fontSize: 12, color: color.neutral400, marginTop: 8, lineHeight: 17 }}>
+            {copy('moneyNotYet')}
+          </Text>
+        )}
         {saved < 0 && (
           <Text style={{ fontFamily: font.regular, fontSize: 12, color: color.neutral400, marginTop: 8, lineHeight: 17 }}>
             {copy('moneyBehind')}

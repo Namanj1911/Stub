@@ -14,6 +14,7 @@ import {
   budgetHoldOnLog,
   budgetSeries,
   budgetSixths,
+  computeSavings,
   currentPlanRate,
   dateOfKey,
   planHistoryWithRate,
@@ -413,5 +414,53 @@ describe('dayKey — the 4am day boundary (NFR3)', () => {
       const noon = atLocalHour(I + offset, 12); // midday: same calendar day as the key
       expect(weekdayOfKey(dayKey(noon))).toBe(new Date(noon).getDay());
     }
+  });
+});
+
+// R7 (REVIEW_FINDINGS_2026-11-16). Money used to credit the install day and
+// today in full: "₹200 saved" a minute after setup, and a whole day's baseline
+// again every morning at 4am. ₹20 a stick, 10 a day → ₹200 per avoided day.
+describe('computeSavings — only whole days the app watched (R7)', () => {
+  const price = [{ fromTimestamp: 0, pricePerStick: 20 }];
+  const savings = (entries: ReturnType<typeof smoke>[], today: number) =>
+    computeSavings(entries, b10, price, I, today);
+
+  it('claims nothing on the install day, whatever was or was not logged', () => {
+    expect(savings([], I)).toEqual({ saved: 0, savedWeek: 0, days: 0 });
+    expect(savings([smoke(I, 8)], I)).toEqual({ saved: 0, savedWeek: 0, days: 0 });
+  });
+
+  it('claims nothing on the first full day either — it is not over yet', () => {
+    expect(savings([], I + 1)).toEqual({ saved: 0, savedWeek: 0, days: 0 });
+  });
+
+  it('counts the first full day once it is over, and never the install day', () => {
+    // install day: 2 logged (would have "saved" ₹160). Day I+1: 4 smoked.
+    const entries = [smoke(I, 2), smoke(I + 1, 4)];
+    expect(savings(entries, I + 2)).toEqual({ saved: 120, savedWeek: 120, days: 1 });
+  });
+
+  it('does not move when a cigarette is logged today, or when the day turns over empty', () => {
+    const entries = smokeDaily(I + 1, 3, 4); // I+1..I+3, ₹120 a day
+    const before = savings(entries, I + 4);
+    expect(before.saved).toBe(360);
+    expect(savings([...entries, smoke(I + 4, 5)], I + 4)).toEqual(before);
+  });
+
+  it('adds a day only when it closes, at what was actually smoked', () => {
+    const entries = [...smokeDaily(I + 1, 3, 4), smoke(I + 4, 5)];
+    expect(savings(entries, I + 5).saved).toBe(360 + 100);
+  });
+
+  it('savedWeek is the last 7 counted days, not 6 plus a partial today', () => {
+    const entries = smokeDaily(I + 1, 20, 4); // ₹120 saved every day
+    const s = savings(entries, I + 15); // counted: I+1..I+14
+    expect(s.days).toBe(14);
+    expect(s.saved).toBe(14 * 120);
+    expect(s.savedWeek).toBe(7 * 120);
+  });
+
+  it('still goes negative for days above baseline (roast, not clamp)', () => {
+    expect(savings([smoke(I + 1, 12)], I + 2).saved).toBe(-40);
   });
 });
