@@ -29,6 +29,9 @@ export function cleanName(name: string | undefined): string | undefined {
 
 const TABLE = {
   undone: 'Undone. It never happened.',
+  // Undo only reaches what was logged in this sitting, today (R6). Points at
+  // the entry rows, which is where anything older gets fixed.
+  nothingToUndo: 'Nothing new to undo. Tap an entry below to fix it.',
   edited: 'Fixed. Revisionist history, but fine.',
   deleted: 'Deleted. We saw nothing.',
   budgetTorched: 'budget torched',
