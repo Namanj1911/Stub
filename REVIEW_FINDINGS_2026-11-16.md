@@ -19,10 +19,16 @@ smoker who is trying to cut down, on the phone they actually own?**
   from reading code and Expo's documentation; there is still no Android
   build.
 
-**Status:** five findings were fixed in code on 2026-11-16 (R1, R2, R7, R9
-and the undo part of R6) and merged to main the same day at the owner's
-request. None of it has been seen on a phone. See "Fix round" directly below. Everything else is still open and
-needs the usual discussion and branch.
+**Status:** two fix rounds, both on 2026-11-16.
+
+- **Round 1** (R1, R2, R7, R9 and the undo part of R6) is merged to main, at
+  the owner's request. None of it has been seen on a phone.
+- **Round 2** (R5, R8, R10, R11, the copy fix for R3, pre-install days from
+  R6, and the accessibility item from R12) is on branches, pushed and **not
+  merged**. None of it has been seen on a phone either.
+
+Still open after both rounds: R4, the nudge feature in R3, the past-day view
+in R6, and the rest of R12.
 
 ---
 
@@ -103,6 +109,145 @@ so anything that fails here needs a follow-up fix.
 
 ---
 
+## Fix round 2, 2026-11-16
+
+Seven changes, again with no phone to hand. Each is on its own branch, pushed,
+and **not merged**. The branches are stacked in the order of the table, so
+checking out the last one (`feat/ask-notifs-on-plan-card`) gives all seven
+for one pass on the phone. Merge in table order.
+
+Typecheck passes. Jest passes (8 suites, 149 tests, up from 134). The Android
+and iOS JS bundles build. Every new test was checked by putting the bug back
+and watching it fail.
+
+| Finding | Branch | What changed | Covered by tests |
+|---|---|---|---|
+| R6 (pre-install days) | `fix/backfill-preinstall-days` | Backfill greys out days before the install day and says why. | Yes, `domain.test.ts` |
+| R12 (accessibility) | `fix/a11y-roles` | Backfill's "Add" has a role and a spoken label. Profile's pace chips have a role and a selected state. | No. Needs a screen reader. |
+| R3 (b) | `fix/onboarding-trigger-promise` | The trigger step no longer says "we'll watch those windows and nudge you". It now says Stats shows when you actually light up, which is true. | No, copy only |
+| R5 | `fix/load-failure-keeps-data` | A read error shows a "Try again" screen instead of onboarding, and nothing is written until a load has succeeded. A damaged store is copied to its own key before the app starts fresh, and an alert offers to share the copy. A failed save is reported once per launch. Reset also deletes any kept copy. | Partly. `store.test.ts` covers telling a damaged store from a valid one. The alerts and the retry screen need a device. |
+| R8 | `fix/sos-awake-and-timer-push` | The screen stays on during the countdown (`expo-keep-awake`, new dependency, same version the iOS build already links). One local notification marks the end of the five minutes, and is taken back on every way out of the countdown. With the budget at zero, a slip is no longer said to go "against today's budget". | Copy only, `strings.test.ts`. The rest needs a device. |
+| R10 | `feat/about-section` | Profile ends with an About section: privacy policy, prefilled support email, quit line, and the app version. The SOS result after a slip carries one line with the quit line number. | The email link, `strings.test.ts`. The rest needs a device. |
+| R11 | `feat/ask-notifs-on-plan-card` | The plan-ready card offers notifications with a line of context and a button. The system prompt follows the tap. The old ask (after 80% of the budget) remains for anyone who skips the card. | No. Needs a device. |
+
+Things in this round that go beyond the finding as written, so the owner
+knows they are there:
+
+- **`reconcile()` no longer cancels every scheduled notification.** It cancels
+  everything except the SOS timer's. Without this, returning to the app
+  mid-countdown would have removed the SOS push. This touches the path all
+  nudges and milestones go through, so the round 1 nudge checks are worth
+  repeating.
+- **The SOS push is sent only if notifications are already allowed.** The SOS
+  screen never asks for permission.
+- **The SOS push makes no claim about the outcome.** It reads "Five minutes
+  are up. The timer you started has finished. Come back and say how it
+  went." The app cannot know whether the user held out, so it does not say
+  "you made it". It also avoids the word "craving", because lock screens are
+  public.
+- **`notifNote` on Profile no longer says "We'll ask iOS"** (Android finding
+  A2). It now reads the same on both platforms.
+- **The quit line number was checked** on 2026-11-16: 1800-11-2356, toll-free,
+  run by the health ministry ([ntqls.in](https://ntqls.in/)). Sources differ
+  on its hours (the official site says 8 am to 8 pm; an older paper says
+  Tuesday to Sunday), so the app prints no hours.
+- **The support address** is the one on the privacy page,
+  `stubapp.help@gmail.com`. The privacy link is
+  `https://namanj1911.github.io/Stub/`, which was live when checked.
+
+Not done in this round:
+
+- **R3 is not closed.** The false promise is gone, but the trigger answers
+  are still saved and still used by nothing. Building the nudge (a) or
+  dropping the step (c) is an owner decision.
+- **R5 offers the damaged copy through the share sheet as text**, the same
+  mechanism as Export. It has the size limit described in R4 and is fixed
+  with R4.
+- **R6: the day view for correcting past days** is not built.
+- **R4** and the rest of **R12** are untouched.
+
+One thing noticed on the way: `perf.test.ts` failed three times in seven full
+runs on a busy Mac (407 to 524 ms against a 400 ms limit). Run alone it takes
+about 30 ms, and main passed three of three. It measures wall-clock time, and
+an eighth test suite now competes for the same cores. The maths is not
+slower. The limit or the measurement needs a look before this is trusted in
+CI.
+
+### Still to check on a phone, round 2
+
+**R6, pre-install days**
+
+- [ ] Fresh install, open Backfill. The three days before today are greyed
+      out and cannot be selected. The line under them explains why.
+- [ ] An install older than three days: all four days can be selected.
+
+**R12, accessibility**
+
+- [ ] With VoiceOver or TalkBack on, Backfill's Add button is announced as a
+      button with the amount and day. Pace chips are announced as buttons,
+      and the active one as selected.
+
+**R3 (b)**
+
+- [ ] Copy check on the new line on the trigger step of Setup.
+
+**R5**
+
+- [ ] Normal launch with existing data: nothing new appears.
+- [ ] Hard to force on a device. If there is a way to corrupt the stored
+      value in a dev build: the alert appears once, "Share the copy" opens
+      the share sheet, and the app then shows onboarding.
+- [ ] Copy check on `loadFailed*`, `unreadable*` and `writeFailed*` in
+      `strings.ts`.
+
+**R8**
+
+- [ ] Start the SOS timer and do not touch the phone. The screen stays on
+      for the full five minutes.
+- [ ] Leave the SOS screen. The phone dims and locks as normal again.
+- [ ] With notifications allowed: start the timer, go to the home screen,
+      wait five minutes. One notification arrives.
+- [ ] Is the notification noticed with the phone in a pocket? It is sent on
+      the same silent channel as the nudges. If not, it needs its own
+      channel with sound or vibration.
+- [ ] Start the timer, go to the home screen, come back after a minute. The
+      notification still arrives at the end if the app is left again.
+- [ ] Start the timer and tap "It passed. I win." No notification arrives
+      later.
+- [ ] Stay on the SOS screen until the timer ends. The result appears and no
+      banner is shown over it.
+- [ ] With notifications not allowed: the timer works and no permission
+      prompt appears on the SOS screen.
+- [ ] Budget nudges and milestone pushes still arrive as before.
+- [ ] With the taper at zero, "I smoked it anyway" says "today's record",
+      not "today's budget", on both screens.
+- [ ] Copy check on `sosDonePushCopy` and `sosAmountNote`.
+
+**R10**
+
+- [ ] Profile, About: the privacy row opens the page in the browser. The
+      email row opens a draft to the support address with the version and
+      platform in the body. The quit line row opens the dialler with
+      1800112356.
+- [ ] **Owner decision:** after "I smoked it anyway", the result shows one
+      underlined line with the quit line number. If that reads as a lecture
+      at that moment, remove it and keep the Profile row.
+- [ ] Copy check on the `about*` lines and `sosQuitLine`.
+
+**R11**
+
+- [ ] Fresh install. The plan-ready card shows the offer. Tapping "Turn on
+      nudges" shows the system prompt. Allowing it changes the card to
+      "Nudges are on."
+- [ ] Refusing it changes the card to the "No nudges, then" line. On iPhone
+      no prompt appears later.
+- [ ] Skipping the card: the prompt appears later, the old way, once 80% of
+      the budget is logged.
+- [ ] The card still fits on a small phone without hiding "Let's go".
+- [ ] Copy check on the `setupNudge*` lines.
+
+---
+
 ## Who this is for
 
 The person using Stub is a smoker, usually mid-craving or just after a
@@ -125,16 +270,16 @@ things follow, and the findings are judged against them:
 |---|---|---|---|
 | R1 | Log, Money and Stats get slower with every day of use — *fixed, not device-checked* | **High** | 1 |
 | R2 | Android: the notification permission prompt will probably never appear — *fixed, not device-checked* | **High** (Android) | 2 |
-| R3 | Onboarding promises trigger-time nudges that were never built | **High** | 2 |
+| R3 | Onboarding promises trigger-time nudges that were never built — *promise removed in round 2, not merged; nudges still not built* | **High** | 2 |
 | R4 | Export cannot be imported, and will fail on Android as history grows | **High** | 3 |
-| R5 | A failed or corrupt load silently starts a fresh install over the old data | Medium | 3 |
-| R6 | "Undo last" can delete yesterday's entry; past days cannot be corrected — *undo fixed, not device-checked; rest open* | Medium | 3 |
+| R5 | A failed or corrupt load silently starts a fresh install over the old data — *fixed in round 2, not merged, not device-checked* | Medium | 3 |
+| R6 | "Undo last" can delete yesterday's entry; past days cannot be corrected — *undo fixed and merged; pre-install days fixed in round 2, not merged; past-day view open* | Medium | 3 |
 | R7 | Money shows a full day "saved" the moment the app is installed, and again every morning — *fixed, not device-checked* | Medium | 2 |
-| R8 | SOS: the screen sleeps mid-countdown and nothing tells you that you made it | Medium | 4 |
+| R8 | SOS: the screen sleeps mid-countdown and nothing tells you that you made it — *fixed in round 2, not merged, not device-checked* | Medium | 4 |
 | R9 | Screens do not refresh when the app comes back to the foreground — *fixed, not device-checked* | Medium | 4 |
-| R10 | No privacy, support or help link anywhere inside the app | Medium | 2, 4 |
-| R11 | The permission prompt appears while logging the cigarette that nears the budget | Low/Med | 4 |
-| R12 | Smaller items | Low | — |
+| R10 | No privacy, support or help link anywhere inside the app — *fixed in round 2, not merged, not device-checked* | Medium | 2, 4 |
+| R11 | The permission prompt appears while logging the cigarette that nears the budget — *fixed in round 2, not merged, not device-checked* | Low/Med | 4 |
+| R12 | Smaller items — *accessibility item fixed in round 2, not merged; rest open* | Low | — |
 
 ---
 
@@ -393,7 +538,8 @@ this round:
   request.
 - **A17 added** (= R10 above): in-app privacy policy link.
 - **A10 confirmed with numbers** (= R4 above).
-- A1 (name edit dead on Android) and A2 ("We'll ask iOS") are still open.
+- A2 ("We'll ask iOS") and A17 (in-app privacy link) are fixed in round 2,
+  not merged. A1 (name edit dead on Android) is still open.
 
 ---
 
