@@ -82,6 +82,26 @@ async function ensurePermission(wantsToSchedule: boolean): Promise<boolean> {
   return asked.status === 'granted';
 }
 
+// Onboarding's ask (R11). The ask-when-there-is-something-to-send rule above
+// put the system prompt right after the cigarette that crosses 80% of the
+// budget: unexplained, and at the moment the user least wants to hear from the
+// app. The plan-ready card now offers it first, with a line of context and a
+// button, so the prompt only ever follows a tap. reconcile() still asks later
+// for anyone who skipped the card.
+export async function canAskForNotifications(): Promise<boolean> {
+  if (!supported) return false;
+  const current = await Notifications.getPermissionsAsync();
+  return current.status !== 'granted' && current.canAskAgain;
+}
+
+export async function askForNotifications(): Promise<boolean> {
+  if (!supported) return false;
+  await ensureChannel(); // before the ask — see reconcile()
+  const granted = await ensurePermission(true);
+  if (granted) lastSignature = null; // anything planned while refused gets scheduled now
+  return granted;
+}
+
 // One reconcile at a time. Store writes can land in bursts (logging fires
 // several in a row), and two interleaved cancel-then-schedule passes would
 // happily cancel each other's work.

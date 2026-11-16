@@ -4,14 +4,15 @@
 // every step has a sane default so Continue always works — for the name step
 // the default is simply no name (strings.ts personalization rule).
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import Svg, { Defs, Ellipse, RadialGradient, Stop } from 'react-native-svg';
 import { useApp } from '../AppContext';
 import { BRANDS, BRAND_AVERAGES, ONBOARDING_BRANDS } from '../brands';
 import { PACE_RATE, Pace } from '../domain';
 import { haptic } from '../haptics';
-import { setupReaction } from '../strings';
+import { askForNotifications, canAskForNotifications } from '../notifications';
+import { copy, setupReaction } from '../strings';
 import { color, font, radius } from '../theme';
 import { useHoldRepeat } from '../useHoldRepeat';
 
@@ -82,6 +83,23 @@ export function SetupScreen() {
   const price = picked?.price ?? BRAND_AVERAGES.price;
   const trimmedName = name.trim();
   const done = step >= STEPS;
+
+  // The plan-ready card offers notifications (R11). 'hidden' until we know
+  // the phone can still be asked — already allowed, already refused for good,
+  // or web all show nothing rather than a button that cannot do anything.
+  const [nudges, setNudges] = useState<'hidden' | 'ask' | 'on' | 'off'>('hidden');
+  useEffect(() => {
+    if (!done) return;
+    let alive = true;
+    canAskForNotifications()
+      .then((can) => {
+        if (alive && can) setNudges('ask');
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, [done]);
   const monthly = Math.round(count * price * 30).toLocaleString('en-IN');
   const weeksTo = (p: Pace) => Math.ceil(count / (PACE_RATE[p] / 6));
   const quitDay = new Date(Date.now() + weeksTo(pace) * 7 * 86_400_000).toLocaleDateString(
@@ -429,6 +447,70 @@ export function SetupScreen() {
             <Text style={{ fontFamily: font.regular, fontSize: 13, color: color.neutral500, marginTop: 16 }}>
               No cold turkey, no drama. Just a number that shrinks a little every week.
             </Text>
+            {nudges !== 'hidden' && (
+              <View
+                style={{
+                  backgroundColor: color.surface,
+                  borderRadius: radius.md,
+                  padding: 16,
+                  marginTop: 20,
+                }}
+              >
+                {nudges === 'ask' ? (
+                  <>
+                    <Text style={{ fontFamily: font.medium, fontSize: 15, color: color.text }}>
+                      {copy('setupNudgeAsk')}
+                    </Text>
+                    <Text
+                      style={{
+                        fontFamily: font.regular,
+                        fontSize: 12,
+                        color: color.neutral500,
+                        marginTop: 4,
+                        lineHeight: 17,
+                      }}
+                    >
+                      {copy('setupNudgeNote')}
+                    </Text>
+                    <Pressable
+                      onPress={() => {
+                        haptic.select();
+                        askForNotifications()
+                          .then((granted) => setNudges(granted ? 'on' : 'off'))
+                          .catch(() => setNudges('off'));
+                      }}
+                      accessibilityRole="button"
+                      accessibilityLabel={copy('setupNudgeCta')}
+                      style={({ pressed }) => ({
+                        alignItems: 'center',
+                        borderWidth: 1,
+                        borderColor: color.accent,
+                        backgroundColor: pressed ? color.accentTint12 : color.accentTint10,
+                        borderRadius: radius.md,
+                        paddingVertical: 12,
+                        marginTop: 14,
+                        transform: [{ scale: pressed ? 0.98 : 1 }],
+                      })}
+                    >
+                      <Text style={{ fontFamily: font.medium, fontSize: 14, color: color.accent300 }}>
+                        {copy('setupNudgeCta')}
+                      </Text>
+                    </Pressable>
+                  </>
+                ) : (
+                  <Text
+                    style={{
+                      fontFamily: font.regular,
+                      fontSize: 13,
+                      color: color.neutral400,
+                      lineHeight: 19,
+                    }}
+                  >
+                    {copy(nudges === 'on' ? 'setupNudgeOn' : 'setupNudgeOff')}
+                  </Text>
+                )}
+              </View>
+            )}
           </>
         )}
       </ScrollView>
