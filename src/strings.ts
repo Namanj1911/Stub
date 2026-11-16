@@ -117,6 +117,17 @@ const TABLE = {
   writeFailedBody:
     'Your phone refused the last save. It may be out of storage. Free some space. Until then, what you log may be gone the next time the app opens.',
   exportNote: 'Your data lives only on this phone. Export it somewhere safe once in a while.',
+  // Profile's About section (R10). The quit line rows state a fact and stop:
+  // no "you should call", here or on the SOS result. An offer, not a referral.
+  aboutPrivacy: 'Privacy policy',
+  aboutPrivacyNote: 'What the app keeps, and where. Opens in your browser.',
+  aboutSupport: 'Email support',
+  aboutSupportNote: 'Bugs, ideas, complaints. A person reads it.',
+  aboutQuitLine: 'Talk to someone',
+  aboutQuitLineNote:
+    'National Tobacco Quit Line, 1800-11-2356. Free counselling, run by the health ministry.',
+  sosQuitLine: 'Want a person to talk to? The free quit line is 1800-11-2356.',
+  linkFailedTitle: "Couldn't open that",
   notifNote:
     "Scheduled on your phone, like an alarm — nothing leaves the device. We'll ask iOS for permission the first time there's actually something to say.",
 } as const satisfies Record<string, string>;
@@ -286,6 +297,14 @@ export function sosResult(
       ? "It happens. We logged it against today's budget — honesty is the whole point."
       : "It happens. It's on the record — honesty is the whole point.",
   };
+}
+
+// The support email, prefilled (R10). The version and platform go in the body
+// where the user can see and delete them — nothing is attached silently.
+export function supportMailto(address: string, version: string, platform: string): string {
+  const subject = encodeURIComponent('Stub feedback');
+  const body = encodeURIComponent(`\n\n—\nStub ${version} · ${platform}`);
+  return `mailto:${address}?subject=${subject}&body=${body}`;
 }
 
 // S7 insight card copy

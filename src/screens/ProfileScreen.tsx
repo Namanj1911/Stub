@@ -20,6 +20,7 @@ import {
   weeksToQuitAtRate,
 } from '../domain';
 import { haptic } from '../haptics';
+import { APP_VERSION, callQuitLine, openPrivacy, openSupportEmail } from '../links';
 import { useNav } from '../navigation';
 import { DEFAULT_NOTIF_PREFS } from '../notificationPlan';
 import { sendPreviewNotifications } from '../notifications';
@@ -436,6 +437,41 @@ export function ProfileScreen() {
           Burns every log to day zero — we'll ask twice, but there's no undo.
         </Text>
       </Pressable>
+
+      {/* about (R10) — the only ways out of the app besides the CDC source on
+          Health. Last on the screen: needed rarely, findable always. */}
+      <SectionLabel>About</SectionLabel>
+      <View style={{ gap: 8 }}>
+        <LinkRow
+          label={copy('aboutPrivacy')}
+          note={copy('aboutPrivacyNote')}
+          role="link"
+          onPress={openPrivacy}
+        />
+        <LinkRow
+          label={copy('aboutSupport')}
+          note={copy('aboutSupportNote')}
+          role="link"
+          onPress={openSupportEmail}
+        />
+        <LinkRow
+          label={copy('aboutQuitLine')}
+          note={copy('aboutQuitLineNote')}
+          role="button"
+          onPress={callQuitLine}
+        />
+      </View>
+      <Text
+        style={{
+          fontFamily: font.regular,
+          fontSize: 12,
+          color: color.neutral500,
+          textAlign: 'center',
+          marginTop: 20,
+        }}
+      >
+        Stub {APP_VERSION}
+      </Text>
     </ScrollView>
   );
 }
@@ -455,6 +491,51 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
     >
       {children}
     </Text>
+  );
+}
+
+function LinkRow({
+  label,
+  note,
+  role,
+  onPress,
+}: {
+  label: string;
+  note: string;
+  role: 'link' | 'button';
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole={role}
+      accessibilityLabel={label}
+      accessibilityHint={note}
+      style={({ pressed }) => ({
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+        backgroundColor: pressed ? color.accentTint10 : color.surface,
+        borderRadius: radius.md,
+        padding: 16,
+      })}
+    >
+      <View style={{ flex: 1 }}>
+        <Text style={{ fontFamily: font.medium, fontSize: 15, color: color.text }}>{label}</Text>
+        <Text
+          style={{
+            fontFamily: font.regular,
+            fontSize: 12,
+            color: color.neutral500,
+            marginTop: 3,
+            lineHeight: 17,
+          }}
+        >
+          {note}
+        </Text>
+      </View>
+      <Text style={{ fontFamily: font.regular, fontSize: 13, color: color.accent300 }}>→</Text>
+    </Pressable>
   );
 }
 
