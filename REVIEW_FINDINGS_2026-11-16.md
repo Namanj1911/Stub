@@ -20,16 +20,17 @@ smoker who is trying to cut down, on the phone they actually own?**
   build.
 
 **Status:** five findings were fixed in code on 2026-11-16 (R1, R2, R7, R9
-and the undo part of R6). None of it has been seen on a phone and none of it
-is merged. See "Fix round" directly below. Everything else is still open and
+and the undo part of R6) and merged to main the same day at the owner's
+request. None of it has been seen on a phone. See "Fix round" directly below. Everything else is still open and
 needs the usual discussion and branch.
 
 ---
 
 ## Fix round, 2026-11-16
 
-Done without a phone to hand. Each fix is on its own branch, pushed, **not
-merged to main**. Typecheck passes, jest passes (7 suites, 134 tests, up from
+Done without a phone to hand. Each fix was made on its own branch and
+**merged to main on 2026-11-16 before any device check**, at the owner's
+request. Typecheck passes, jest passes (7 suites, 134 tests, up from
 117), and the Android JS bundle builds. Every new test was checked by putting
 the bug back and watching it fail.
 
@@ -41,15 +42,15 @@ the bug back and watching it fail.
 | R9 | `fix/foreground-refresh` | One shared clock in `AppContext` (`useNow`), updated every minute and when the app returns to the foreground. Log, Stats, Goal, Money, Profile and Nicotine read it. | No. Needs a device. |
 | R6 (undo only) | `fix/undo-today-only` | "Undo last" takes back the newest entry added in this launch, today. With nothing to take back it says so and points at the entry rows. | Yes, `domain.test.ts` |
 
-The last four are stacked in the order R1 → R7 → R9 → R6, because they touch
-the same files. Merge them in that order. R2 stands alone, off main.
+Merged in the order R2, R1, R7, R9, R6.
 
 Not done from R6: the day view for correcting past days, and disabling
 pre-install days in Backfill.
 
-### To check on a phone before merging
+### Still to check on a phone
 
-Nothing below has been looked at on a device. Tick each off, then merge.
+Nothing below has been looked at on a device. The code is already on main,
+so anything that fails here needs a follow-up fix.
 
 **R2, Android only (first Android build)**
 
