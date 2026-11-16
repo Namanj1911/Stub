@@ -200,6 +200,14 @@ export function dayKey(timestamp: number): number {
   );
 }
 
+// Backfill offers calendar days, but no calculation counts a day before the
+// install day (R6) — an entry written there is saved and changes nothing.
+// Noon sits inside the calendar date's own day key whatever the 4am shift.
+export function isBeforeInstall(date: Date, installDayKey: number): boolean {
+  const noon = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 12).getTime();
+  return dayKey(noon) < installDayKey;
+}
+
 // Weekday of a day key (getDay() convention, 0 = Sunday). Day-key 0 covers
 // 1970-01-01, a Thursday. Charts must label days from the key, not the wall
 // clock — between midnight and 4am the current key is still "yesterday".

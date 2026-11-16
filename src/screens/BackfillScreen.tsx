@@ -5,8 +5,8 @@
 
 import React, { useRef, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
-import { useApp } from '../AppContext';
-import { frac } from '../domain';
+import { useApp, useProfile } from '../AppContext';
+import { frac, isBeforeInstall } from '../domain';
 import { haptic } from '../haptics';
 import { useNav } from '../navigation';
 import { backfillToast, copy } from '../strings';
@@ -21,6 +21,7 @@ const BUCKETS = [
 
 export function BackfillScreen() {
   const { addEntry } = useApp();
+  const { installDayKey } = useProfile();
   const nav = useNav();
   const [dayIdx, setDayIdx] = useState(0);
   const [bucketId, setBucketId] = useState<(typeof BUCKETS)[number]['id']>('evening');
@@ -36,6 +37,8 @@ export function BackfillScreen() {
       label: i === 0 ? 'Today' : i === 1 ? 'Yst' : d.toLocaleDateString('en-IN', { weekday: 'short' }),
       name: i === 0 ? 'today' : i === 1 ? 'yesterday' : d.toLocaleDateString('en-IN', { weekday: 'long' }),
       date: d,
+      // days before the app was installed are not counted by anything (R6)
+      preInstall: isBeforeInstall(d, installDayKey),
     };
   });
   const bucket = BUCKETS.find((b) => b.id === bucketId)!;
@@ -82,13 +85,31 @@ export function BackfillScreen() {
         <SectionLabel>Which day</SectionLabel>
         <View style={{ flexDirection: 'row', gap: 8, marginTop: 10 }}>
           {days.map((d, i) => (
-            <Select key={i} on={dayIdx === i} onPress={() => setDayIdx(i)} label={d.name} style={{ flex: 1 }}>
-              <Text style={{ fontFamily: font.medium, fontSize: 13, color: color.text }}>
+            <Select
+              key={i}
+              on={dayIdx === i}
+              disabled={d.preInstall}
+              onPress={() => setDayIdx(i)}
+              label={d.name}
+              style={{ flex: 1 }}
+            >
+              <Text
+                style={{
+                  fontFamily: font.medium,
+                  fontSize: 13,
+                  color: d.preInstall ? color.neutral600 : color.text,
+                }}
+              >
                 {d.label}
               </Text>
             </Select>
           ))}
         </View>
+        {days.some((d) => d.preInstall) && (
+          <Text style={{ fontFamily: font.regular, fontSize: 12, color: color.neutral500, marginTop: 8 }}>
+            {copy('backfillPreInstall')}
+          </Text>
+        )}
 
         <SectionLabel>Roughly when</SectionLabel>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 10 }}>
@@ -222,12 +243,14 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 
 function Select({
   on,
+  disabled = false,
   onPress,
   label,
   style,
   children,
 }: {
   on: boolean;
+  disabled?: boolean;
   onPress: () => void;
   label?: string;
   style?: object;
@@ -239,9 +262,10 @@ function Select({
         haptic.select();
         onPress();
       }}
+      disabled={disabled}
       accessibilityRole="button"
       accessibilityLabel={label}
-      accessibilityState={{ selected: on }}
+      accessibilityState={{ selected: on, disabled }}
       style={({ pressed }) => ({
         alignItems: 'center',
         borderWidth: 1,

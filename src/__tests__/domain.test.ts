@@ -17,6 +17,7 @@ import {
   computeSavings,
   currentPlanRate,
   dateOfKey,
+  isBeforeInstall,
   planHistoryWithRate,
   plannedBudgetFor,
   recentDailyAverageSixths,
@@ -498,5 +499,26 @@ describe('undoTarget — undo the last action, never yesterday (R6)', () => {
     // the entry lands on I − 2; the mark is stamped now
     const marks = [mark('backfilled', I, 15)];
     expect(undoTarget(marks, atLocalHour(I, 15, 1)).id).toBe('backfilled');
+  });
+});
+
+describe('isBeforeInstall — Backfill only offers days that count (R6)', () => {
+  const dateOf = (key: number) => new Date(atLocalHour(key, 12));
+
+  it('allows the install day itself and every day after it', () => {
+    expect(isBeforeInstall(dateOf(I), I)).toBe(false);
+    expect(isBeforeInstall(dateOf(I + 3), I)).toBe(false);
+  });
+
+  it('refuses the day before install', () => {
+    expect(isBeforeInstall(dateOf(I - 1), I)).toBe(true);
+  });
+
+  it('judges the calendar date, not the hour — 1 am on install day is still install day', () => {
+    // Backfill builds its day list from wall-clock dates. At 1 am the day key
+    // is still yesterday's, but the calendar date being offered is today's.
+    // (hour 25 of the previous key is 1 am on install day's calendar date)
+    expect(isBeforeInstall(new Date(atLocalHour(I - 1, 25)), I)).toBe(false);
+    expect(isBeforeInstall(new Date(atLocalHour(I, 23)), I)).toBe(false);
   });
 });
