@@ -170,31 +170,92 @@ function migrate(parsed: Partial<AppData>): AppData {
   return { ...data, profile, priceDatasetVersion: DATASET_VERSION };
 }
 
+// Turns the stored string into app data, or null when it is not something
+// this app wrote: broken JSON, or JSON of the wrong shape (a truncated write
+// can still parse). Null must never be treated as "no data" — see the load
+// path below, which keeps a copy before anything can overwrite it (R5).
+export function readStored(raw: string): AppData | null {
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) return null;
+    const p = parsed as Partial<AppData>;
+    if (p.entries !== undefined && !Array.isArray(p.entries)) return null;
+    if (p.cravings !== undefined && !Array.isArray(p.cravings)) return null;
+    if (p.profile != null && typeof p.profile !== 'object') return null;
+    return migrate(p);
+  } catch {
+    return null;
+  }
+}
+
+// Where an unreadable store is copied before the app starts fresh over it.
+// Timestamped, so a second failure cannot replace the first copy — the older
+// one is the one more likely to hold months of history.
+export const rescueKey = (now: number) => `${KEY}/unreadable/${now}`;
+
+// Something the user has to be told about storage (R5). `unreadable` carries
+// the raw string so the alert can offer to share it out of the app.
+export type StoreProblem = { kind: 'unreadable'; raw: string } | { kind: 'writeFailed' };
+
 export function useAppData() {
   const [data, setData] = useState<AppData>(EMPTY);
   const [loaded, setLoaded] = useState(false);
+  // The read itself failed. The data is probably intact, so the app must not
+  // carry on as a fresh install: the first write would replace it.
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [problem, setProblem] = useState<StoreProblem | null>(null);
+  // Nothing is written until a load has finished cleanly. Before that, a
+  // write would put an empty store over data we have not managed to read.
+  const canPersist = useRef(false);
+  const writeFailureShown = useRef(false);
   const dataRef = useRef(data);
   dataRef.current = data;
   // What "undo last" may take back — see domain.undoTarget. In memory on
   // purpose: an action from a previous launch is not "the last thing I did".
   const undoMarks = useRef<UndoMark[]>([]);
 
-  useEffect(() => {
+  const load = useCallback(() => {
+    setLoadFailed(false);
+    setLoaded(false);
     AsyncStorage.getItem(KEY)
-      .then((raw) => {
-        if (raw) setData(migrate(JSON.parse(raw) as Partial<AppData>));
+      .then(async (raw) => {
+        if (raw) {
+          const stored = readStored(raw);
+          if (stored) {
+            setData(stored);
+          } else {
+            // Unreadable. Starting fresh is the only way forward, but the old
+            // string is kept under its own key first and the user is told.
+            // A failed copy is not fatal: the alert can still share `raw`.
+            await AsyncStorage.setItem(rescueKey(Date.now()), raw).catch(() => {});
+            setProblem({ kind: 'unreadable', raw });
+          }
+        }
+        canPersist.current = true;
       })
-      .catch(() => {}) // corrupt/missing store — start fresh rather than crash
+      .catch(() => setLoadFailed(true))
       .finally(() => setLoaded(true));
   }, []);
+
+  useEffect(load, [load]);
 
   const update = useCallback((fn: (d: AppData) => AppData) => {
     setData((prev) => {
       const next = fn(prev);
-      AsyncStorage.setItem(KEY, JSON.stringify(next)).catch(() => {});
+      if (canPersist.current) {
+        AsyncStorage.setItem(KEY, JSON.stringify(next)).catch(() => {
+          // Said once per launch: a full disk fails every write, and an alert
+          // on every tap of the log button helps nobody.
+          if (writeFailureShown.current) return;
+          writeFailureShown.current = true;
+          setProblem((p) => p ?? { kind: 'writeFailed' });
+        });
+      }
       return next;
     });
   }, []);
+
+  const clearProblem = useCallback(() => setProblem(null), []);
 
   const completeSetup = useCallback(
     (input: {
@@ -517,12 +578,20 @@ export function useAppData() {
   const resetAll = useCallback(() => {
     undoMarks.current = [];
     AsyncStorage.removeItem(KEY).catch(() => {});
+    // "Every log gone" includes any copy kept from an unreadable store (R5).
+    AsyncStorage.getAllKeys()
+      .then((keys) => AsyncStorage.multiRemove(keys.filter((k) => k.startsWith(`${KEY}/`))))
+      .catch(() => {});
     setData(EMPTY);
   }, []);
 
   return {
     data,
     loaded,
+    loadFailed,
+    retryLoad: load,
+    problem,
+    clearProblem,
     completeSetup,
     setName,
     addEntry,

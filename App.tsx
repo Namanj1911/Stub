@@ -16,7 +16,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import * as Sentry from '@sentry/react-native';
 import { Feather } from '@expo/vector-icons';
 import React from 'react';
-import { Text, View } from 'react-native';
+import { Alert, Pressable, Share, Text, View } from 'react-native';
 import Svg, { Circle, Line, Rect } from 'react-native-svg';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { AppProvider } from './src/AppContext';
@@ -35,7 +35,8 @@ import { SosScreen } from './src/screens/SosScreen';
 import { StatsScreen } from './src/screens/StatsScreen';
 import { WelcomeScreen } from './src/screens/WelcomeScreen';
 import { useAppData } from './src/store';
-import { color, font } from './src/theme';
+import { copy } from './src/strings';
+import { color, font, radius } from './src/theme';
 
 // Crash reporting (GO_LIVE.md §6). Inert until a DSN is supplied via
 // EXPO_PUBLIC_SENTRY_DSN — no Sentry project yet means no init, no network, no
@@ -166,6 +167,47 @@ function Tabs() {
   );
 }
 
+// Shown instead of the app when the saved data could not be read at all (R5).
+// Deliberately a dead end with one way out: carrying on would show onboarding,
+// and finishing onboarding would write a fresh install over the old data.
+function LoadFailed({ onRetry }: { onRetry: () => void }) {
+  return (
+    <SafeAreaView style={{ flex: 1, backgroundColor: color.bg, justifyContent: 'center', padding: 28 }}>
+      <Text style={{ fontFamily: font.medium, fontSize: 24, color: color.text }}>
+        {copy('loadFailedTitle')}
+      </Text>
+      <Text
+        style={{
+          fontFamily: font.regular,
+          fontSize: 14,
+          color: color.neutral400,
+          lineHeight: 21,
+          marginTop: 12,
+        }}
+      >
+        {copy('loadFailedBody')}
+      </Text>
+      <Pressable
+        onPress={onRetry}
+        accessibilityRole="button"
+        accessibilityLabel={copy('loadFailedCta')}
+        style={({ pressed }) => ({
+          backgroundColor: color.accent,
+          borderRadius: radius.md,
+          padding: 16,
+          alignItems: 'center',
+          marginTop: 28,
+          transform: [{ scale: pressed ? 0.98 : 1 }],
+        })}
+      >
+        <Text style={{ fontFamily: font.medium, fontSize: 15, color: color.bg }}>
+          {copy('loadFailedCta')}
+        </Text>
+      </Pressable>
+    </SafeAreaView>
+  );
+}
+
 function App() {
   const [fontsLoaded] = useFonts({ Inter_400Regular, Inter_500Medium, Inter_700Bold });
   const store = useAppData();
@@ -193,7 +235,37 @@ function App() {
   React.useEffect(() => {
     if (ready) SplashScreen.hideAsync().catch(() => {});
   }, [ready]);
+
+  // Storage trouble is said once, in a system alert, then cleared (R5).
+  const { problem, clearProblem } = store;
+  React.useEffect(() => {
+    if (!ready || !problem) return;
+    if (problem.kind === 'writeFailed') {
+      Alert.alert(copy('writeFailedTitle'), copy('writeFailedBody'));
+    } else {
+      const { raw } = problem;
+      Alert.alert(copy('unreadableTitle'), copy('unreadableBody'), [
+        {
+          text: copy('unreadableShare'),
+          onPress: () => {
+            Share.share({ title: 'stub data (damaged)', message: raw }).catch(() => {});
+          },
+        },
+        { text: copy('unreadableContinue'), style: 'cancel' },
+      ]);
+    }
+    clearProblem();
+  }, [ready, problem, clearProblem]);
+
   if (!ready) return null; // native splash is still covering the window
+  if (store.loadFailed) {
+    return (
+      <SafeAreaProvider>
+        <StatusBar style="light" />
+        <LoadFailed onRetry={store.retryLoad} />
+      </SafeAreaProvider>
+    );
+  }
 
   return (
     <SafeAreaProvider>

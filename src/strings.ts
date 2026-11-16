@@ -101,6 +101,21 @@ const TABLE = {
   resetBody:
     "Every log, craving and rupee saved — gone. This is the one thing here we can't undo.",
   resetConfirm: 'Reset everything',
+  // Storage trouble (R5). Plain on purpose — no roast voice when the subject
+  // is the user's own history. Each line says what happened, what state the
+  // data is in, and what to do.
+  loadFailedTitle: "Couldn't open your data",
+  loadFailedBody:
+    "Your logs should still be on this phone, but the app couldn't read them just now. Nothing has been changed. Try again, or close the app and open it again.",
+  loadFailedCta: 'Try again',
+  unreadableTitle: "Your saved data couldn't be read",
+  unreadableBody:
+    'The saved file is damaged, so the app is starting fresh. A copy of the old data has been kept on this phone. Share it to yourself now and email stubapp.help@gmail.com. It may be recoverable.',
+  unreadableShare: 'Share the copy',
+  unreadableContinue: 'Continue',
+  writeFailedTitle: "Couldn't save",
+  writeFailedBody:
+    'Your phone refused the last save. It may be out of storage. Free some space. Until then, what you log may be gone the next time the app opens.',
   exportNote: 'Your data lives only on this phone. Export it somewhere safe once in a while.',
   notifNote:
     "Scheduled on your phone, like an alarm — nothing leaves the device. We'll ask iOS for permission the first time there's actually something to say.",
