@@ -44,7 +44,7 @@ are things the first build must confirm.
 | # | Finding | Kind | Where |
 |---|---|---|---|
 | A1 | **Name edit in Profile does nothing on Android.** It uses `Alert.prompt`, which exists only on iOS. The code comment says so: "iOS-only, which is the only platform we ship". Needs a small modal with a text field | **Bug** | `src/screens/ProfileScreen.tsx:93` |
-| A2 | Notification permission copy says "We'll ask iOS for permission" | **Bug** (copy) | `src/strings.ts:97` |
+| A2 | Notification permission copy says "We'll ask iOS for permission". *Fixed 2026-11-16 on `feat/ask-notifs-on-plan-card`, not merged* | **Bug** (copy) | `src/strings.ts:97` |
 | A3 | ~~Privacy page is written for iPhone only.~~ **Fixed 2026-11-16** in the working tree: the page now covers both platforms, both stores and both backup systems. It goes live when the change is merged to main and pushed | Fixed, not yet live | `docs/index.html` |
 | A4 | Android 13+ needs a runtime notification permission; confirm the existing prompt flow triggers it and that denial is handled | Verify | `src/notifications.ts` |
 | A5 | Scheduled notifications use date triggers. Without the exact-alarm permission Android may deliver them late when the phone is idle. The budget nudge (45 minutes) and craving-window alerts are the time-sensitive ones. Decide whether late is acceptable before requesting exact alarms, which Google restricts | Verify, then decide | `src/notifications.ts:127` |
@@ -59,7 +59,7 @@ are things the first build must confirm.
 | A14 | No `android.versionCode`. Let EAS manage it (`appVersionSource: remote`, `autoIncrement`) | Config | `eas.json` (to create) |
 | A15 | Haptics vary widely across Android phones; the haptic vocabulary was tuned on iPhone | Verify | `src/haptics.ts` |
 | A16 | **The notification permission prompt will probably never appear.** The code asks for permission before creating the notification channel; Expo's documentation says Android 13+ shows no prompt until a channel exists. Every nudge and milestone would be silently off. Create the channel first. From documentation, not a device: check this first on the first build (review finding R2) | **Likely bug** | `src/notifications.ts:109,118` |
-| A17 | No link to the privacy policy inside the app. Google's user data policy asks for one in the app as well as on the listing. Add an About section to Profile (review finding R10) | Gap | `ProfileScreen.tsx` |
+| A17 | No link to the privacy policy inside the app. Google's user data policy asks for one in the app as well as on the listing. Add an About section to Profile (review finding R10). *Fixed 2026-11-16 on `feat/about-section`, not merged* | Gap | `ProfileScreen.tsx` |
 
 A1, A2, A16 and A17 are code changes and each needs the usual branch and
 owner check. The rest need a build and a phone. The whole-app review of
