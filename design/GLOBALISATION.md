@@ -25,6 +25,9 @@ ships on them.
   stores where established quit apps already compete. The base case with
   a global release is about **₹60,000 in year one**, three times the
   India-only figure and still not income (§2.3).
+- For India and the US alone, with the US released in month 4, the base
+  case is about **₹38,800 in year one** (India ₹18,100, US ₹20,700) and
+  about ₹51,300 in year two (§2.5).
 - Ticking "all countries" in Play Console today would ship a broken app.
   A user in London would see rupees, fifteen Indian brands, a price
   stepper that cannot express 80p, an Indian quit-line number that does
@@ -118,6 +121,77 @@ that is **about 10,000 installs a month outside India**. The India-only
 route needed 56,000 a month. That is the whole case for this doc: the
 target moves from the scale of the category leaders to the scale of a
 well-run niche app. It still has to be earned, and §6 is about how.
+
+### 2.5 Earnings by country and by phase: India and the US
+
+Added 2026-11-16. §2.3 blends five countries over a full year. This
+section takes the two that matter first, India and the United States, and
+lays the money against the calendar. The other phase-B countries and
+phases C and D are not estimated yet.
+
+**Timeline assumed.** Month 0 is the Android production release in India.
+
+| Months | Globalisation phase (§5) | Monetisation phase (`MONETISATION.md` §3.4) | On sale in India | On sale in the US |
+|---|---|---|---|---|
+| 1–3 | A: region-neutral work | Free launch, then the tip jar from month 2 | Tips only | Not released |
+| 4–6 | B: US release | Pro v1 | Pro ₹249, tips | Pro US$6.99, tips |
+| 7–12 | B continues | Pro grows | Pro, tips | Pro, tips |
+| 13–24 | B continues | Pro on sale all year | Pro, tips | Pro, tips |
+
+If phase A takes longer than three months, the US columns move right by
+the same amount and the US year-one figure shrinks in proportion.
+
+**Inputs.** India is unchanged from `MONETISATION.md` §4.2. The US is
+taken as about 60% of the "outside India" installs in §2.3.
+
+| Input | India | United States |
+|---|---|---|
+| Installs per year, low / base / high | 3,000 / 15,000 / 60,000 | 300 / 2,500 / 12,000 |
+| Install → Pro, low / base / high | 0.3% / 0.8% / 2.0% | 0.8% / 2.0% / 3.0% |
+| Net per Pro sale | ₹179 | about ₹530 |
+| Tips | 0.1–0.3% of installs, about ₹72 net each | 0.1–0.3% of installs, about ₹225 net each (US$2.99) |
+
+Installs are spread evenly across the months. A new listing actually
+starts slowly, so the early periods below are, if anything, generous.
+
+**Base case, by period** (net to owner):
+
+| Period | India | United States | Total |
+|---|---|---|---|
+| Months 1–3: phase A, tips only | about ₹400 | — | **about ₹400** |
+| Months 4–6: US release, Pro v1 | about ₹5,900 (30 sales) | about ₹6,900 (13 sales) | **about ₹12,800** |
+| Months 7–12: Pro grows | about ₹11,800 (60 sales) | about ₹13,800 (25 sales) | **about ₹25,600** |
+| **Year one** | **about ₹18,100** | **about ₹20,700** | **about ₹38,800** |
+| **Year two** (months 13–24) | about ₹23,700 (120 sales) | about ₹27,600 (50 sales) | **about ₹51,300** |
+
+**All three scenarios:**
+
+| | India, year one | US, year one | Total, year one | Total, year two |
+|---|---|---|---|---|
+| Low | about ₹1,400 | about ₹1,000 | **about ₹2,400** | about ₹3,100 |
+| Base | about ₹18,100 | about ₹20,700 | **about ₹38,800** | about ₹51,300 |
+| High | about ₹1.74 lakh | about ₹1.49 lakh | **about ₹3.23 lakh** | about ₹4.27 lakh |
+
+What the tables say:
+
+- **The US earns as much as India on a sixth of the installs.** In the
+  base case 2,500 US installs a year bring in slightly more than 15,000
+  Indian ones, and in year one they do it in nine months.
+- **Year two is not growth.** It assumes the same installs per year as
+  year one. It is higher only because Pro and the US listing are on sale
+  for all twelve months.
+- **The run rate at the end of year one is about ₹4,000 a month** in the
+  base case, against the ₹1 lakh target in §2.4. Reaching that on these
+  two countries alone needs US installs near the high case and more.
+- **Phase A earns nothing by itself.** It is three months of work whose
+  return is everything in the US column.
+- **These US figures are Android only.** More than half of US phones are
+  iPhones (verify), and the iOS release is blocked (`GO_LIVE.md`
+  revision 2026-11-16). If iOS opens, the reachable US market roughly
+  doubles, and the Apple fee in `MONETISATION.md` §4.5 (about ₹8,800 a
+  year) comes with it.
+- **No new fixed cost.** Releasing to the US on Google Play adds nothing
+  to the US$25 already paid.
 
 ## 3. Review findings
 
