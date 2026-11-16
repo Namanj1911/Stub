@@ -11,9 +11,10 @@ import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import { useApp, useNow, useProfile } from '../AppContext';
 import { budgetSixths, dayKey } from '../domain';
 import { haptic } from '../haptics';
+import { callQuitLine } from '../links';
 import { useNav } from '../navigation';
 import { cancelSosDone, scheduleSosDone } from '../notifications';
-import { pickPrompts, sosAmountNote, sosResult } from '../strings';
+import { copy, pickPrompts, sosAmountNote, sosResult } from '../strings';
 import { color, font, radius } from '../theme';
 
 const TOTAL = 300; // seconds
@@ -485,6 +486,29 @@ function ResultView({
       >
         {body}
       </Text>
+      {/* After a slip only, and below the result, never instead of it (R10).
+          One quiet line: the route to a person exists, nothing more is said. */}
+      {outcome === 'smoked' && (
+        <Pressable
+          onPress={callQuitLine}
+          hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel="Call the free national quit line"
+        >
+          <Text
+            style={{
+              fontFamily: font.regular,
+              fontSize: 12,
+              color: color.neutral500,
+              textAlign: 'center',
+              textDecorationLine: 'underline',
+              marginTop: 6,
+            }}
+          >
+            {copy('sosQuitLine')}
+          </Text>
+        </Pressable>
+      )}
       <Pressable
         onPress={onDone}
         accessibilityRole="button"

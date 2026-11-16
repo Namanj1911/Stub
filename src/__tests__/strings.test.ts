@@ -45,6 +45,7 @@ import {
   sosAmountNote,
   sosDonePushCopy,
   sosResult,
+  supportMailto,
 } from '../strings';
 import { INSTALL_KEY as I, atLocalHour } from './fixtures';
 
@@ -353,5 +354,24 @@ describe('budgetHoldCopy — the budget-holding sheet', () => {
     for (let budget = 6; budget <= 60; budget += 3) {
       expect(budgetHoldCopy(budget, budget - 3).body.toLowerCase()).toMatch(/average|pace/);
     }
+  });
+});
+
+describe('supportMailto — the prefilled support email (R10)', () => {
+  const url = supportMailto('help@example.com', '1.0.0', 'android 34');
+
+  it('is addressed to the support inbox', () => {
+    expect(url.startsWith('mailto:help@example.com?')).toBe(true);
+  });
+
+  it('carries the version and platform in the body, where the user can see them', () => {
+    const body = decodeURIComponent(url.split('&body=')[1]);
+    expect(body).toContain('Stub 1.0.0');
+    expect(body).toContain('android 34');
+  });
+
+  it('leaves nothing unencoded that would cut the link short', () => {
+    // a raw space, newline or second "?" ends the URL early in some mail apps
+    expect(url.slice(url.indexOf('?') + 1)).not.toMatch(/[\s?]/);
   });
 });
