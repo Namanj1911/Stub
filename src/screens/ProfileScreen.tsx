@@ -286,7 +286,9 @@ export function ProfileScreen() {
                 haptic.select();
                 setPace(p.id);
               }}
+              accessibilityRole="button"
               accessibilityLabel={`Set pace to ${p.name}`}
+              accessibilityState={{ selected }}
               style={({ pressed }) => ({
                 flex: 1,
                 alignItems: 'center',

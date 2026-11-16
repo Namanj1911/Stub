@@ -188,6 +188,8 @@ export function BackfillScreen() {
 
         <Pressable
           onPress={add}
+          accessibilityRole="button"
+          accessibilityLabel={`Add ${frac(total)} for ${days[dayIdx].name}, ${bucketId}`}
           style={({ pressed }) => ({
             backgroundColor: color.accent,
             borderRadius: radius.md,
