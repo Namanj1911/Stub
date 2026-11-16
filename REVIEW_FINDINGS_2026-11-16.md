@@ -19,8 +19,86 @@ smoker who is trying to cut down, on the phone they actually own?**
   from reading code and Expo's documentation; there is still no Android
   build.
 
-Nothing in this document has been fixed. Each item needs the usual
-discussion and branch.
+**Status:** five findings were fixed in code on 2026-11-16 (R1, R2, R7, R9
+and the undo part of R6). None of it has been seen on a phone and none of it
+is merged. See "Fix round" directly below. Everything else is still open and
+needs the usual discussion and branch.
+
+---
+
+## Fix round, 2026-11-16
+
+Done without a phone to hand. Each fix is on its own branch, pushed, **not
+merged to main**. Typecheck passes, jest passes (7 suites, 134 tests, up from
+117), and the Android JS bundle builds. Every new test was checked by putting
+the bug back and watching it fail.
+
+| Finding | Branch | What changed | Covered by tests |
+|---|---|---|---|
+| R2 | `fix/android-channel-before-permission` | The Android channel is created before the permission request, in both places that ask. | No. Needs an Android device. |
+| R1 | `fix/day-totals-linear` | Per-day totals are built once per `entries` array and shared (`domain.dayTotals`, `totalForDay`). Every day loop in domain, stats, postzero, health, the notification plan and the Stats and Nicotine screens reads from it. Two years at 20 a day: about 8.9 s before, about 28 ms after, for one pass of every screen's maths under jest. | Yes, `perf.test.ts` |
+| R7 | `fix/money-completed-days` | Money counts only whole days: the day after install up to yesterday. A "nothing counted yet" line shows until the first day closes. "this week" is now "last 7 days". The Health screen's "What you didn't inhale" totals had the same fault and follow the same rule. | Yes, `domain.test.ts` |
+| R9 | `fix/foreground-refresh` | One shared clock in `AppContext` (`useNow`), updated every minute and when the app returns to the foreground. Log, Stats, Goal, Money, Profile and Nicotine read it. | No. Needs a device. |
+| R6 (undo only) | `fix/undo-today-only` | "Undo last" takes back the newest entry added in this launch, today. With nothing to take back it says so and points at the entry rows. | Yes, `domain.test.ts` |
+
+The last four are stacked in the order R1 → R7 → R9 → R6, because they touch
+the same files. Merge them in that order. R2 stands alone, off main.
+
+Not done from R6: the day view for correcting past days, and disabling
+pre-install days in Backfill.
+
+### To check on a phone before merging
+
+Nothing below has been looked at on a device. Tick each off, then merge.
+
+**R2, Android only (first Android build)**
+
+- [ ] Fresh install on Android 13 or later. Log until past 80% of the budget.
+      The system notification prompt appears.
+- [ ] Allow it. The nudge arrives about 45 minutes later.
+- [ ] iPhone: the prompt and the nudge behave as before.
+
+**R1**
+
+- [ ] Log, Stats, Goal, Money, Health and Nicotine show the same numbers as
+      before for existing data. Compare against a screenshot from main.
+- [ ] Logging feels instant.
+
+**R7**
+
+- [ ] Fresh install: Money shows ₹0 and the "Nothing counted yet" line on the
+      install day and the day after. No rupee figure before a full day has
+      closed.
+- [ ] Existing data: the total is lower than on main by roughly the install
+      day plus today. It does not change when a cigarette is logged today.
+- [ ] Health, "What you didn't inhale": the same "Nothing counted yet" line on
+      a fresh install, not the "above your baseline" line.
+- [ ] **Owner decision on feel:** a new user now sees ₹0 for up to two days
+      (the first figure arrives on the second morning after install). That is
+      honest but slow. The alternative is to pro-rate today by time of day.
+- [ ] Copy check on the two new lines (`moneyNotYet`, `healthNotYet` in
+      `strings.ts`) and on "last 7 days".
+
+**R9**
+
+- [ ] Open the app in the evening with cigarettes logged. Leave it in the
+      background overnight. Open it after 4 am without force-quitting. Log
+      shows a clean day at once, and Stats, Goal and Money show today.
+- [ ] Leave Log open for a few minutes. "last one … ago" still moves each
+      minute.
+- [ ] Log a cigarette. "last one … ago" resets at once.
+
+**R6, undo**
+
+- [ ] Log one, tap "undo last". It is removed and the toast says "Undone."
+- [ ] Add a backfill for yesterday, return to Log, tap "undo last". The
+      backfill is removed.
+- [ ] Force-quit, reopen, tap "undo last". Nothing is removed and the toast
+      says "Nothing new to undo. Tap an entry below to fix it."
+- [ ] Known trade-off to judge: after the app has been closed, a cigarette
+      logged a minute earlier can no longer be undone with the button. It can
+      still be removed from today's list.
+- [ ] Copy check on `nothingToUndo`.
 
 ---
 
@@ -44,15 +122,15 @@ things follow, and the findings are judged against them:
 
 | # | Finding | Severity | Principle |
 |---|---|---|---|
-| R1 | Log, Money and Stats get slower with every day of use | **High** | 1 |
-| R2 | Android: the notification permission prompt will probably never appear | **High** (Android) | 2 |
+| R1 | Log, Money and Stats get slower with every day of use — *fixed, not device-checked* | **High** | 1 |
+| R2 | Android: the notification permission prompt will probably never appear — *fixed, not device-checked* | **High** (Android) | 2 |
 | R3 | Onboarding promises trigger-time nudges that were never built | **High** | 2 |
 | R4 | Export cannot be imported, and will fail on Android as history grows | **High** | 3 |
 | R5 | A failed or corrupt load silently starts a fresh install over the old data | Medium | 3 |
-| R6 | "Undo last" can delete yesterday's entry; past days cannot be corrected | Medium | 3 |
-| R7 | Money shows a full day "saved" the moment the app is installed, and again every morning | Medium | 2 |
+| R6 | "Undo last" can delete yesterday's entry; past days cannot be corrected — *undo fixed, not device-checked; rest open* | Medium | 3 |
+| R7 | Money shows a full day "saved" the moment the app is installed, and again every morning — *fixed, not device-checked* | Medium | 2 |
 | R8 | SOS: the screen sleeps mid-countdown and nothing tells you that you made it | Medium | 4 |
-| R9 | Screens do not refresh when the app comes back to the foreground | Medium | 4 |
+| R9 | Screens do not refresh when the app comes back to the foreground — *fixed, not device-checked* | Medium | 4 |
 | R10 | No privacy, support or help link anywhere inside the app | Medium | 2, 4 |
 | R11 | The permission prompt appears while logging the cigarette that nears the budget | Low/Med | 4 |
 | R12 | Smaller items | Low | — |
