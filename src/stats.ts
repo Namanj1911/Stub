@@ -12,12 +12,13 @@ import {
   Entry,
   PriceRecord,
   budgetSeries,
+  dayKey,
   entriesForDay,
   fmtSince,
   fmtTime,
   frac,
   priceAt,
-  totalSixths,
+  totalForDay,
   weekdayOfKey,
 } from './domain';
 
@@ -37,7 +38,7 @@ function dailyTotals(
 ): (number | null)[] {
   const out: (number | null)[] = [];
   for (let k = todayKey - n + 1; k <= todayKey; k++) {
-    out.push(k >= installDayKey ? totalSixths(entriesForDay(entries, k)) : null);
+    out.push(k >= installDayKey ? totalForDay(entries, k) : null);
   }
   return out;
 }
@@ -128,7 +129,7 @@ export function underBudgetCount(
   let days = 0;
   for (let k = Math.max(installDayKey, todayKey - n + 1); k <= todayKey; k++) {
     days += 1;
-    if (totalSixths(entriesForDay(entries, k)) <= budgets[k - installDayKey]) {
+    if (totalForDay(entries, k) <= budgets[k - installDayKey]) {
       under += 1;
     }
   }
@@ -149,7 +150,7 @@ export function underBudgetStreaks(
   let current = 0;
   let best = 0;
   for (let k = installDayKey; k <= todayKey; k++) {
-    const under = totalSixths(entriesForDay(entries, k)) <= budgets[k - installDayKey];
+    const under = totalForDay(entries, k) <= budgets[k - installDayKey];
     current = under ? current + 1 : 0;
     best = Math.max(best, current);
   }
@@ -166,8 +167,9 @@ function spentOver(
   n: number,
 ): number {
   let total = 0;
-  for (let k = todayKey - n + 1; k <= todayKey; k++) {
-    for (const e of entriesForDay(entries, k)) {
+  for (const e of entries) {
+    const k = dayKey(e.timestamp);
+    if (k > todayKey - n && k <= todayKey) {
       total += (e.sixths / 6) * priceAt(priceHistory, e.timestamp);
     }
   }
@@ -291,7 +293,7 @@ export function pickInsight(
     let satDays = 0;
     for (let k = Math.max(installDayKey, todayKey - 27); k < todayKey; k++) {
       if (weekdayOfKey(k) !== 6) continue;
-      satTotal += totalSixths(entriesForDay(entries, k));
+      satTotal += totalForDay(entries, k);
       satDays += 1;
     }
     const satAvg = satDays ? satTotal / satDays : 0;
@@ -334,7 +336,7 @@ export function heatCells(
       continue;
     }
     const budget = budgets[k - installDayKey];
-    const v = totalSixths(entriesForDay(entries, k));
+    const v = totalForDay(entries, k);
     cells.push({
       key: k,
       color: v === 0 ? 'low' : v <= budget / 2 ? 'mid' : v <= budget ? 'high' : 'over',

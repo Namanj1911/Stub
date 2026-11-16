@@ -16,7 +16,7 @@
 // is: never schedule a claim we can't stand behind, and let notifications.ts
 // re-derive the whole schedule from the store on every change.
 
-import { budgetSixths, dayKey, entriesForDay, totalSixths } from './domain';
+import { budgetSixths, dayKey, entriesForDay, totalForDay } from './domain';
 import { underBudgetCount, underBudgetStreaks } from './stats';
 import { budgetNudgeCopy, milestonePushCopy } from './strings';
 import type { AppData } from './store';
@@ -124,7 +124,7 @@ export function planNotifications(data: AppData, now: number): PlannedNotificati
     p.baselineHistory,
     p.planHistory,
   );
-  const spent = totalSixths(entriesForDay(data.entries, todayKey));
+  const spent = totalForDay(data.entries, todayKey);
 
   const out: PlannedNotification[] = [];
   if (prefs.budget) {
@@ -251,7 +251,7 @@ function planMilestones(
 function countCleanDays(data: AppData, todayKey: number, installDayKey: number): number {
   let clean = 0;
   for (let k = installDayKey + 1; k <= todayKey; k++) {
-    if (totalSixths(entriesForDay(data.entries, k)) === 0) clean += 1;
+    if (totalForDay(data.entries, k) === 0) clean += 1;
   }
   return clean;
 }

@@ -22,7 +22,7 @@ import {
 import Svg, { Defs, Ellipse, RadialGradient, Stop } from 'react-native-svg';
 import { useApp, useProfile } from '../AppContext';
 import { BRANDS, BRAND_AVERAGES, brandInfo, findBrand, isSoft } from '../brands';
-import { dayKey, entriesForDay, totalSixths } from '../domain';
+import { dayKey, totalForDay } from '../domain';
 import { haptic } from '../haptics';
 import { useNav } from '../navigation';
 import { brandSwitchRoast } from '../strings';
@@ -62,7 +62,7 @@ export function NicotineScreen() {
   const weekSixths = (offsetWeeks: number) => {
     let s = 0;
     for (let k = todayKey - 6 - offsetWeeks * 7; k <= todayKey - offsetWeeks * 7; k++) {
-      s += totalSixths(entriesForDay(entries, k));
+      s += totalForDay(entries, k);
     }
     return s;
   };

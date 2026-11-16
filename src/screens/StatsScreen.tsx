@@ -12,6 +12,7 @@ import {
   dayKey,
   entriesForDay,
   frac,
+  totalForDay,
   totalSixths,
 } from '../domain';
 import {
@@ -80,7 +81,7 @@ export function StatsScreen() {
   const rangeSixths = (() => {
     let s = 0;
     for (let k = todayKey - rangeDays + 1; k <= todayKey; k++) {
-      s += totalSixths(entriesForDay(entries, k));
+      s += totalForDay(entries, k);
     }
     return s;
   })();

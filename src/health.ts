@@ -21,9 +21,8 @@ import {
   Entry,
   PriceRecord,
   baselineSixthsFor,
-  entriesForDay,
   priceRecordAtEndOfDay,
-  totalSixths,
+  totalForDay,
 } from './domain';
 
 // ---------------------------------------------------------------------------
@@ -190,7 +189,7 @@ export function cumulativeAvoided(
   let estimated = false;
 
   for (let k = installDayKey; k <= todayKey; k++) {
-    const avoided = baselineSixthsFor(baselineHistory, k) - totalSixths(entriesForDay(entries, k));
+    const avoided = baselineSixthsFor(baselineHistory, k) - totalForDay(entries, k);
     if (avoided === 0) continue;
     // The brand in effect by that evening — avoided smokes have no timestamp
     // of their own, so they're valued at what the user was smoking that day
