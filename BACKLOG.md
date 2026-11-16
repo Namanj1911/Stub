@@ -1096,7 +1096,8 @@ deliberately **not** here — deferred until after beta + PMF, see Later.
 - Remote-fetch brand/price database (server-hosted, updatable without app
   releases) — decided 2026-07-17 to ship the dataset inside the app for now;
   remote fetch needs real research + design.
-- Android build (EAS) — India is ~95% Android, so it's the actual market for
+- Android build (EAS) — **now the active launch path (2026-11-02), plan
+  in `design/ANDROID_LAUNCH.md`.** India is ~95% Android, so it's the actual market for
   an India-first app. Expo keeps it cheap (mostly an EAS build target) and it
   rides the same dev-build infra as notifications. Sequence alongside
   GO_LIVE §8; on both stores, sell local-only privacy ("your data never
@@ -1121,6 +1122,9 @@ deliberately **not** here — deferred until after beta + PMF, see Later.
   never paywall logging or SOS ("never blocks logging" applies to payment
   too). Decide the free/Pro split from beta retention data — pay for what
   people demonstrably stay for.
+  **Reviewed 2026-11-16** with revenue estimates in
+  `design/MONETISATION.md`; note there is no retention data to decide from
+  while the app ships without analytics (finding F2 there).
 
 ## Issues faced so far (for the record)
 
