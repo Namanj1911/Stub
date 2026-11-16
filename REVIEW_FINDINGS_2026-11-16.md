@@ -24,8 +24,8 @@ smoker who is trying to cut down, on the phone they actually own?**
 - **Round 1** (R1, R2, R7, R9 and the undo part of R6) is merged to main, at
   the owner's request. None of it has been seen on a phone.
 - **Round 2** (R5, R8, R10, R11, the copy fix for R3, pre-install days from
-  R6, and the accessibility item from R12) is on branches, pushed and **not
-  merged**. None of it has been seen on a phone either.
+  R6, and the accessibility item from R12) is also merged to main, at the
+  owner's request. None of it has been seen on a phone either.
 
 Still open after both rounds: R4, the nudge feature in R3, the past-day view
 in R6, and the rest of R12.
@@ -111,13 +111,14 @@ so anything that fails here needs a follow-up fix.
 
 ## Fix round 2, 2026-11-16
 
-Seven changes, again with no phone to hand. Each is on its own branch, pushed,
-and **not merged**. The branches are stacked in the order of the table, so
-checking out the last one (`feat/ask-notifs-on-plan-card`) gives all seven
-for one pass on the phone. Merge in table order.
+Seven changes, again with no phone to hand. Each was made on its own branch
+and **merged to main on 2026-11-16 before any device check**, at the owner's
+request, in the order of the table. Anything that fails the checklist below
+needs a follow-up fix.
 
-Typecheck passes. Jest passes (8 suites, 149 tests, up from 134). The Android
-and iOS JS bundles build. Every new test was checked by putting the bug back
+On main after the merge, typecheck passes and jest passes (8 suites, 149
+tests, up from 134). The Android and iOS JS bundles were built from the last
+branch before merging. Every new test was checked by putting the bug back
 and watching it fail.
 
 | Finding | Branch | What changed | Covered by tests |
@@ -270,16 +271,16 @@ things follow, and the findings are judged against them:
 |---|---|---|---|
 | R1 | Log, Money and Stats get slower with every day of use — *fixed, not device-checked* | **High** | 1 |
 | R2 | Android: the notification permission prompt will probably never appear — *fixed, not device-checked* | **High** (Android) | 2 |
-| R3 | Onboarding promises trigger-time nudges that were never built — *promise removed in round 2, not merged; nudges still not built* | **High** | 2 |
+| R3 | Onboarding promises trigger-time nudges that were never built — *promise removed in round 2, not device-checked; nudges still not built* | **High** | 2 |
 | R4 | Export cannot be imported, and will fail on Android as history grows | **High** | 3 |
-| R5 | A failed or corrupt load silently starts a fresh install over the old data — *fixed in round 2, not merged, not device-checked* | Medium | 3 |
-| R6 | "Undo last" can delete yesterday's entry; past days cannot be corrected — *undo fixed and merged; pre-install days fixed in round 2, not merged; past-day view open* | Medium | 3 |
+| R5 | A failed or corrupt load silently starts a fresh install over the old data — *fixed in round 2, not device-checked* | Medium | 3 |
+| R6 | "Undo last" can delete yesterday's entry; past days cannot be corrected — *undo fixed and merged; pre-install days fixed in round 2; none device-checked; past-day view open* | Medium | 3 |
 | R7 | Money shows a full day "saved" the moment the app is installed, and again every morning — *fixed, not device-checked* | Medium | 2 |
-| R8 | SOS: the screen sleeps mid-countdown and nothing tells you that you made it — *fixed in round 2, not merged, not device-checked* | Medium | 4 |
+| R8 | SOS: the screen sleeps mid-countdown and nothing tells you that you made it — *fixed in round 2, not device-checked* | Medium | 4 |
 | R9 | Screens do not refresh when the app comes back to the foreground — *fixed, not device-checked* | Medium | 4 |
-| R10 | No privacy, support or help link anywhere inside the app — *fixed in round 2, not merged, not device-checked* | Medium | 2, 4 |
-| R11 | The permission prompt appears while logging the cigarette that nears the budget — *fixed in round 2, not merged, not device-checked* | Low/Med | 4 |
-| R12 | Smaller items — *accessibility item fixed in round 2, not merged; rest open* | Low | — |
+| R10 | No privacy, support or help link anywhere inside the app — *fixed in round 2, not device-checked* | Medium | 2, 4 |
+| R11 | The permission prompt appears while logging the cigarette that nears the budget — *fixed in round 2, not device-checked* | Low/Med | 4 |
+| R12 | Smaller items — *accessibility item fixed in round 2, not device-checked; rest open* | Low | — |
 
 ---
 
@@ -538,8 +539,8 @@ this round:
   request.
 - **A17 added** (= R10 above): in-app privacy policy link.
 - **A10 confirmed with numbers** (= R4 above).
-- A2 ("We'll ask iOS") and A17 (in-app privacy link) are fixed in round 2,
-  not merged. A1 (name edit dead on Android) is still open.
+- A2 ("We'll ask iOS") and A17 (in-app privacy link) are fixed in round 2.
+  A1 (name edit dead on Android) is still open.
 
 ---
 
