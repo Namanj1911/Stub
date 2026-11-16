@@ -291,7 +291,14 @@ export function SetupScreen() {
         {step === 3 && (
           <>
             <Title>When do you{'\n'}usually light up?</Title>
-            <Sub>Pick your triggers — we'll watch those windows and nudge you before they hit.</Sub>
+            {/* Was "we'll watch those windows and nudge you before they hit" —
+                a promise nothing kept (R3): the answers are saved and never
+                read, and trigger-window nudges (S16) were not built. This
+                line claims only what Stats already does from the logs. */}
+            <Sub>
+              Pick the moments that get you. Naming them is half the job — once you've logged a
+              few days, Stats shows when you actually light up.
+            </Sub>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 28 }}>
               {TRIGGERS.map((t) => {
                 const on = !!triggers[t.id];
