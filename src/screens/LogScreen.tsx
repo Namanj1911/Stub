@@ -14,7 +14,7 @@ import {
   tomorrowBudgetSixths,
   totalSixths,
 } from '../domain';
-import { useApp, useProfile } from '../AppContext';
+import { useApp, useNow, useProfile, useRefreshNow } from '../AppContext';
 import { haptic } from '../haptics';
 import { ProfileButton } from '../ProfileButton';
 import { useNav } from '../navigation';
@@ -27,16 +27,13 @@ export function LogScreen() {
   const profile = useProfile();
   const entries = data.entries;
   const nav = useNav();
-  const [now, setNow] = useState(Date.now());
+  const now = useNow();
+  const refreshNow = useRefreshNow();
   const [toast, setToast] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // header "since last" updates every minute (S3)
-  useEffect(() => {
-    const t = setInterval(() => setNow(Date.now()), 60_000);
-    return () => clearInterval(t);
-  }, []);
+  // header "since last" updates every minute (S3) — the shared clock ticks
 
   // SOS halo pulse — a ring breathes outward every ~2s
   const pulse = useRef(new Animated.Value(0)).current;
@@ -105,7 +102,7 @@ export function LogScreen() {
   const log = (sixths: number) => {
     haptic.logged();
     addEntry(sixths); // optimistic, never blocked (S4)
-    setNow(Date.now());
+    refreshNow();
     // A slip at zero gets the quiet note, never the budget roast: logToast
     // grades `after >= budget * 1.5`, which at a budget of zero is true of
     // every log, so all of them land in the 'torched' pool — a lecture about
