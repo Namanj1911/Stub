@@ -4,11 +4,22 @@ Scope: every commit merged to main in the last two days (budget-taper clamp →
 brands dataset → splash/bundle-id → onboarding search → Goal/Profile
 restructure → plan control → health timeline → post-zero → notifications →
 Android notification icon). `tsc --noEmit` passes. Findings ordered by
-severity; file:line refs are against current main (0054df9).
+severity; file:line refs are against main as it was then (0054df9) and no
+longer line up with the current files.
+
+> **Status, 2026-11-16: every finding below is closed.** Each was re-checked
+> against the code on main (`079e214`) and the fix is in place; a status line
+> under each heading says where. The original text is kept unchanged as the
+> record of what was found, so anything below that reads as "not fixed" or
+> "no tests exist" describes July, not today. `tsc --noEmit` passes and the
+> jest suite (6 suites, 117 tests) passes. The second review round is in
+> `REVIEW_FINDINGS_2026-11-16.md`.
 
 ---
 
 ## 1. Log screen breaks once the budget reaches zero  — HIGH
+
+> **Status (checked against main `079e214`, 2026-11-16):** Fixed. Log has an `atZero` state: the meter and Tomorrow row retire, the caption switches to "past the taper", and a log at zero gets `relapseNote()` instead of the torched roast (`LogScreen.tsx`).
 
 The plan-control round deliberately let the budget reach 0 ("the plan is the
 one path that is allowed to reach 0", domain.ts:106-110), and post-zero mode
@@ -33,6 +44,8 @@ worth an explicit choice.
 
 ## 2. Notification reconcile's change-detection never fires  — MEDIUM
 
+> **Status (checked against main `079e214`, 2026-11-16):** Fixed. Push copy is now picked deterministically from (id, fireAt), so the signature matches and the short-circuit works (`notifications.ts` `signature`, `strings.ts`).
+
 `reconcile()` short-circuits when the planned schedule signature is unchanged
 (src/notifications.ts:87-89,100-101), but the signature includes `title` and
 `body`, and the copy generators pick a **random line per call**
@@ -49,6 +62,8 @@ per notification (seed the roll from id + fireAt/day).
 
 ## 3. Profile promises a quit date to a user already at zero  — MEDIUM
 
+> **Status (checked against main `079e214`, 2026-11-16):** Fixed. Profile's plan section has its own at-zero card and hides the presets and date (`ProfileScreen.tsx`).
+
 `weeksToQuitAtRate` floors at `Math.max(1, …)` (src/domain.ts:280-282).
 GoalScreen was explicitly guarded against this ("would promise a quit date a
 week away from a user already at zero" — src/screens/GoalScreen.tsx:284-288),
@@ -59,6 +74,8 @@ all three presets (src/screens/ProfileScreen.tsx — `target` /
 arrived/post-zero state (or hide the date and week counts at budget ≤ 0).
 
 ## 4. Money projects from `profile.pace`, not the canonical rate  — LOW/MED
+
+> **Status (checked against main `079e214`, 2026-11-16):** Fixed 2026-07-21. Money reads `currentPlanRate` and the rate-based helpers, and guards the zero-budget case (`MoneyScreen.tsx`).
 
 The plan round made the rate canonical: "these are what the screens should
 use; the Pace versions above remain for the preset labels and onboarding"
@@ -72,6 +89,8 @@ disagree with Goal's. Switch to `currentPlanRate` + the rate-based helpers.
 
 ## 5. The 7-day flip counts the partial install day as clean  — LOW
 
+> **Status (checked against main `079e214`, 2026-11-16):** Fixed. `completedZeroDays` drops the install day when the run reaches back to it (`postzero.ts`). The same partial-install-day reasoning is still missing from Money: see R7 in the 2026-11-16 review.
+
 `smokeFree()` counts the run from `installDayKey` (src/postzero.ts:66), so
 the install day — almost always a partial day — counts as one of the seven
 "lived" zero days. `countCleanDays` in the very same round excludes it for
@@ -83,6 +102,8 @@ apply the same silent-day reasoning inconsistently — the run should probably
 start at `installDayKey + 1`.
 
 ## 6. Post-zero date/count nits on Goal  — LOW
+
+> **Status (checked against main `079e214`, 2026-11-16):** Fixed. The since-date comes from `dateOfKey(runStartDayKey)` and the offer headline prints `completedZeroDays` (`GoalScreen.tsx`).
 
 - **"Smoke-free since" can be off by one day.** It shows the calendar date of
   `lastSmokeAt + 24h` (src/screens/GoalScreen.tsx:84-91). A last cigarette
@@ -97,6 +118,8 @@ start at `installDayKey + 1`.
   postZeroOfferCopy in src/strings.ts). Print `completedZeroDays`.
 
 ## 7. Re-tapping a pace preset silently re-anchors the plan  — LOW/MED
+
+> **Status (checked against main `079e214`, 2026-11-16):** Fixed. `planHistoryWithRate` returns the same array when the rate is unchanged and the store skips the write (`domain.ts`, `store.ts`).
 
 The pace chips on Profile call `setPace` unconditionally
 (src/screens/ProfileScreen.tsx:166-169) — there is no `if (selected) return`
@@ -114,6 +137,8 @@ at that day (deliberate, to avoid rewriting history), which holds the budget
 line flat for the next couple of days.
 
 ## 8. Tomorrow card doesn't say it's conditional  — LOW (UX)
+
+> **Status (checked against main `079e214`, 2026-11-16):** Fixed. The Tomorrow row always carries a caption: the "if you stop now" qualifier, or the nudge once 80% of today is spent (`LogScreen.tsx`).
 
 `tomorrowBudgetSixths` is arithmetically consistent with the real next-day
 chain step (verified: same window, same rounding, same min) — but it predicts
@@ -135,6 +160,8 @@ than renumbered — closing it would silently break those cross-references. Left
 here so nobody hunts for a #9 that never existed.
 
 ## 10. Zero budget is a one-way door with no way back  — HIGH, needs a decision
+
+> **Status (checked against main `079e214`, 2026-11-16):** Fixed 2026-07-20/21, owner chose option (c). `startNewTaper` on Profile re-anchors on measured recent smoking and `budgetSeries` re-seeds on a plan record's start day. Log and Goal both signpost it for a relapsed user. The "Not fixed" paragraph below is the original text.
 
 Found 2026-07-20 while fixing #3, by probing the real budget maths rather
 than reading it. Once the plan reaches zero the budget can never rise again,
@@ -168,6 +195,8 @@ the new baseline; (c) an explicit "start a new taper" control on Profile,
 which fits the app's ask-don't-assume habit (`postzero.ts`) best.
 
 ## 11. Notes (not bugs, worth recording)
+
+> **Status (checked against main `079e214`, 2026-11-16):** All three closed. A jest suite exists (6 suites, 117 tests, mutation-checked). The `ackMilestone` comment in `store.ts` was rewritten. Post-zero confirm was device-checked (merge `8cf6b0a`).
 
 - **No tests exist at all.** notificationPlan.ts and postzero.ts both say
   they were kept pure "so the interesting decisions can be tested without a

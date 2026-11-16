@@ -7,8 +7,46 @@ operational questions answered plus a register of the questions nobody has
 asked yet. The goal: progress to go-live with **all questions known**, even
 the ones without answers yet.
 
-Scope: iOS / App Store first (owner and testers are on iPhones). Play Store
-is a later, separate pass.
+Scope: this doc was written iOS / App Store first. **That order changed on
+2026-11-02** — see the revision note below. The iOS pipeline here still
+stands for when Apple enrollment is unblocked.
+
+### Revision 2026-11-16
+
+- **Launch moved to Google Play.** Apple Developer enrollment is blocked, so
+  Android goes first. The Android plan, including findings from reviewing
+  the code for Android, is in `ANDROID_LAUNCH.md`. The critical path is
+  Google's closed test: 12 testers opted in for 14 continuous days before a
+  personal account can publish.
+- **Monetisation now has its own doc**, `MONETISATION.md`: a review of the
+  BACKLOG plan plus revenue estimates. Headline: the plan's direction holds;
+  at ₹249 one-time on organic India installs the base case is about ₹21,500
+  in year one. Launch stays free with no purchases.
+- **The app is not iOS-clean on Android.** Profile's name edit uses
+  `Alert.prompt` (iOS only), the notification-permission copy names iOS, and
+  the privacy page is written for iPhone. Details: `ANDROID_LAUNCH.md` §2.
+- **Statuses below were stale and are corrected**: dev build and Sentry
+  wiring are done (§1, §9.3, §9.5), the copy audit passed (§8.4), and the
+  timezone and accessibility register items are closed or partly closed
+  (§10).
+- **DPDP date passed.** The 14 Nov 2026 phase in §5 is now in force. It does
+  not change anything for a local-only app; the 14 May 2027 date is the one
+  that binds any off-device feature.
+- **Whole-app review done** (`REVIEW_FINDINGS_2026-11-16.md`), written from
+  the smoker's point of view. Four high findings: the main screens slow down
+  as history grows (measured), the Android notification prompt will probably
+  never appear, onboarding promises trigger nudges that were never built,
+  and export has no import. The July review (`REVIEW_FINDINGS.md`) is fully
+  closed and now says so.
+- **Privacy page rewritten for both platforms** (`docs/index.html`). Live
+  once merged to main and pushed. §4's row and the URL are unchanged.
+- **§8.2 needs a caveat:** "onboarding nudges an occasional export" is only
+  half true. Profile suggests exporting, but there is no import, so an
+  export cannot restore anything yet (R4). Device backup (iCloud, Google)
+  is the only real safety net today.
+- **Still not started:** no `eas.json` and no EAS project link exist, so no
+  EAS cloud build has been made for either platform. The dev build so far is
+  a local iOS one.
 
 ---
 
@@ -16,8 +54,9 @@ is a later, separate pass.
 
 Changed since the last revision:
 
-- **Notifications shipped** (S15–S17: budget nudge, craving-window alerts,
-  milestones) — local scheduled, no server, deterministic copy so reconcile's
+- **Notifications shipped** (S15 budget nudge and S17 milestones.
+  *Correction 2026-11-16: S16 craving-window alerts were not built, although
+  onboarding still promises them — review finding R3.*) — local scheduled, no server, deterministic copy so reconcile's
   change-detection works. §7's old "notifications before launch?" question is
   answered: they're in.
 - **Icon / splash / notification-icon assets exist** and are wired in
@@ -33,9 +72,10 @@ Changed since the last revision:
 
 Unchanged:
 
-- Still runs in **Expo Go** off a local Metro server. No dev build yet
-  (`expo-dev-client` not installed; the `ios/` directory is a local prebuild,
-  not a distribution artifact).
+- ~~Still runs in Expo Go; no dev build yet.~~ **Updated 2026-11-16:**
+  `expo-dev-client` and `expo-updates` are installed and a local iOS dev
+  build runs (notifications verified on the simulator, 2026-07-22). No EAS
+  cloud build yet, and no Android build of any kind.
 - **All data on-device** (AsyncStorage); the only export is manual JSON via
   the share sheet. Still the privacy-compliance simplifier — see §5.
 - Pinned to **SDK 54** (Expo Go ceiling). The pin stops mattering at the
@@ -280,9 +320,10 @@ Ordered by hurt-if-ignored; statuses updated.
    than feared.
 3. ✅ **Notifications** — S15–S17 shipped with deterministic copy; they need
    the dev build to ship to others, which the pipeline provides anyway.
-4. ☐ **Copy audit for 1.4.3** — one pass over `src/strings.ts` with reviewer
-   eyes: nothing that reads as celebrating smoking itself. Low effort; do
-   just before first review submission.
+4. ✅ **Copy audit for 1.4.3** — passed 2026-07-26 with no changes:
+   `src/strings.ts` roasts the behaviour and never celebrates smoking.
+   Carried forward: the store description on both stores must frame Stub as
+   a reduction/quit aid.
 
 ## 9. Recommended sequence
 
@@ -291,10 +332,13 @@ their own design/discussion pass first.
 
 1. ☐ Apple Developer enrollment ($99/yr) — pure paperwork, start now.
 2. ✅ Icon + splash — done, wired in `app.json`.
-3. ☐ EAS dev build (`expo-dev-client` + `expo-updates`) on owner's phone;
-   retire the Expo Go constraint and the SDK 54 pin question.
+3. ◐ Dev build — `expo-dev-client` + `expo-updates` installed and a local
+   iOS build runs. Still open: EAS project + `eas.json`, and a build on a
+   physical phone (now Android first, `ANDROID_LAUNCH.md` §4).
 4. ✅ Notifications S15–S17 — shipped.
-5. ☐ Sentry crash reporting (small; alongside step 3).
+5. ◐ Sentry crash reporting — wired in `App.tsx`, inert until
+   `EXPO_PUBLIC_SENTRY_DSN` is set. No Sentry project yet; stays off for the
+   Android closed test.
 6. ✅ Support mailbox (`stubapp.help@gmail.com`) + privacy/support page
    (`docs/index.html`, 2026-07-22). Last click: owner enables GitHub Pages
    (repo Settings → Pages → deploy from `main`, folder `/docs`).
@@ -308,8 +352,9 @@ their own design/discussion pass first.
     signal.
 
 Explicitly deferred, each a deliberate future project with its own DPDP/label
-pass: product analytics (§7.1.3), cloud sync + accounts (§7.7), Play Store,
-remote-fetch brand DB. Independent small candidates: name personalization
+pass: product analytics (§7.1.3), cloud sync + accounts (§7.7), monetisation
+(`MONETISATION.md`), remote-fetch brand DB. Play Store is no longer
+deferred (`ANDROID_LAUNCH.md`). Independent small candidates: name personalization
 (§7.8) — local-only, can ship any time after discussion.
 
 ## 10. Questions not yet asked (register)
@@ -323,14 +368,14 @@ numbered section when it becomes live.
 | Is `com.stubapp.stub` final? | First TestFlight upload | Bundle ID is **permanent** once shipped; confirm before step 3 of §2 |
 | Who owns the keys? | First build | Let EAS manage signing credentials (default, recommended); the Apple ID + Expo account are the crown jewels — 2FA both |
 | What if Apple rejects? | First review | Common, recoverable; rejections cite a guideline and you reply/resubmit in the Resolution Center — budget a week of back-and-forth into any launch date |
-| Free forever? | Before listing | v1 free with no IAP keeps review, tax, and banking paperwork away; monetization later reopens review + DPDP + ASC banking/tax forms — its own project |
+| Free forever? | Before listing | v1 free with no IAP. Reviewed 2026-11-16 in `MONETISATION.md`: tip jar first, then a one-time Pro at about ₹249 made only of post-launch features |
 | Oldest supported iPhone? | External beta | SDK 54 floors at iOS 15.1; test small screens (SE) before external — layout was designed on big phones |
 | Store schema changes after launch? | First post-launch feature | Once real users have data, every `store.ts` shape change needs a `migrate()` rung — the ladder exists (`store.ts:104`); the discipline becomes mandatory, not optional |
-| Notification opt-in rate? | Beta | The permission prompt's timing matters; consider a pre-prompt explainer screen if beta opt-in is poor — retention lever depends on it |
-| Accessibility pass? | Before listing | Dynamic Type + VoiceOver sweep; also a review-quality signal — schedule alongside the copy audit |
-| Time zones / DST in day-keyed data? | First traveling user | `dayKey` logic should be audited once against a timezone change scenario — cheap test, ugly bug class |
+| Notification opt-in rate? | Beta | The prompt currently fires right after logging the cigarette that passes 80% of budget, with no context. Recommended: ask on the plan-ready card (review finding R11). On Android the prompt may not appear at all (R2) |
+| Accessibility pass? | Before listing | Roles pass done 2026-07-26. Still open: WelcomeScreen has no scroll view and a large scaling headline, so it may clip on a small phone at maximum text size. Check on an iPhone SE and a small Android phone; TalkBack has never been run |
+| Time zones / DST in day-keyed data? | First traveling user | Audited 2026-07-26, clean and now under test. Known limit: history is bucketed with the device's current offset, so travel can shift entries near midnight. Deferred to the sync project |
 | What does "delete my data" mean? | Listing questionnaire | Local-only: the reset flow *is* deletion; say so in the privacy policy. Becomes a legal duty (DPDP) only when data goes off-device |
-| Play Store pass? | Post-iOS traction | Separate later project: $25 one-time, different review culture, data-safety form, and real Android device testing |
+| Play Store pass? | **Now** | Active launch path since 2026-11-02. See `ANDROID_LAUNCH.md` |
 
 ---
 
