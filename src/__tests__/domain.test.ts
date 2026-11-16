@@ -21,6 +21,7 @@ import {
   plannedBudgetFor,
   recentDailyAverageSixths,
   tomorrowBudgetSixths,
+  undoTarget,
   weekdayOfKey,
 } from '../domain';
 import { INSTALL_KEY as I, atLocalHour, baseline, dayKey, plan, smoke, smokeDaily } from './fixtures';
@@ -462,5 +463,40 @@ describe('computeSavings — only whole days the app watched (R7)', () => {
 
   it('still goes negative for days above baseline (roast, not clamp)', () => {
     expect(savings([smoke(I + 1, 12)], I + 2).saved).toBe(-40);
+  });
+});
+
+// R6 (REVIEW_FINDINGS_2026-11-16). "Undo last" used to remove the last row in
+// the array whatever its age, so a tap on a fresh morning deleted last night's
+// final cigarette. It now takes back the newest action made today, or nothing.
+describe('undoTarget — undo the last action, never yesterday (R6)', () => {
+  const mark = (id: string, key: number, hour: number) => ({ id, at: atLocalHour(key, hour) });
+
+  it('takes back the newest mark and leaves the rest for the next tap', () => {
+    const marks = [mark('a', I, 10), mark('b', I, 11)];
+    const first = undoTarget(marks, atLocalHour(I, 12));
+    expect(first).toEqual({ id: 'b', marks: [marks[0]] });
+    expect(undoTarget(first.marks, atLocalHour(I, 12)).id).toBe('a');
+  });
+
+  it('has nothing to undo with no marks — a fresh launch', () => {
+    expect(undoTarget([], atLocalHour(I, 9))).toEqual({ id: null, marks: [] });
+  });
+
+  it('will not reach into yesterday when the app was left open overnight', () => {
+    const marks = [mark('lastNight', I, 23)];
+    expect(undoTarget(marks, atLocalHour(I + 1, 8))).toEqual({ id: null, marks: [] });
+  });
+
+  it('treats a 1am action as the same day until the 4am boundary (NFR3)', () => {
+    const marks = [mark('late', I, 23)];
+    expect(undoTarget(marks, atLocalHour(I, 25)).id).toBe('late');
+    expect(undoTarget(marks, atLocalHour(I + 1, 4)).id).toBeNull();
+  });
+
+  it('goes by when the user acted, so a backfill onto a past day is undoable', () => {
+    // the entry lands on I − 2; the mark is stamped now
+    const marks = [mark('backfilled', I, 15)];
+    expect(undoTarget(marks, atLocalHour(I, 15, 1)).id).toBe('backfilled');
   });
 });

@@ -322,11 +322,10 @@ export function LogScreen() {
             label="undo last"
             a11yLabel="Undo last entry"
             onPress={() => {
-              if (!entries.length) return;
               haptic.select();
-              undoLast();
+              const undone = undoLast();
               setEditingId(null);
-              showToast(copy('undone'));
+              showToast(copy(undone ? 'undone' : 'nothingToUndo'));
             }}
           />
           <FooterLink

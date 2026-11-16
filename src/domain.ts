@@ -223,6 +223,30 @@ export function entriesForDay(entries: Entry[], key: number): Entry[] {
   return entries.filter((e) => dayKey(e.timestamp) === key);
 }
 
+// "Undo last" (S2) undoes the user's most recent *action*, not the last row in
+// the array (R6, 2026-11-16). The old rule removed entries[length − 1] whatever
+// its age: on a morning with nothing logged yet, the button silently deleted
+// last night's final cigarette, said "Undone", and nothing on screen changed —
+// yesterday's verdict altered without the user knowing.
+//
+// A mark is left each time an entry is added. Undo takes the newest mark, and
+// only if it was made today: marks live in memory, so a restart clears them,
+// and the day check covers an app left open overnight. A backfill onto a past
+// day is still undoable right after it is made, because the mark records when
+// the user acted, not the day the entry landed on. Anything older is corrected
+// from the entry row (edit / remove), where the user can see what they change.
+export type UndoMark = { id: string; at: number };
+
+export function undoTarget(
+  marks: UndoMark[],
+  now: number,
+): { id: string | null; marks: UndoMark[] } {
+  const last = marks[marks.length - 1];
+  // stale top → everything beneath it is older still
+  if (!last || dayKey(last.at) !== dayKey(now)) return { id: null, marks: [] };
+  return { id: last.id, marks: marks.slice(0, -1) };
+}
+
 export function totalSixths(entries: Entry[]): number {
   return entries.reduce((a, e) => a + e.sixths, 0);
 }

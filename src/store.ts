@@ -12,11 +12,13 @@ import {
   Pace,
   PlanRecord,
   PriceRecord,
+  UndoMark,
   budgetHoldOnLog,
   budgetSixths,
   dayKey,
   planHistoryWithRate,
   recentDailyAverageSixths,
+  undoTarget,
 } from './domain';
 // From the pure planning module, not notifications.ts — the store must not
 // drag the native notifications module into its import graph.
@@ -173,6 +175,9 @@ export function useAppData() {
   const [loaded, setLoaded] = useState(false);
   const dataRef = useRef(data);
   dataRef.current = data;
+  // What "undo last" may take back — see domain.undoTarget. In memory on
+  // purpose: an action from a previous launch is not "the last thing I did".
+  const undoMarks = useRef<UndoMark[]>([]);
 
   useEffect(() => {
     AsyncStorage.getItem(KEY)
@@ -322,6 +327,7 @@ export function useAppData() {
         timestamp,
         ...(backfilled ? { backfilled: true } : {}),
       };
+      undoMarks.current = [...undoMarks.current, { id: entry.id, at: Date.now() }];
       update((d) => {
         const entries = [...d.entries, entry];
         // Did this cigarette hold the budget flat that was going to step down?
@@ -360,8 +366,14 @@ export function useAppData() {
     update((d) => (d.pendingHoldNotice ? { ...d, pendingHoldNotice: null } : d));
   }, [update]);
 
-  const undoLast = useCallback(() => {
-    update((d) => ({ ...d, entries: d.entries.slice(0, -1) }));
+  // Returns false when there is nothing of today's to take back, so the
+  // caller can say so instead of confirming an undo that did not happen.
+  const undoLast = useCallback((): boolean => {
+    const { id, marks } = undoTarget(undoMarks.current, Date.now());
+    undoMarks.current = marks;
+    if (!id) return false;
+    update((d) => ({ ...d, entries: d.entries.filter((e) => e.id !== id) }));
+    return true;
   }, [update]);
 
   const editEntry = useCallback(
@@ -376,6 +388,7 @@ export function useAppData() {
 
   const removeEntry = useCallback(
     (id: string) => {
+      undoMarks.current = undoMarks.current.filter((m) => m.id !== id);
       update((d) => ({ ...d, entries: d.entries.filter((e) => e.id !== id) }));
     },
     [update],
@@ -502,6 +515,7 @@ export function useAppData() {
 
   // The one thing we can't undo — wipes storage and returns to onboarding.
   const resetAll = useCallback(() => {
+    undoMarks.current = [];
     AsyncStorage.removeItem(KEY).catch(() => {});
     setData(EMPTY);
   }, []);
