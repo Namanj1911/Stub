@@ -26,7 +26,7 @@ import {
   underBudgetStreaks,
   weekBars,
 } from '../stats';
-import { useApp, useProfile } from '../AppContext';
+import { useApp, useNow, useProfile } from '../AppContext';
 import { haptic } from '../haptics';
 import { ProfileButton } from '../ProfileButton';
 import { useNav } from '../navigation';
@@ -41,7 +41,7 @@ export function StatsScreen() {
   const nav = useNav();
   const [range, setRange] = useState<StatsRange>('week');
 
-  const now = Date.now();
+  const now = useNow();
   const todayKey = dayKey(now);
   const budget = budgetSixths(entries, todayKey, profile.installDayKey, profile.baselineHistory, profile.planHistory);
   const today = entriesForDay(entries, todayKey);

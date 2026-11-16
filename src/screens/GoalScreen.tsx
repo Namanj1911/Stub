@@ -21,7 +21,7 @@ import {
   trailing7Totals,
   weeksToQuitAtRate,
 } from '../domain';
-import { useApp, useProfile } from '../AppContext';
+import { useApp, useNow, useProfile } from '../AppContext';
 import {
   furthestEarned,
   gaps,
@@ -42,7 +42,7 @@ export function GoalScreen() {
   const profile = useProfile();
   const nav = useNav();
   const entries = data.entries;
-  const now = Date.now();
+  const now = useNow();
   const todayKey = dayKey(now);
   // Quit-day progress and the 7-day-average fallback measure against the
   // onboarding baseline; the budget itself follows the dated history.

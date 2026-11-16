@@ -17,7 +17,7 @@ import {
   weeksToQuitAtRate,
 } from '../domain';
 import { copy, moneyTemptation } from '../strings';
-import { useApp, useProfile } from '../AppContext';
+import { useApp, useNow, useProfile } from '../AppContext';
 import { ProfileButton } from '../ProfileButton';
 import { color, font, radius } from '../theme';
 
@@ -33,7 +33,7 @@ export function MoneyScreen() {
   const entries = data.entries;
 
   const price = profile.pricePerStick; // current, for projections + header
-  const now = Date.now();
+  const now = useNow();
   const todayKey = dayKey(now);
   const baseline = profile.countPerDay * 6; // current baseline, for projections
   const perSixth = price / 6;

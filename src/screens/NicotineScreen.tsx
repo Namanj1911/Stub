@@ -20,7 +20,7 @@ import {
   View,
 } from 'react-native';
 import Svg, { Defs, Ellipse, RadialGradient, Stop } from 'react-native-svg';
-import { useApp, useProfile } from '../AppContext';
+import { useApp, useNow, useProfile } from '../AppContext';
 import { BRANDS, BRAND_AVERAGES, brandInfo, findBrand, isSoft } from '../brands';
 import { dayKey, totalForDay } from '../domain';
 import { haptic } from '../haptics';
@@ -58,7 +58,7 @@ export function NicotineScreen() {
   }, [pickNonce, roast, roastAnim]);
 
   const yourBrand = brandInfo(profile.brandId, profile.customBrandName);
-  const todayKey = dayKey(Date.now());
+  const todayKey = dayKey(useNow());
   const weekSixths = (offsetWeeks: number) => {
     let s = 0;
     for (let k = todayKey - 6 - offsetWeeks * 7; k <= todayKey - offsetWeeks * 7; k++) {

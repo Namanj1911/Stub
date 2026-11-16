@@ -6,7 +6,7 @@
 
 import React from 'react';
 import { Alert, Pressable, ScrollView, Share, Text, View } from 'react-native';
-import { useApp, useProfile } from '../AppContext';
+import { useApp, useNow, useProfile } from '../AppContext';
 import { brandInfo } from '../brands';
 import {
   PACE_RATE,
@@ -40,7 +40,7 @@ export function ProfileScreen() {
   const profile = useProfile();
   const nav = useNav();
   const brand = brandInfo(profile.brandId, profile.customBrandName);
-  const now = Date.now();
+  const now = useNow();
   const todayKey = dayKey(now);
   // The plan lives only here (it used to be duplicated on Goal), so this
   // control carries the weeks-to-quit comparison Goal's picker used to show.
