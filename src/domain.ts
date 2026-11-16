@@ -83,16 +83,19 @@ export function computeSavings(
   installDayKey: number,
   todayKey: number,
 ): { saved: number; savedWeek: number } {
+  // What was actually spent per day, in one pass over the entries — filtering
+  // the whole array per day made this quadratic in days of use (R1).
+  const cost = new Map<number, number>();
+  for (const e of entries) {
+    const k = dayKey(e.timestamp);
+    cost.set(k, (cost.get(k) ?? 0) + (e.sixths * priceAt(priceHistory, e.timestamp)) / 6);
+  }
   let saved = 0;
   let savedWeek = 0;
   for (let k = installDayKey; k <= todayKey; k++) {
-    const actualCost = entriesForDay(entries, k).reduce(
-      (a, e) => a + (e.sixths * priceAt(priceHistory, e.timestamp)) / 6,
-      0,
-    );
     const counterfactualCost =
       (baselineSixthsFor(baselineHistory, k) * priceAtEndOfDay(priceHistory, k)) / 6;
-    const daySaved = counterfactualCost - actualCost;
+    const daySaved = counterfactualCost - (cost.get(k) ?? 0);
     saved += daySaved;
     if (k > todayKey - 7) savedWeek += daySaved;
   }
@@ -149,10 +152,10 @@ export function recentDailyAverageSixths(
   let mean = 0;
   if (todayKey > from) {
     let total = 0;
-    for (let k = from; k < todayKey; k++) total += totalSixths(entriesForDay(entries, k));
+    for (let k = from; k < todayKey; k++) total += totalForDay(entries, k);
     mean = total / (todayKey - from);
   }
-  const today = totalSixths(entriesForDay(entries, todayKey));
+  const today = totalForDay(entries, todayKey);
   return Math.round(Math.max(mean, today) / 3) * 3;
 }
 
@@ -214,6 +217,35 @@ export function totalSixths(entries: Entry[]): number {
   return entries.reduce((a, e) => a + e.sixths, 0);
 }
 
+// Sixths smoked per day key, for the whole history, built in one pass.
+//
+// Anything that walks days must read a day's total from here (totalForDay)
+// rather than call entriesForDay() per day: that filters the whole array, and
+// builds a Date per entry, for every day walked — days × entries, which made
+// Log, Money and Stats slower with every day of use (R1, 2026-11-16).
+//
+// Cached against the array reference, so the many callers in one render share
+// one pass. That is safe because the store never mutates `entries` in place —
+// every write produces a new array. The length check is a cheap guard for a
+// caller that appends to an array it built itself.
+const dayTotalsCache = new WeakMap<Entry[], { length: number; totals: Map<number, number> }>();
+
+export function dayTotals(entries: Entry[]): Map<number, number> {
+  const hit = dayTotalsCache.get(entries);
+  if (hit && hit.length === entries.length) return hit.totals;
+  const totals = new Map<number, number>();
+  for (const e of entries) {
+    const k = dayKey(e.timestamp);
+    totals.set(k, (totals.get(k) ?? 0) + e.sixths);
+  }
+  dayTotalsCache.set(entries, { length: entries.length, totals });
+  return totals;
+}
+
+export function totalForDay(entries: Entry[], key: number): number {
+  return dayTotals(entries).get(key) ?? 0;
+}
+
 // Daily totals for the 7 day-keys before `todayKey`. Days after install with
 // no entries count as 0 (a clean day is a clean day); days before the user
 // existed fall back to their stated baseline.
@@ -225,7 +257,7 @@ export function trailing7Totals(
 ): number[] {
   const out: number[] = [];
   for (let k = todayKey - 7; k < todayKey; k++) {
-    out.push(k >= installDayKey ? totalSixths(entriesForDay(entries, k)) : baselineSixths);
+    out.push(k >= installDayKey ? totalForDay(entries, k) : baselineSixths);
   }
   return out;
 }
@@ -251,11 +283,7 @@ export function budgetSeries(
   planHistory: PlanRecord[],
 ): number[] {
   const preInstall = baselineSixthsFor(baselineHistory, installDayKey);
-  const totals = new Map<number, number>();
-  for (const e of entries) {
-    const k = dayKey(e.timestamp);
-    totals.set(k, (totals.get(k) ?? 0) + e.sixths);
-  }
+  const totals = dayTotals(entries);
   const totalFor = (k: number) => (k >= installDayKey ? totals.get(k) ?? 0 : preInstall);
 
   let budget = preInstall;

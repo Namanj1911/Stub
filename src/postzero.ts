@@ -12,7 +12,7 @@
 // the logs. The single stored value (`confirmedFrom`, below) is *consent*, not
 // truth — it can gate the mode but never assert it.
 
-import { Entry, entriesForDay, totalSixths } from './domain';
+import { Entry, totalForDay } from './domain';
 
 // §12, decision 11: the budget reaching zero sets the expectation; living it
 // for a week earns the mode. Flipping on the budget alone would declare
@@ -64,13 +64,13 @@ export function smokeFree(
   let run = 0;
   let best = 0;
   for (let k = installDayKey; k <= todayKey; k++) {
-    const zero = totalSixths(entriesForDay(entries, k)) === 0;
+    const zero = totalForDay(entries, k) === 0;
     run = zero ? run + 1 : 0;
     best = Math.max(best, run);
   }
   const runStartDayKey = run > 0 ? todayKey - run + 1 : null;
 
-  const todayClean = totalSixths(entriesForDay(entries, todayKey)) === 0;
+  const todayClean = totalForDay(entries, todayKey) === 0;
   // A run has two partial days at its ends, and neither is *lived*. Today is
   // partial because the 4am boundary means a clean evening can still end in a
   // cigarette. The install day is partial because the user installed mid-day —
