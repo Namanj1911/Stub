@@ -129,7 +129,17 @@ const TABLE = {
   sosQuitLine: 'Want a person to talk to? The free quit line is 1800-11-2356.',
   linkFailedTitle: "Couldn't open that",
   notifNote:
-    "Scheduled on your phone, like an alarm — nothing leaves the device. We'll ask iOS for permission the first time there's actually something to say.",
+    "Scheduled on your phone, like an alarm — nothing leaves the device. If you skipped this during setup, your phone asks for permission the first time there's actually something to say.",
+  // The plan-ready card's offer (R11). It has to earn the system prompt that
+  // follows the button, so it says what arrives and how often — and repeats
+  // the local-only promise, since "notifications" reads as "tracking" to
+  // anyone who has installed another quit app.
+  setupNudgeAsk: 'Want a heads-up before you run out for the day?',
+  setupNudgeNote:
+    "One nudge when the day's budget is nearly gone, and a word when you hit a milestone. Scheduled on this phone — nothing leaves it.",
+  setupNudgeCta: 'Turn on nudges',
+  setupNudgeOn: 'Nudges are on. You can switch them off in Profile.',
+  setupNudgeOff: "No nudges, then. If you change your mind, it's in your phone's Settings.",
 } as const satisfies Record<string, string>;
 
 export type StringKey = keyof typeof TABLE;
