@@ -85,6 +85,10 @@ const TABLE = {
   taperStaleLead: "this budget's out of date",
   taperStaleCta: 'start a new taper',
   backfillZero: 'Add zero? Bold strategy. Tap an amount first.',
+  // Money before any whole day has been counted (install day and the day
+  // after). ₹0 with no explanation reads as a verdict; this says why.
+  moneyNotYet:
+    'Nothing counted yet. Savings start with your first full day here, and each day is added once it is over.',
   moneyBehind:
     "You're smoking above your baseline, so this is costing you extra. Goa is drifting further away, just so you know.",
   baselineNote: 'Applies from today — your history keeps its old numbers.',
@@ -458,6 +462,11 @@ export function avoidedCopy(): string {
 
 // Mirrors `moneyBehind`: above baseline means the counterfactual runs the
 // other way, and we say so plainly instead of clamping the number to zero.
+// Before any whole day has been counted — not the same state as being above
+// baseline, so it must not borrow healthBehind's wording.
+export const healthNotYet =
+  'Nothing counted yet. This starts with your first full day here, and each day is added once it is over.';
+
 export const healthBehind =
   "You're smoking above your baseline right now, so there's nothing banked yet. It starts counting the moment you're under.";
 

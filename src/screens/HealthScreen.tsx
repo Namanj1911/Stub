@@ -45,7 +45,7 @@ import { Medal } from '../Medal';
 import { smokeFree } from '../postzero';
 import { useNav } from '../navigation';
 import { underBudgetCount } from '../stats';
-import { avoidedCopy, healthBehind, healthClockCopy, milestoneCelebration } from '../strings';
+import { avoidedCopy, healthBehind, healthClockCopy, healthNotYet, milestoneCelebration } from '../strings';
 import { color, font, radius } from '../theme';
 
 // The smallest unit anything here renders is a minute, so a 10s tick is
@@ -441,7 +441,7 @@ export function HealthScreen() {
           <Text
             style={{ fontFamily: font.regular, fontSize: 13, color: color.neutral300, lineHeight: 19 }}
           >
-            {healthBehind}
+            {avoided.days === 0 ? healthNotYet : healthBehind}
           </Text>
         </View>
       ) : (

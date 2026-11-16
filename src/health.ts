@@ -162,14 +162,18 @@ export type Avoided = {
   nicotineMg: number;
   tarMg: number;
   estimated: boolean; // any day valued at dataset averages → the whole total is soft
+  days: number; // whole days the totals cover; 0 = nothing counted yet
 };
 
 // Exposure avoided since install, valued against the effective-dated baseline
 // exactly the way computeSavings() values money (§4.2) — same loop, same
 // window, same day-by-day effective dating, different multiplier.
 //
-// Counting starts at install day, consistent with Money and the P0 display
-// rule: we only ever do arithmetic on days we actually watched.
+// Only whole days the app watched are counted — the day after install up to
+// yesterday — for the reasons given on computeSavings (R7): the install day
+// and today are both partial, and crediting either claims cigarettes "not
+// smoked" that nobody has yet not smoked. `days` is how many days the totals
+// cover; 0 means nothing has been counted yet.
 //
 // Deliberately NOT clamped per day. A day spent above your stated baseline
 // subtracts, exactly as it does in Money — clamping would quietly hide
@@ -188,7 +192,7 @@ export function cumulativeAvoided(
   let tarMg = 0;
   let estimated = false;
 
-  for (let k = installDayKey; k <= todayKey; k++) {
+  for (let k = installDayKey + 1; k < todayKey; k++) {
     const avoided = baselineSixthsFor(baselineHistory, k) - totalForDay(entries, k);
     if (avoided === 0) continue;
     // The brand in effect by that evening — avoided smokes have no timestamp
@@ -203,7 +207,14 @@ export function cumulativeAvoided(
     tarMg += (avoided / 6) * perStickTar;
   }
 
-  return { sixths, cigarettes: sixths / 6, nicotineMg, tarMg, estimated };
+  return {
+    sixths,
+    cigarettes: sixths / 6,
+    nicotineMg,
+    tarMg,
+    estimated,
+    days: Math.max(0, todayKey - installDayKey - 1),
+  };
 }
 
 // ---------------------------------------------------------------------------
